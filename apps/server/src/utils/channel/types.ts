@@ -8,11 +8,6 @@ export type ProviderSources = { language: string; media: string };
 export type VendorKind = "language" | "media";
 export type Vendor = { id: string; name: string; description: string; updateTime: number; version?: string };
 export type VendorSource = Vendor & { source: string };
-export type LoginParams = { userName: string; password: string; captcha: string; originalCaptcha: string };
-export type SmsParams = { phone: string; verify: { ticket: string; randstr: string }; isForget?: 0 | 1 | null };
-export type RegisterParams = { userName: string; phone: string; password: string; verificationCode: string; invitationCode?: string };
-export type ForgotPasswordParams = { phone: string; verificationCode: string; newPassword: string; confirmPassword: string };
-
 export type PluginType = "node" | "tool" | "skill" | "agent" | "ext";
 export type PluginIdentity = { type: PluginType; identifier: string };
 export type PluginExistence = PluginIdentity & { exists: boolean };
@@ -292,11 +287,6 @@ export type ExploreProcess = {
 };
 
 export interface Channel {
-  getCaptcha(options?: RequestOptions): Promise<Captcha>;
-  sendSmsCode(params: SmsParams, options?: RequestOptions): Promise<number>;
-  register(params: RegisterParams, options?: RequestOptions): Promise<{ userCode: string }>;
-  login(params: LoginParams, options?: RequestOptions): Promise<Login>;
-  forgotPassword(params: ForgotPasswordParams, options?: RequestOptions): Promise<string>;
   getPlugins(params: PluginsParams, options: AuthenticatedOptions): Promise<{ list: Plugin[]; total: number }>;
   getPluginExistence(plugins: PluginIdentity[], options: AuthenticatedOptions): Promise<PluginExistence[]>;
   toggleCollection(pluginId: number, options: AuthenticatedOptions): Promise<{ collected: boolean }>;

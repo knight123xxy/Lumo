@@ -25,6 +25,13 @@
         :fileAction="performFileAction"
         :saveNode="saveDocumentNode" />
     </keep-alive>
+    <keep-alive :key="workspaceStore.project?.directory" :max="1">
+      <timelinePanel
+        v-if="activePanel === 'timeline'"
+        :key="workspaceStore.project?.directory"
+        :ref="setTimelinePanel"
+        :directory="workspaceStore.project?.directory ?? ''" />
+    </keep-alive>
     <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
     <div class="workspaceTools">
       <el-segmented :modelValue="activePanel" class="panelSwitcher" :options="panelOptions" size="small" aria-label="切换面板" @change="switchPanel">
@@ -134,7 +141,7 @@ import { translate } from "@toonflow/i18n/vue";
 import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import axios from "axios";
-import { IconVector, IconFileText, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
+import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
@@ -150,8 +157,9 @@ import workspaceMenu from "./components/workspaceMenu.vue";
 import floatingAgent from "./components/floatingAgent.vue";
 
 const documentPanel = defineAsyncComponent(() => import("./panels/document/index.vue"));
+const timelinePanel = defineAsyncComponent(() => import("./panels/timeline/index.vue"));
 
-const activePanel = ref<"canvas" | "document">("canvas");
+const activePanel = ref<"canvas" | "document" | "timeline">("canvas");
 const selectedTool = ref<"move" | "hand">("move");
 const sideButtonEvents = ["mousedown", "mouseup", "auxclick"] as const;
 // 鼠标侧键会直接触发原生历史导航，需在 DOM 事件阶段拦截，避免生成中的工作区被误关闭。
@@ -169,6 +177,7 @@ const workspaceStore = useWorkspaceStore();
 useProviderBalances();
 const panelOptions = [
   { label: "画布", value: "canvas", icon: IconVector },
+  { label: "剪辑", value: "timeline", icon: IconMovie },
   { label: "文档", value: "document", icon: IconFileText },
 ];
 const agentVisible = ref(true);
@@ -215,6 +224,15 @@ function setDocumentPanel(value: Element | ComponentPublicInstance | null) {
   // KeepAlive 失活会清空模板 ref，保留同一工作区实例以协调后台文档保存和文件操作。
   if (value && directory) documentPanelCache.value = { directory, instance: value as InstanceType<typeof documentPanel> };
 }
+const timelinePanelCache = shallowRef<{ directory: string; instance: InstanceType<typeof timelinePanel> }>();
+const timelinePanelRef = computed(() => timelinePanelCache.value?.directory === workspaceStore.project?.directory ? timelinePanelCache.value?.instance : undefined);
+watch(() => workspaceStore.project?.directory, () => {
+  timelinePanelCache.value = undefined;
+}, { flush: "sync" });
+function setTimelinePanel(value: Element | ComponentPublicInstance | null) {
+  const directory = workspaceStore.project?.directory;
+  if (value && directory) timelinePanelCache.value = { directory, instance: value as InstanceType<typeof timelinePanel> };
+}
 provide("canvas", () => canvasPanelRef.value?.getCanvasContext());
 provide("mentionCanvas", () => canvasPanelRef.value?.mentionSource);
 provide("activateCanvasPanel", () => switchPanel("canvas"));
@@ -246,7 +264,7 @@ registerWorkspaceControl({
     };
     checkDirectory();
     if (request.name === "switchPanel") {
-      if (request.args.panel !== "canvas" && request.args.panel !== "document") throw new Error("未知面板");
+      if (request.args.panel !== "canvas" && request.args.panel !== "document" && request.args.panel !== "timeline") throw new Error("未知面板");
       if (!(await switchPanel(request.args.panel))) throw new Error("面板切换失败，请检查文档是否保存成功");
       if (request.args.panel === "document") await waitForControlValue(() => documentPanelRef.value?.ready ? documentPanelRef.value : undefined, callSignal);
       checkDirectory();
@@ -273,6 +291,7 @@ registerWorkspaceControl({
 
 async function flushSave() {
   await documentPanelRef.value?.flushSave();
+  await timelinePanelRef.value?.flushSave();
   await canvasPanelRef.value?.flushSave();
 }
 
@@ -308,13 +327,13 @@ onBeforeRouteLeave(async () => {
 });
 
 async function switchPanel(value: string | number | boolean) {
-  if (value !== "canvas" && value !== "document") return false;
+  if (value !== "canvas" && value !== "document" && value !== "timeline") return false;
   try {
     if (activePanel.value === "document") await documentPanelRef.value?.flushSave();
     const changed = activePanel.value !== value;
     activePanel.value = value;
     await nextTick();
-    if (changed) anonymousData.track(value === "canvas" ? "workspace.canvas" : "workspace.document");
+    if (changed) anonymousData.track(value === "canvas" ? "workspace.canvas" : value === "timeline" ? "workspace.timeline" : "workspace.document");
     return true;
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "文本保存失败");
@@ -495,58 +514,21 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
         flex-shrink: 0;
         margin: 0;
         padding: 0;
-        border: 1px solid color-mix(in srgb, #6edfdc 30%, var(--el-border-color-light));
+        border: 1px solid var(--color-border-2);
         border-radius: 50%;
-        background: linear-gradient(145deg, color-mix(in srgb, #96f9f0 15%, var(--el-bg-color-overlay)), var(--el-bg-color-overlay) 65%,
-          color-mix(in srgb, #8588ff 18%, var(--el-bg-color-overlay)));
-        box-shadow: inset 0 1px 0 #ffffff52;
-        color: #f4fffe;
-        overflow: hidden;
-        isolation: isolate;
-        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        background: var(--color-panel-2);
+        color: var(--color-accent);
+        transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
 
         &.standalone {
           position: relative;
           left: auto;
         }
 
-        &::before,
-        &::after {
-          content: "";
-          position: absolute;
-          inset: 4px;
-          border-radius: 50%;
-          pointer-events: none;
-        }
-
-        &::before {
-          z-index: -2;
-          background: radial-gradient(ellipse at 22% 15%, #adfff0, transparent 50%), radial-gradient(ellipse at 85% 85%, #b29aff, transparent 55%),
-            radial-gradient(ellipse at 85% 20%, #25dccc, transparent 50%), linear-gradient(150deg, #10aec1, #3765c6 60%, #765bd3);
-          animation: agentFlow 5.4s linear infinite;
-          filter: saturate(1.05);
-          transition: filter 180ms ease;
-        }
-
-        &::after {
-          z-index: -1;
-          background: radial-gradient(ellipse 12% 18% at 50% 50%, #ffffffa6, #d3fff773 35%, transparent 80%),
-            radial-gradient(ellipse at 32% 18%, #ffffff99, transparent 42%), radial-gradient(ellipse at 65% 95%, #17246070, transparent 65%);
-          background-size: 160% 160%, 100% 100%, 100% 100%;
-          background-position: 75% 85%, 0 0, 0 0;
-          background-repeat: no-repeat;
-          box-shadow: inset 0 0 0 1px #ffffff52, inset 0 2px 3px #ffffff80, inset 0 -3px 6px #16305b73;
-          animation: agentShine 3.2s linear infinite;
-        }
-
-        &:hover::before {
-          filter: saturate(1.2);
-        }
-
         &:hover {
           transform: translateY(-1px);
-          border-color: #87f2eb99;
-          box-shadow: inset 0 1px 0 #ffffff70;
+          border-color: var(--color-accent);
+          background: var(--color-accent-soft);
         }
 
         &:active {
@@ -570,66 +552,12 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
 
         @media (prefers-reduced-motion: reduce) {
           transition: none;
-
-          &::before,
-          &::after {
-            animation: none;
-          }
         }
       }
     }
   }
 }
 
-@keyframes agentFlow {
-  from {
-    transform: rotate(0deg) scale(1);
-  }
-  25% {
-    transform: rotate(90deg) scale(1.06, 1.02);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.02, 1.06);
-  }
-  75% {
-    transform: rotate(270deg) scale(1.05, 1.03);
-  }
-  to {
-    transform: rotate(360deg) scale(1);
-  }
-}
-
-@keyframes agentShine {
-  0%,
-  100% {
-    background-size: 160% 160%, 100% 100%, 100% 100%;
-    background-position: 75% 85%, 0 0, 0 0;
-  }
-  12.5% {
-    background-position: 40% 98%, 0 0, 0 0;
-  }
-  25% {
-    background-size: 180% 140%, 100% 100%, 100% 100%;
-    background-position: 10% 75%, 0 0, 0 0;
-  }
-  37.5% {
-    background-position: 2% 40%, 0 0, 0 0;
-  }
-  50% {
-    background-size: 160% 160%, 100% 100%, 100% 100%;
-    background-position: 25% 10%, 0 0, 0 0;
-  }
-  62.5% {
-    background-position: 60% 2%, 0 0, 0 0;
-  }
-  75% {
-    background-size: 140% 180%, 100% 100%, 100% 100%;
-    background-position: 95% 25%, 0 0, 0 0;
-  }
-  87.5% {
-    background-position: 98% 60%, 0 0, 0 0;
-  }
-}
 .helpMenu {
   display: flex;
   flex-direction: column;

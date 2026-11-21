@@ -374,7 +374,7 @@ onBeforeUnmount(() => {
         color: var(--el-text-color-secondary);
         cursor: pointer;
 
-        &:hover { background: var(--el-fill-color); color: var(--el-text-color-primary); }
+        &:hover { background: var(--color-panel-2); color: var(--color-text); }
         &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
         &:dir(rtl) svg { transform: scaleX(-1); }
       }
@@ -406,9 +406,9 @@ onBeforeUnmount(() => {
 
         > svg { flex-shrink: 0; }
         .sidebarText { min-width: 0; overflow-wrap: anywhere; }
-        &:hover { background: var(--el-fill-color); color: var(--el-text-color-primary); }
+        &:hover { background: var(--color-panel-2); color: var(--color-text); }
         &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: -2px; }
-        &.active { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
+        &.active { background: var(--color-panel-2); color: var(--color-accent); }
       }
     }
     .sidebarFooter {

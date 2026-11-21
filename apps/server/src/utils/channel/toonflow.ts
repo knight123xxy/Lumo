@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { t, translateMessage } from "@/lib/i18n";
 import type {
-  AuthenticatedOptions, Captcha, Channel, CreateSubAccountParams, ExploreDetail, ExplorePage, ExploreParams, ExploreProcess, ExploreProject,
-  ExploreSubmission, ExploreUploadSignature, ExploreUploadSignatureParams, ForgotPasswordParams, HomeAdvertisement, HomeAdvertisements, Login, LoginParams, ModelData, ModelDataParams, Plugin, PluginExistence, PluginIdentity, PluginsParams, PluginType, PluginUploadSignature, PluginUploadSignatureParams, PointsConsumption,
-  PointsConsumptionParams, PreviewData, ProviderSources, RegisterParams, RequestOptions, SmsParams, Sponsor, SubAccountsPage, SubAccountsParams, TaskRecordsPage, TaskRecordsParams,
+  AuthenticatedOptions, Channel, CreateSubAccountParams, ExploreDetail, ExplorePage, ExploreParams, ExploreProcess, ExploreProject,
+  ExploreSubmission, ExploreUploadSignature, ExploreUploadSignatureParams, HomeAdvertisement, HomeAdvertisements, ModelData, ModelDataParams, Plugin, PluginExistence, PluginIdentity, PluginsParams, PluginType, PluginUploadSignature, PluginUploadSignatureParams, PointsConsumption,
+  PointsConsumptionParams, PreviewData, ProviderSources, RequestOptions, Sponsor, SubAccountsPage, SubAccountsParams, TaskRecordsPage, TaskRecordsParams,
   UpdatePluginParams, UploadExploreProjectParams, UploadPluginParams, UsageStatistics, UsageStatisticsParams, Vendor, VendorKind, VendorSource, WalletActivity, WalletBonusBatchesPage, WalletBonusBatchesParams, WalletOrdersPage, WalletOrdersParams, WalletPayment, WalletPaymentParams, WalletPaymentStatus, WalletPlan, WalletPresentation,
 } from "./types";
 
@@ -235,81 +235,6 @@ export class Toonflow implements Channel {
       fail(message, typeof status === "number" && Number.isInteger(status) && status >= 400 && status <= 599 ? status : 502);
     }
     return body.data as T;
-  }
-
-  async getCaptcha(options?: RequestOptions): Promise<Captcha> {
-    const data = await this.request<Captcha>({ method: "GET", path: "/web/toonflow/user/getCaptcha", signal: options?.signal });
-    if (!data || typeof data.svg !== "string" || !data.svg.trim() || typeof data.captcha !== "string" || !data.captcha.trim()) {
-      fail("图形验证码响应格式不正确", 502);
-    }
-    return { svg: data.svg, captcha: data.captcha };
-  }
-
-  async sendSmsCode(params: SmsParams, options?: RequestOptions): Promise<number> {
-    requireText(params.phone, "请输入手机号");
-    requireText(params.verify?.ticket, "请先完成人机验证");
-    requireText(params.verify?.randstr, "请先完成人机验证");
-    if (params.isForget != null && params.isForget !== 0 && params.isForget !== 1) fail("短信验证码场景无效");
-    const data = await this.request<number>({
-      method: "POST", path: "/web/toonflow/user/sendSmsCode", signal: options?.signal,
-      data: {
-        phone: params.phone.trim(), verify: { ticket: params.verify.ticket, randstr: params.verify.randstr },
-        ...(params.isForget !== undefined ? { isForget: params.isForget } : {}),
-      },
-    });
-    if (typeof data !== "number" || !Number.isSafeInteger(data) || data <= 0) fail("短信验证码响应格式不正确", 502);
-    return data;
-  }
-
-  async register(params: RegisterParams, options?: RequestOptions): Promise<{ userCode: string }> {
-    requireText(params.userName, "请输入昵称");
-    requireText(params.phone, "请输入手机号");
-    if (typeof params.password !== "string" || !params.password) fail("请输入密码");
-    requireText(params.verificationCode, "请输入短信验证码");
-    if (params.invitationCode !== undefined && typeof params.invitationCode !== "string") fail("邀请码格式不正确");
-    const data = await this.request<{ userCode: string }>({
-      method: "POST", path: "/web/toonflow/user/register", signal: options?.signal,
-      data: {
-        userName: params.userName.trim(), phone: params.phone.trim(), password: params.password,
-        verificationCode: params.verificationCode.trim(),
-        ...(params.invitationCode !== undefined ? { invitationCode: params.invitationCode.trim() } : {}),
-      },
-    });
-    if (!data || typeof data.userCode !== "string" || !data.userCode.trim()) fail("注册响应格式不正确", 502);
-    return { userCode: data.userCode };
-  }
-
-  async login(params: LoginParams, options?: RequestOptions): Promise<Login> {
-    requireText(params.userName, "请输入手机号或邮箱");
-    if (typeof params.password !== "string" || !params.password) fail("请输入密码");
-    requireText(params.captcha, "请输入图形验证码");
-    requireText(params.originalCaptcha, "请先获取图形验证码");
-    const data = await this.request<Login>({
-      method: "POST", path: "/web/toonflow/user/login", signal: options?.signal,
-      data: {
-        userName: params.userName.trim(), password: params.password,
-        captcha: params.captcha.trim(), originalCaptcha: params.originalCaptcha,
-      },
-    });
-    if (!data || typeof data.token !== "string" || !data.token.trim() || !data.info
-      || typeof data.info.userName !== "string" || typeof data.info.phone !== "string") fail("登录响应格式不正确", 502);
-    return { token: data.token, info: { userName: data.info.userName, phone: data.info.phone } };
-  }
-
-  async forgotPassword(params: ForgotPasswordParams, options?: RequestOptions): Promise<string> {
-    requireText(params.phone, "请输入手机号");
-    requireText(params.verificationCode, "请输入短信验证码");
-    if (typeof params.newPassword !== "string" || params.newPassword.length < 6) fail("新密码至少 6 位");
-    if (params.confirmPassword !== params.newPassword) fail("两次输入的密码不一致");
-    const data = await this.request<string>({
-      method: "POST", path: "/web/toonflow/user/forgotPassword", signal: options?.signal,
-      data: {
-        phone: params.phone.trim(), verificationCode: params.verificationCode.trim(),
-        newPassword: params.newPassword, confirmPassword: params.confirmPassword,
-      },
-    });
-    if (typeof data !== "string") fail("重置密码响应格式不正确", 502);
-    return data;
   }
 
   async getSubAccounts(params: SubAccountsParams, options: AuthenticatedOptions): Promise<SubAccountsPage> {

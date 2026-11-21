@@ -417,7 +417,7 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
         cursor: pointer;
         transition: inset-inline-start var(--sidebarMotion) ease, opacity var(--sidebarFade) ease;
 
-        &:hover { background: var(--el-fill-color); color: var(--el-text-color-primary); }
+        &:hover { background: var(--color-panel-2); color: var(--color-text); }
         &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
         &:dir(rtl) svg { transform: scaleX(-1); }
       }
@@ -453,10 +453,10 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
         transition: max-width var(--sidebarMotion) ease, opacity var(--sidebarFade) ease;
       }
 
-      &:hover:not(:disabled) { background: var(--el-fill-color); color: var(--el-text-color-primary); }
+      &:hover:not(:disabled) { background: var(--color-panel-2); color: var(--color-text); }
       &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
       &:disabled { cursor: wait; opacity: 0.6; }
-      &.active { background: var(--el-fill-color-darker); color: var(--el-text-color-primary); font-weight: 500; }
+      &.active { background: var(--color-panel-2); color: var(--color-accent); font-weight: 500; }
     }
 
     .sidebarNav, .sidebarFooter { display: flex; flex-direction: column; gap: 4px; }

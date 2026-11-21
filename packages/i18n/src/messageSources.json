@@ -575,10 +575,13 @@
   ],
   "导入": [
     "apps/web/src/components/settings/panels/developer/index.vue",
-    "apps/web/src/components/settings/panels/pluginMarket/mcpServers.vue"
+    "apps/web/src/components/settings/panels/pluginMarket/mcpServers.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/assetLibrary.vue"
   ],
   "导出": [
-    "apps/web/src/components/settings/panels/developer/index.vue"
+    "apps/web/src/components/settings/panels/developer/index.vue",
+    "apps/web/src/pages/workspace/panels/timeline/index.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
   ],
   "刷新列表": [
     "apps/web/src/components/settings/panels/developer/index.vue"
@@ -848,8 +851,6 @@
     "apps/web/src/components/settings/panels/multiTenant/index.vue",
     "apps/web/src/components/settings/panels/account/index.vue",
     "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts",
-    "apps/server/src/routes/channel/user/forgotPassword.ts",
     "packages/multiTenant/userWeb/index.vue",
     "packages/multiTenant/adminWeb/pages/users.vue"
   ],
@@ -1568,6 +1569,7 @@
     "apps/web/src/components/videoPlayer.vue",
     "apps/web/src/pages/workspace/panels/document/components/editorTab.vue",
     "apps/web/src/pages/workspace/panels/document/components/workspaceSearch.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue",
     "packages/multiTenant/adminWeb/pages/users.vue"
   ],
   "收藏成功": [
@@ -1680,7 +1682,8 @@
     "apps/web/src/components/settings/panels/pluginMarket/mcpImportForm.vue"
   ],
   "导入失败": [
-    "apps/web/src/components/settings/panels/pluginMarket/mcpImportForm.vue"
+    "apps/web/src/components/settings/panels/pluginMarket/mcpImportForm.vue",
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
   ],
   "请选择非空且不超过 {0} MB 的文件": [
     "apps/web/src/components/settings/panels/pluginMarket/mcpImportForm.vue"
@@ -3086,6 +3089,7 @@
     "apps/web/src/components/settings/panels/deviceLink/index.vue",
     "apps/web/src/lib/canvasShortcuts.ts",
     "apps/web/src/pages/workspace/panels/canvas/components/nodeMenu.vue",
+    "apps/web/src/pages/workspace/panels/timeline/index.vue",
     "apps/desktop/src/index.ts"
   ],
   "等待设备连接": [
@@ -3635,6 +3639,7 @@
   ],
   "分辨率": [
     "apps/web/src/components/settings/panels/mediaModel/providerTestPanel.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue",
     "packages/providerWeb/modelEditorDialog.vue"
   ],
   "视频分辨率": [
@@ -3802,12 +3807,10 @@
     "apps/web/src/components/settings/panels/account/index.vue"
   ],
   "请输入手机号或邮箱": [
-    "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/web/src/components/settings/panels/account/index.vue"
   ],
   "请输入密码": [
-    "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/web/src/components/settings/panels/account/index.vue"
   ],
   "图形验证码": [
     "apps/web/src/components/settings/panels/account/index.vue"
@@ -3838,15 +3841,13 @@
   ],
   "请输入手机号": [
     "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue"
   ],
   "昵称": [
     "apps/web/src/components/settings/panels/account/index.vue"
   ],
   "请输入昵称": [
-    "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/web/src/components/settings/panels/account/index.vue"
   ],
   "请再次输入密码": [
     "apps/web/src/components/settings/panels/account/index.vue"
@@ -3857,8 +3858,7 @@
   ],
   "请输入短信验证码": [
     "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue"
   ],
   "注册": [
     "apps/web/src/components/settings/panels/account/index.vue",
@@ -3928,8 +3928,7 @@
     "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue"
   ],
   "新密码至少 6 位": [
-    "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue"
   ],
   "请输入至少 6 位的新密码": [
     "apps/web/src/components/settings/panels/account/forgotPasswordDialog.vue"
@@ -4596,7 +4595,8 @@
   ],
   "暂停": [
     "apps/web/src/components/singleAgentDialog.vue",
-    "apps/web/src/components/videoPlayer.vue"
+    "apps/web/src/components/videoPlayer.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/previewPlayer.vue"
   ],
   "继续": [
     "apps/web/src/components/singleAgentDialog.vue"
@@ -5579,16 +5579,19 @@
     "apps/web/src/components/videoPlayer.vue"
   ],
   "音量": [
-    "apps/web/src/components/videoPlayer.vue"
+    "apps/web/src/components/videoPlayer.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
   ],
   "播放": [
-    "apps/web/src/components/videoPlayer.vue"
+    "apps/web/src/components/videoPlayer.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/previewPlayer.vue"
   ],
   "播放速度": [
     "apps/web/src/components/videoPlayer.vue"
   ],
   "静音": [
-    "apps/web/src/components/videoPlayer.vue"
+    "apps/web/src/components/videoPlayer.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/trackRow.vue"
   ],
   "视频翻转": [
     "apps/web/src/components/videoPlayer.vue"
@@ -5742,6 +5745,7 @@
   "重做": [
     "apps/web/src/lib/canvasShortcuts.ts",
     "apps/web/src/pages/workspace/panels/canvas/components/nodeMenu.vue",
+    "apps/web/src/pages/workspace/panels/timeline/index.vue",
     "apps/desktop/src/index.ts"
   ],
   "画布节点搜索": [
@@ -6164,7 +6168,8 @@
     "apps/web/src/pages/home/index.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/canvasControls.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetBrowser.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/assetLibrary.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/assetLibrary.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/assetLibrary.vue"
   ],
   "白模预演 TrumanMap": [
     "apps/web/src/pages/home/index.vue"
@@ -6736,6 +6741,9 @@
     "apps/web/src/pages/workspace/index.vue"
   ],
   "{0}二维码": [
+    "apps/web/src/pages/workspace/index.vue"
+  ],
+  "剪辑": [
     "apps/web/src/pages/workspace/index.vue"
   ],
   "此联系方式仅用于商务合作接洽，不提供问题答疑。使用问题欢迎在交流群交流，需求与 BUG 可通过反馈表提交。感谢理解。": [
@@ -8088,6 +8096,211 @@
     "apps/server/src/agent/mentionSources.ts",
     "apps/server/src/agent/mentionFiles.ts"
   ],
+  "时间线剪辑": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "项目名": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "吸附：开（Shift+S）": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "吸附：关（Shift+S）": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "吸附开关": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "剪辑工具": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "选择": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "切割（Cmd/Ctrl+K）": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "变速": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "字幕": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "调色": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "配音": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "删除（Delete）": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "显示属性面板": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "导入素材开始剪辑": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/assetLibrary.vue"
+  ],
+  "上传视频、音频、图片或字幕，拖到时间线即可编排。": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "导入素材": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "识别字幕失败": [
+    "apps/web/src/pages/workspace/panels/timeline/index.vue"
+  ],
+  "暂不支持这种文件格式": [
+    "apps/web/src/pages/workspace/panels/timeline/useTimeline.ts"
+  ],
+  "未找到片段": [
+    "apps/web/src/pages/workspace/panels/timeline/useTimeline.ts"
+  ],
+  "当前浏览器暂不支持音频识别，可以换用 Chrome 再试": [
+    "apps/web/src/pages/workspace/panels/timeline/useTimeline.ts"
+  ],
+  "文字片段不需要识别字幕": [
+    "apps/web/src/pages/workspace/panels/timeline/useTimeline.ts"
+  ],
+  "没有识别到清晰的人声": [
+    "apps/web/src/pages/workspace/panels/timeline/useTimeline.ts"
+  ],
+  "时间线已关闭": [
+    "apps/web/src/pages/workspace/panels/timeline/useTimeline.ts"
+  ],
+  "音频读取失败": [
+    "apps/web/src/pages/workspace/panels/timeline/useWaveform.ts"
+  ],
+  "文字": [
+    "apps/web/src/pages/workspace/panels/timeline/components/clipBlock.vue"
+  ],
+  "素材": [
+    "apps/web/src/pages/workspace/panels/timeline/components/clipBlock.vue",
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "导出 MP4": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "码率": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "格式": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "输出尺寸": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "时长": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "已导出到": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "高质量（12M）": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "标准（8M）": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "较小（4M）": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "导出完成": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "导出失败": [
+    "apps/web/src/pages/workspace/panels/timeline/components/exportDialog.vue"
+  ],
+  "显示轨道": [
+    "apps/web/src/pages/workspace/panels/timeline/components/trackRow.vue"
+  ],
+  "隐藏轨道": [
+    "apps/web/src/pages/workspace/panels/timeline/components/trackRow.vue"
+  ],
+  "取消静音": [
+    "apps/web/src/pages/workspace/panels/timeline/components/trackRow.vue"
+  ],
+  "添加文字片段": [
+    "apps/web/src/pages/workspace/panels/timeline/components/trackRow.vue"
+  ],
+  "删除轨道": [
+    "apps/web/src/pages/workspace/panels/timeline/components/trackRow.vue"
+  ],
+  "属性面板": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "属性": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "选中片段后编辑属性": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "淡入 / 淡出（秒）": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "亮度": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "对比度": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "饱和度": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "预设滤镜": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "裁切": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "启用裁切": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "文字内容": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "裁剪区间": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "识别字幕": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "在播放头切割": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "删除片段": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "文字片段": [
+    "apps/web/src/pages/workspace/panels/timeline/components/propertyPanel.vue"
+  ],
+  "导入视频片段后在此预览": [
+    "apps/web/src/pages/workspace/panels/timeline/components/previewPlayer.vue"
+  ],
+  "预览倍速": [
+    "apps/web/src/pages/workspace/panels/timeline/components/previewPlayer.vue"
+  ],
+  "缩小画面": [
+    "apps/web/src/pages/workspace/panels/timeline/components/previewPlayer.vue"
+  ],
+  "放大画面": [
+    "apps/web/src/pages/workspace/panels/timeline/components/previewPlayer.vue"
+  ],
+  "时间线为空，请先添加片段": [
+    "apps/web/src/pages/workspace/panels/timeline/timelineExport.ts"
+  ],
+  "请先在视频轨添加至少一个片段": [
+    "apps/web/src/pages/workspace/panels/timeline/timelineExport.ts"
+  ],
+  "媒体路径必须为工作区相对路径": [
+    "apps/web/src/pages/workspace/panels/timeline/timelineMedia.ts"
+  ],
+  "输出路径不能覆盖源文件": [
+    "apps/web/src/pages/workspace/panels/timeline/timelineMedia.ts"
+  ],
   "AI 对话": [
     "apps/web/src/pages/workspace/components/floatingAgent.vue"
   ],
@@ -8200,6 +8413,7 @@
   "请求已取消": [
     "apps/server/src/utils/multiTenant/modelAdapters.ts",
     "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/hosting.ts",
     "packages/multiTenant/gateway/index.ts"
   ],
   "平台 算力汇 云端配置获取失败": [
@@ -8247,6 +8461,9 @@
     "apps/server/src/utils/multiTenant/index.ts"
   ],
   "请在宿主本机页面首次设置超级管理员账号和密码": [
+    "apps/server/src/utils/multiTenant/index.ts"
+  ],
+  "Lumo 托管建子账号失败": [
     "apps/server/src/utils/multiTenant/index.ts"
   ],
   "多租户模式下只能使用已发布的平台模型": [
@@ -9454,49 +9671,23 @@
     "apps/server/src/utils/channel/toonflow.ts"
   ],
   "算力汇 请求超时，请重试": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/hosting.ts"
   ],
   "算力汇 请求失败（HTTP {0}）": [
     "apps/server/src/utils/channel/toonflow.ts"
   ],
   "算力汇 响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/hosting.ts"
   ],
   "算力汇 请求失败，请检查网络连接": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/hosting.ts"
   ],
   "算力汇 请求失败": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "图形验证码响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "请先完成人机验证": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "短信验证码场景无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "短信验证码响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "邀请码格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "注册响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "请输入图形验证码": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "请先获取图形验证码": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "登录响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
-  ],
-  "重置密码响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/hosting.ts"
   ],
   "页码必须为正整数": [
     "apps/server/src/utils/channel/toonflow.ts"
@@ -9762,6 +9953,36 @@
   ],
   "渠道未配置，请检查 TOONFLOW_CHANNEL": [
     "apps/server/src/utils/channel/index.ts"
+  ],
+  "未配置 Lumo 总账号 access_token（LUOMO_ACCESS_TOKEN）": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "用户 ID 无效": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "体验额度无效": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "算力汇 建子账号响应格式不正确": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "子账号 ID 无效": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "算力汇 明文 key 响应格式不正确": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "充值额度无效": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "子账号 key 无效": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "算力汇 余额响应格式不正确": [
+    "apps/server/src/utils/channel/hosting.ts"
+  ],
+  "反查关键词无效": [
+    "apps/server/src/utils/channel/hosting.ts"
   ],
   "模型用量事件超过读取限制": [
     "apps/server/src/utils/ai/billingUsage.ts"

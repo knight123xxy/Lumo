@@ -369,6 +369,7 @@ async function execute(task: MediaTask, resume: boolean) {
   try {
     const files = await generateMedia(record.cwd, record.mediaType!, record.request!, task.controller!.signal, {
       taskId: record.taskId, resume, checkpoint: record.checkpoint, modelRouteCipher: record.modelRouteCipher,
+      ownerUserId: record.ownerUserId,
       save: patch => locked(task.key, async () => {
         if (record.state !== "running") throw new Error("生成已停止");
         Object.assign(record.checkpoint, patch);

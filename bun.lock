@@ -122,6 +122,7 @@
         "@toonflow/assets": "workspace:*",
         "@toonflow/ext-md": "workspace:*",
         "@toonflow/ext-scaffold": "workspace:*",
+        "@toonflow/ffmpeg": "workspace:*",
         "@toonflow/i18n": "workspace:*",
         "@toonflow/model-icons": "workspace:*",
         "@toonflow/multi-tenant-admin-web": "workspace:*",

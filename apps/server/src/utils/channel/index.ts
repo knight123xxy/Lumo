@@ -1,6 +1,8 @@
 import { Toonflow } from "./toonflow";
 import type { Channel } from "./types";
 
+export { hosting } from "./hosting";
+
 const channels = new Map<string, Channel>([["toonflow", new Toonflow()]]);
 
 export function getChannel(): Channel {

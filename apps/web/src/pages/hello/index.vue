@@ -102,7 +102,7 @@ async function completeSetup() {
   padding: 8px;
   background: var(--el-bg-color);
   color: var(--el-text-color-primary);
-  font-family: "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--el-font-family);
 
   .pageLanguage {
     position: fixed;
@@ -268,8 +268,7 @@ async function completeSetup() {
     padding: 28px;
     border-radius: calc(var(--ui-radius) * 1.125);
     overflow: hidden;
-    background: radial-gradient(ellipse at 76% 82%, #f3dcb1 0%, transparent 46%), radial-gradient(ellipse at 25% 52%, #667ab5 0%, transparent 52%),
-      radial-gradient(ellipse at 90% 18%, #369889 0%, transparent 48%), linear-gradient(145deg, #123f38, #467f72 48%, #a8c9ad);
+    background: var(--color-dark);
 
     .artBg {
       z-index: 0;

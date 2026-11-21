@@ -1,3 +1,48 @@
+// Lumo 品牌 token（267 §二 + §六）。固定中性深色 + 单一靛蓝 #7b83f7。
+// 同时覆盖浅色与深色两套 Element Plus 变量，使应用无论系统配色都呈现 Lumo 暗色外观。
+:root,
+html.dark {
+  // 品牌自定义 token
+  --color-bg: #07090b;
+  --color-window: #0e1013;
+  --color-panel: #14171c;
+  --color-panel-2: #1a1e24;
+  --color-field: #0f1217;
+  --color-dark: #0c0f13;
+  --color-border: #23272e;
+  --color-border-2: #2e343c;
+  --color-text: #e8eaed;
+  --color-text-2: #9ba1aa;
+  --color-text-3: #626a74;
+  --color-accent: #7b83f7;
+  --color-accent-soft: rgba(123, 131, 247, 0.15);
+  --color-accent-text: #cdd1ff;
+  --color-success: #34d399;
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+
+  // Element Plus 主色系列（#7b83f7 派生，暗色语义：light-* 混 bg、dark-2 混白）
+  --el-color-primary: #7b83f7;
+  --el-color-primary-light-3: #5a61b3;
+  --el-color-primary-light-5: #454a85;
+  --el-color-primary-light-7: #2f3357;
+  --el-color-primary-light-8: #242741;
+  --el-color-primary-light-9: #191c2a;
+  --el-color-primary-dark-2: #959cf9;
+
+  // Element Plus 中性色与排版
+  --el-bg-color-page: #07090b;
+  --el-bg-color: #0e1013;
+  --el-bg-color-overlay: #14171c;
+  --el-border-color: #23272e;
+  --el-border-color-light: #2e343c;
+  --el-text-color-primary: #e8eaed;
+  --el-text-color-regular: #9ba1aa;
+  --el-text-color-secondary: #626a74;
+  --el-border-radius-base: 8px;
+  --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
 html:root {
   --ui-radius: 8px;
   --ui-radius-small: calc(var(--ui-radius) * 0.5);

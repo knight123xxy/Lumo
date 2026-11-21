@@ -7,6 +7,7 @@ import type { AuthIdentity, ListUserOptions } from "@toonflow/multi-tenant-auth"
 import { createSourceMapping } from "@toonflow/multi-tenant-source-mapping";
 import type { SourceMapping } from "@toonflow/multi-tenant-source-mapping/config";
 import conf from "@/utils/conf";
+import { hosting } from "@/utils/channel";
 import { assertAppRequest } from "@/utils/mcp/control";
 import { isMobileLinkRequest } from "@/utils/mobileLink";
 import { changeMultiTenantEnabled } from "./runtime";
@@ -18,7 +19,7 @@ export { requestIdentity } from "./runtime";
 export { currentIdentity } from "./context";
 export { modelGateway, requireDirectModelAccess } from "./gateway";
 export { userSettings } from "./settings";
-export { getModelRouting, getAvailableModels, saveModelRouting, configureModelCloud, getModelProviders, saveModelProviders, inspectModelProvider, getUserBilling, creditUserBalance, releaseUserReservation, readOwnBalance } from "./management";
+export { getModelRouting, getAvailableModels, saveModelRouting, configureModelCloud, getModelProviders, saveModelProviders, inspectModelProvider, getUserBilling, creditUserBalance, releaseUserReservation, readOwnBalance, rechargeUserSubAccount } from "./management";
 
 const control = createMultiTenant(dirname(conf.path));
 const sourceMapping = createSourceMapping(dirname(conf.path));
@@ -165,6 +166,13 @@ export async function userSession(req: Request) {
 export async function registerUser(req: Request, res: Response, userName: string, password: string) {
   assertUserRequest(req);
   const result = await accessControl(() => control.register(userName, password));
+  try {
+    // 静默建算力汇子账号（name=lumo-<uid>）；失败不阻断注册，后续按 name 反查补齐（S2 对账）。
+    await hosting.createSubAccount(result.user.id);
+  } catch (error) {
+    // ACT: 总账号 token 与子账号 key 不落日志，只记录可诊断的错误信息。
+    console.error("Lumo 托管建子账号失败", error instanceof Error ? error.message : String(error));
+  }
   res.cookie("toonflowWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
   return { user: result.user };
 }

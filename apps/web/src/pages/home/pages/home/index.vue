@@ -326,12 +326,11 @@ async function restoreAttachment(index: number) {
         border-radius: calc(var(--ui-radius) * 3);
         border-color: var(--el-border-color-light);
         background: color-mix(in srgb, var(--el-bg-color-overlay) 70%, transparent);
-        box-shadow: 0 12px 36px rgb(0 0 0 / 6%), inset 0 1px 0 color-mix(in srgb, var(--el-text-color-primary) 4%, transparent);
         transition: border-color 0.2s, box-shadow 0.2s;
 
         &:focus-within, &.draggingAttachments {
-          border-color: var(--el-color-primary-light-5);
-          box-shadow: 0 12px 36px rgb(0 0 0 / 6%), 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 8%, transparent);
+          border-color: var(--el-color-primary);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 8%, transparent);
         }
 
         :deep(.el-card__body) {

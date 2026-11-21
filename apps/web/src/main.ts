@@ -1,11 +1,12 @@
 import { createApp, h, nextTick, ref, type App } from "vue";
 import { ElButton, ElResult } from "element-plus";
 import { isRtlLocale } from "@toonflow/i18n";
-import "@/assets/main.scss";
 import "element-plus/es/components/message-box/style/css";
 import "element-plus/es/components/button/style/css";
 import "element-plus/es/components/result/style/css";
 import "element-plus/theme-chalk/dark/css-vars.css";
+// Lumo 品牌 token 覆盖须在 Element Plus 样式之后引入，才能盖过 dark css-vars 的主色与中性色。
+import "@/assets/main.scss";
 
 import { initializeMultiTenant } from "@/bootstrap/multiTenant";
 import { createCreationApp } from "@/bootstrap/creation";
