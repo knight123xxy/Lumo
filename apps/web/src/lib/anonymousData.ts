@@ -142,16 +142,8 @@ export function registerAnonymousData() {
       events,
       agent,
     };
-    void axios
-      .post("https://api.toonflow.net/web/telemetry/report", data, {
-        adapter: "fetch",
-        fetchOptions: { keepalive: true, referrerPolicy: "no-referrer" },
-        withCredentials: false,
-        withXSRFToken: false,
-        timeout: 10_000,
-        signal: controller.signal,
-      })
-      .catch(() => {});
+    // ACT: Lumo 不向 Toonflow 官方上报匿名数据（S1a），保留本地采集但不再发送。
+    void data;
   }
 
   function stop() {

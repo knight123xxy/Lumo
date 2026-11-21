@@ -8,7 +8,6 @@
           <p v-if="account.contact">{{ account.contact }}</p>
         </div>
         <div class="profileActions">
-          <el-button tag="a" href="https://api.toonflow.net/console/preview" target="_blank" rel="noopener noreferrer" text type="primary" :icon="IconExternalLink">更多账号信息</el-button>
           <el-button text :icon="IconRefresh" :loading="overviewLoading" :disabled="loggingOut" @click="refreshAccount">刷新</el-button>
           <el-button text type="danger" :icon="IconLogout" :loading="loggingOut" @click="logout">退出登录</el-button>
         </div>

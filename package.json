@@ -1,6 +1,6 @@
 {
   "name": "toonflow",
-  "description": "Toonflow 是一款 AI 短剧漫剧工具，能够利用 AI 技术将小说自动转化为剧本，并结合 AI 生成的图片和视频，实现高效的短剧创作。",
+  "description": "Lumo 是一款「短剧/漫剧优先」的 AI 视频工作台，从剧本到成片全程 AI，背后接算力汇（api.ideamine.cn）的 Seedance 视频模型。基于 HBAI-Ltd/Toonflow-app（MIT）修改。",
   "author": "HBAI-Ltd <ltlctools@outlook.com>",
   "license": "MIT",
   "homepage": "https://github.com/HBAI-Ltd/Toonflow-app#readme",

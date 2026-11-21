@@ -17,9 +17,6 @@
             <span>已加载</span>
           </span>
           <el-text v-if="provider" class="modelCount" size="small">{{ provider.models.length }} 个模型</el-text>
-          <el-link class="websiteLink" href="https://api.toonflow.net/" target="_blank" rel="noopener noreferrer" type="primary">
-            跳转至网页查看<icon-external-link :size="12" aria-hidden="true" />
-          </el-link>
         </div>
       </div>
       <div class="providerActions">
