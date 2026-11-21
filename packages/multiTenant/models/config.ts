@@ -23,7 +23,7 @@ export const modelRouteSchema = z.strictObject({
   label: z.string().trim().min(1).max(128),
   type: z.enum(["text", "image", "video", "audio"]),
   enabled: z.boolean(),
-  target: z.enum(["backend", "toonflowCloud"]),
+  target: z.enum(["backend", "lumoCloud"]),
   providerId: z.string().trim().min(1).max(96),
   upstreamModelId: z.string().trim().min(1).max(256),
   salePrice: modelPriceSchema,

@@ -1,6 +1,6 @@
-import { open, stat, withFileAccess } from "@toonflow/file";
-import type { ProviderPriceReference } from "@toonflow/providers";
-import type { MediaReference } from "@toonflow/tools-scaffold/runtime";
+import { open, stat, withFileAccess } from "@lumo/file";
+import type { ProviderPriceReference } from "@lumo/providers";
+import type { MediaReference } from "@lumo/tools-scaffold/runtime";
 import conf from "@/utils/conf";
 import { getStatus } from "@/utils/ffmpeg";
 import { resolveWorkspacePath } from "@/utils/workspace/files";

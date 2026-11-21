@@ -37,7 +37,7 @@
 import { ref } from "vue";
 import { ElButton, ElPopover, ElRadioGroup, ElRadioButton } from "element-plus";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-vue";
-import type { NodeMediaModel } from "@toonflow/nodes-scaffold/runtime";
+import type { NodeMediaModel } from "@lumo/nodes-scaffold/runtime";
 import modelForm from "./modelForm.vue";
 
 defineProps<{ sizes: string[]; ratios: string[]; model?: NodeMediaModel; disabled?: boolean }>();

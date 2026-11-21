@@ -2,18 +2,18 @@ import { t } from "@/lib/i18n";
 import { listMediaModels, generateMedia } from "@/utils/media/generation";
 import { createWorkspaceFfmpeg, executeWorkspaceFfmpeg } from "@/utils/ffmpeg";
 import { createBrowserContext } from "@/utils/browser";
-import { createSandboxContext } from "@toonflow/tool-sandbox/host";
-import { canvasSchemas, isNodeToolAllowed, nodeToolPermissionsSchema } from "@toonflow/tool-canvas/runtime";
+import { createSandboxContext } from "@lumo/tool-sandbox/host";
+import { canvasSchemas, isNodeToolAllowed, nodeToolPermissionsSchema } from "@lumo/tool-canvas/runtime";
 import { getRuntimePlatform } from "@/lib/platform";
 import { importImage } from "@/utils/workspace/chatImages";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { access, constants, copyFile, createReadStream, mkdir, readFile, readdir, stat, withFileAccess } from "@toonflow/file";
+import { access, constants, copyFile, createReadStream, mkdir, readFile, readdir, stat, withFileAccess } from "@lumo/file";
 import {
   defineTool, createReadToolDefinition, createWriteToolDefinition, createEditToolDefinition, createLsToolDefinition,
   detectSupportedImageMimeTypeFromFile, type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext, QuestionContext, ToolContext, ToolFiles, MediaGenerationRequest } from "@toonflow/tools-scaffold/runtime";
-import { asrRequestSchema } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasContext, QuestionContext, ToolContext, ToolFiles, MediaGenerationRequest } from "@lumo/tools-scaffold/runtime";
+import { asrRequestSchema } from "@lumo/tools-scaffold/runtime";
 import conf from "@/utils/conf";
 import { isWithin, resolveWorkspacePath, writeWorkspaceFile, renameWorkspaceFile, removeWorkspaceFile, lockWorkspaceFiles, protectWorkspaceRoot } from "@/utils/workspace/files";
 import { listTools, loadTool, validateToolConfig } from "@/utils/plugins/tools";

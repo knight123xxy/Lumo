@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { posix } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ToolContext } from "@toonflow/tools-scaffold/runtime";
+import type { ToolContext } from "@lumo/tools-scaffold/runtime";
 import { sandboxRequestSchema } from "./schema";
 import type { SandboxProcessRequest, SandboxProcessResult } from "./sandboxProcess";
 

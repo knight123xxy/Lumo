@@ -2,8 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { networkInterfaces } from "node:os";
 import {
   base64ToBytes, bytesToBase64, matchServicePath, normalizeServicePath, pluginServerLimits, readBody,
-} from "@toonflow/plugin-server/protocol";
-import type { PluginHttpResponse } from "@toonflow/plugin-server/protocol";
+} from "@lumo/plugin-server/protocol";
+import type { PluginHttpResponse } from "@lumo/plugin-server/protocol";
 import type { PluginRuntime, PluginService, PluginSocket } from "./types";
 
 const hiddenHeaders = new Set([
@@ -119,7 +119,7 @@ export function openGateway(runtime: PluginRuntime) {
   clearTimeout(runtime.idleTimer);
   runtime.idleTimer = undefined;
   if (runtime.gateway) return runtime.gateway;
-  const port = Number(process.env.TOONFLOW_PLUGIN_SERVER_PORT ?? 0);
+  const port = Number(process.env.LUMO_PLUGIN_SERVER_PORT ?? 0);
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("插件服务端口必须是 0–65535 之间的整数");
   // ACT: 同一 Bun 进程的一层能力网关，只暴露已注册服务，不装配第二套应用或主机 API。
   runtime.gateway = Bun.serve<PluginSocket>({
@@ -188,7 +188,7 @@ export function openGateway(runtime: PluginRuntime) {
 
 export function serviceUrl(runtime: PluginRuntime, service: PluginService) {
   const gateway = openGateway(runtime);
-  let origin = process.env.TOONFLOW_PLUGIN_SERVER_URL;
+  let origin = process.env.LUMO_PLUGIN_SERVER_URL;
   if (origin) {
     const url = new URL(origin);
     if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
@@ -197,7 +197,7 @@ export function serviceUrl(runtime: PluginRuntime, service: PluginService) {
     origin = url.origin;
   } else {
     const source = new URL(service.owner.origin);
-    if (source.protocol === "https:") throw new Error("HTTPS 部署请配置 TOONFLOW_PLUGIN_SERVER_URL 与插件服务反向代理");
+    if (source.protocol === "https:") throw new Error("HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理");
     let host = source.hostname;
     if (["localhost", "127.0.0.1", "[::1]"].includes(host)) {
       const local = Object.values(networkInterfaces()).flatMap(value => value ?? []).filter(value => value.family === "IPv4" && !value.internal

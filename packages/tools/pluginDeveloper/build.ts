@@ -1,5 +1,5 @@
-import { createToolConfig } from "@toonflow/tools-scaffold";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeAtomic } from "@toonflow/file";
+import { createToolConfig } from "@lumo/tools-scaffold";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeAtomic } from "@lumo/file";
 import { createHash } from "node:crypto";
 import { isBuiltin } from "node:module";
 import { dirname, join, resolve } from "node:path";

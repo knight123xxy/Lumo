@@ -1,4 +1,4 @@
-import { lstat, open, readdir, realpath } from "@toonflow/file";
+import { lstat, open, readdir, realpath } from "@lumo/file";
 import { Router } from "express";
 import { zip } from "fflate";
 import { basename, join } from "node:path";

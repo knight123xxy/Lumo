@@ -1,7 +1,7 @@
 import { inject, onScopeDispose, ref } from "vue";
 import { createPluginServer, type PluginServer } from "./index.ts";
 
-export const pluginServerKey = "toonflow.pluginServer";
+export const pluginServerKey = "lumo.pluginServer";
 export type PluginServerFactory = () => PluginServer;
 
 export function reactivePluginServer(server: PluginServer): PluginServer {

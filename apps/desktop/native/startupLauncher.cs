@@ -54,7 +54,7 @@ internal static class startupLauncher
         catch (Exception logError) { detail += "\r\n启动日志写入失败：" + logError.Message; }
 
         // ACT: 更新事务的启动失败交给现有回滚流程，不弹启动错误提示。
-        if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("TOONFLOW_UPDATE_TRANSACTION"))) return exitCode;
+        if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("LUMO_UPDATE_TRANSACTION"))) return exitCode;
         if (!compatibility) detail += "\r\n\r\n可双击安装目录中的“闪退请双击我兼容运行.bat”尝试兼容运行。";
         MessageBox.Show((compatibility ? "兼容" : "正常") + "启动方式失败或程序异常退出。\r\n" + detail,
             "Lumo", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -75,7 +75,7 @@ internal static class startupLauncher
         options.EnvironmentVariables.Remove("ELECTROBUN_LAUNCHER_PID");
         options.EnvironmentVariables.Remove("ELECTROBUN_INSTALL_ROOT_NAME");
         using (Process current = Process.GetCurrentProcess())
-            options.EnvironmentVariables["TOONFLOW_STARTUP_PID"] = current.Id.ToString();
+            options.EnvironmentVariables["LUMO_STARTUP_PID"] = current.Id.ToString();
         using (Process child = Process.Start(options))
         {
             if (child == null) throw new InvalidOperationException("无法取得 Lumo 启动进程。");

@@ -1,6 +1,6 @@
 import { createApp, h, nextTick, ref, type App } from "vue";
 import { ElButton, ElResult } from "element-plus";
-import { isRtlLocale } from "@toonflow/i18n";
+import { isRtlLocale } from "@lumo/i18n";
 import "element-plus/es/components/message-box/style/css";
 import "element-plus/es/components/button/style/css";
 import "element-plus/es/components/result/style/css";
@@ -13,7 +13,7 @@ import { createCreationApp } from "@/bootstrap/creation";
 import { actualPlatform } from "@/lib/platform";
 import { getMissingBrowserFeatures } from "@/lib/browserCapabilities";
 import { publicWeb } from "@/stores/multiTenant";
-import { detectLocale, locale, setLocale, translate } from "@toonflow/i18n/vue";
+import { detectLocale, locale, setLocale, translate } from "@lumo/i18n/vue";
 
 setLocale(detectLocale(navigator.languages));
 document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -29,7 +29,7 @@ async function notifyDesktopReady(failed = false) {
   if (!actualPlatform.isDesktop || publicWeb.value) return;
   const response = await fetch("/api/desktop/ready", {
     method: "POST",
-    headers: { "x-toonflow-desktop": "1", "Content-Type": "application/json", "Accept-Language": locale.value },
+    headers: { "x-lumo-desktop": "1", "Content-Type": "application/json", "Accept-Language": locale.value },
     body: JSON.stringify({ failed }),
   });
   if (!response.ok) throw new Error((await response.json()).message || `通知桌面就绪失败（${response.status}）`);
@@ -62,9 +62,9 @@ void initialize().catch(async (error) => {
     disconnecting.value = true;
     recoveryError.value = "";
     try {
-      const response = await fetch("/api/connection/disconnect", { method: "POST", headers: { "x-toonflow-workspace": "1" } });
+      const response = await fetch("/api/connection/disconnect", { method: "POST", headers: { "x-lumo-workspace": "1" } });
       if (!response.ok) throw new Error((await response.json()).message || "切回本机失败，请重试");
-      if ((await response.json()).restart === "mobile") window.location.href = "toonflow://restart";
+      if ((await response.json()).restart === "mobile") window.location.href = "lumo://restart";
     } catch (cause) {
       recoveryError.value = cause instanceof Error ? cause.message : "切回本机失败，请重试";
       disconnecting.value = false;

@@ -1,15 +1,15 @@
 import { isBuiltin } from "node:module";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { lstat, mkdir, readFile, realpath, writeAtomic } from "@toonflow/file";
-import { toolMetadataSchema } from "@toonflow/tools-scaffold/runtime";
+import { lstat, mkdir, readFile, realpath, writeAtomic } from "@lumo/file";
+import { toolMetadataSchema } from "@lumo/tools-scaffold/runtime";
 import { z } from "zod";
 import { buildBrowser, validateImports } from "./browserBuild";
 import { pluginManifestSchema } from "./runtime";
 
 const sdkDirectory = dirname(fileURLToPath(import.meta.url));
 const supportedPackages = new Set([
-  "@toonflow/nodes-scaffold", "@toonflow/tools-scaffold", "@toonflow/node-shared", "@toonflow/asr", "@toonflow/ffmpeg", "@toonflow/file", "@toonflow/plugin-server",
+  "@lumo/nodes-scaffold", "@lumo/tools-scaffold", "@lumo/node-shared", "@lumo/asr", "@lumo/ffmpeg", "@lumo/file", "@lumo/plugin-server",
   "@tabler/icons-vue", "@form-create/element-ui", "vue-draggable-plus", "x-sender", "eventsource-parser", "zod",
 ]);
 
@@ -60,7 +60,7 @@ async function run() {
     }
     const { code } = await buildBrowser(root, sdkModules, manifest);
     await mkdir(outDir, { recursive: true });
-    await writeAtomic(join(outDir, `${manifest.name}.umd.js`), `/*! toonflowNode:${JSON.stringify(metadata).replaceAll("/", "\\u002f")} */\n${code}`);
+    await writeAtomic(join(outDir, `${manifest.name}.umd.js`), `/*! lumoNode:${JSON.stringify(metadata).replaceAll("/", "\\u002f")} */\n${code}`);
     return;
   }
 
@@ -78,7 +78,7 @@ async function run() {
   let clientBanner = "";
   if (metadata.components.length) {
     const client = await buildBrowser(root, sdkModules, manifest);
-    clientBanner = `/*! toonflowToolClient:${JSON.stringify(client).replaceAll("/", "\\u002f")} */\n`;
+    clientBanner = `/*! lumoToolClient:${JSON.stringify(client).replaceAll("/", "\\u002f")} */\n`;
   }
   const globals = z.object({ node: z.record(z.string(), z.unknown()), tool: z.record(z.string(), z.unknown()), sdkExports: z.array(z.string()).default([]) })
     .parse(JSON.parse(await readFile(join(sdkDirectory, "browserGlobals.json"), "utf8")));
@@ -95,12 +95,12 @@ async function run() {
     minify: true,
     throw: false,
     tsconfig: join(root, "tsconfig.json"),
-    external: ["toonflow:tool-zod"],
+    external: ["lumo:tool-zod"],
     plugins: [{
       name: "portableTool",
       setup(builder) {
         builder.onResolve({ filter: /^zod$/ }, () => ({ path: "zod", namespace: "toolHost" }));
-        builder.onLoad({ filter: /^zod$/, namespace: "toolHost" }, () => ({ contents: 'module.exports = require("toonflow:tool-zod");', loader: "js" }));
+        builder.onLoad({ filter: /^zod$/, namespace: "toolHost" }, () => ({ contents: 'module.exports = require("lumo:tool-zod");', loader: "js" }));
         builder.onLoad({ filter: /\.[cm]?[jt]sx?$/i }, async ({ path }) => {
           const actual = await allowedPath(path);
           const contents = await readFile(actual, "utf8");
@@ -110,7 +110,7 @@ async function run() {
         });
         builder.onResolve({ filter: /.*/ }, async args => {
           if (args.path.startsWith("macro:")) throw new Error("工具源码不支持 Bun 宏");
-          if (isBuiltin(args.path) || args.path === "toonflow:tool-zod") return { path: args.path, external: true };
+          if (isBuiltin(args.path) || args.path === "lumo:tool-zod") return { path: args.path, external: true };
           let path: string;
           try { path = Bun.resolveSync(args.path, args.resolveDir || (args.importer ? dirname(args.importer) : root)); }
           catch (error) {
@@ -140,7 +140,7 @@ async function run() {
   const code = await result.outputs[0]!.text();
   if (!new Bun.Transpiler({ loader: "js" }).scan(code).exports.includes("default")) throw new Error("工具脚本缺少默认导出");
   await mkdir(outDir, { recursive: true });
-  await writeAtomic(join(outDir, `${manifest.name}.tool.js`), `/*! toonflowTool:${JSON.stringify(metadata).replaceAll("/", "\\u002f")} */\n${clientBanner}${code}`);
+  await writeAtomic(join(outDir, `${manifest.name}.tool.js`), `/*! lumoTool:${JSON.stringify(metadata).replaceAll("/", "\\u002f")} */\n${clientBanner}${code}`);
 }
 
 try { await run(); }

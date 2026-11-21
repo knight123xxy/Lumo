@@ -227,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, shallowRef, watch } from "vue";
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElInput, ElMessage, ElMessageBox, ElPopover, ElTooltip, type InputInstance } from "element-plus";
 import { Editor, EditorContent } from "@tiptap/vue-3";

@@ -1,13 +1,13 @@
 import axios from "axios";
-import { normalizeLocale } from "@toonflow/i18n";
+import { normalizeLocale } from "@lumo/i18n";
 import { computed, nextTick, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { getNodeModelKey, invalidateNodeModels, readNodeModels, subscribeNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
+import { getNodeModelKey, invalidateNodeModels, readNodeModels, subscribeNodeModels } from "@lumo/nodes-scaffold/nodeAi";
 import { canvasShortcutFields, defaultCanvasShortcuts, getShortcutBindings, isShortcutAllowed, normalizeShortcut, type CanvasShortcuts } from "@/lib/canvasShortcuts";
-import { normalizeNodeMenu, type StoredNodeMenuItem } from "@toonflow/server/nodeMenu";
-import { nodeToolPermissionsSchema } from "@toonflow/tool-canvas/runtime";
-import type { ReasoningEfforts, ThinkingLevel } from "@toonflow/server/modelReasoning";
-import type { ProviderSources } from "@toonflow/server/channel";
+import { normalizeNodeMenu, type StoredNodeMenuItem } from "@lumo/server/nodeMenu";
+import { nodeToolPermissionsSchema } from "@lumo/tool-canvas/runtime";
+import type { ReasoningEfforts, ThinkingLevel } from "@lumo/server/modelReasoning";
+import type { ProviderSources } from "@lumo/server/channel";
 import http from "@/lib/http";
 import { currentUser, publicWeb } from "@/stores/multiTenant";
 import "element-plus/es/components/message/style/css";
@@ -111,31 +111,31 @@ export const privacySettings = computed(() => {
 
 export type CustomProviderModel = { id: string; label: string; contextWindow?: number; maxOutputTokens?: number; reasoningEfforts?: ReasoningEfforts };
 export type CustomProvider = { id: string; label: string; icon?: string; version?: string; apiUrl: string; apiKey: string; headers?: Record<string, string>; protocol: string; models: CustomProviderModel[] };
-export const toonflowAccountToken = computed(() => {
-  const account = settings.value.toonflowAccount as { token?: unknown } | null | undefined;
+export const lumoAccountToken = computed(() => {
+  const account = settings.value.lumoAccount as { token?: unknown } | null | undefined;
   return typeof account?.token === "string" ? account.token.trim() : "";
 });
 export const customProviders = computed<CustomProvider[]>(() => {
   const providers = Array.isArray(settings.value.customProviders) ? [...settings.value.customProviders] : [];
-  const accountProvider = settings.value.toonflowProvider as CustomProvider | null | undefined;
-  if (toonflowAccountToken.value && (accountProvider?.id === "Toonflow" || accountProvider?.id === "toonflow")) providers.unshift(accountProvider);
+  const accountProvider = settings.value.lumoProvider as CustomProvider | null | undefined;
+  if (lumoAccountToken.value && (accountProvider?.id === "Lumo" || accountProvider?.id === "lumo")) providers.unshift(accountProvider);
   return providers.filter((item): item is CustomProvider => !!item && typeof item.id === "string" && typeof item.label === "string" && Array.isArray(item.models)
     && item.models.every((model: CustomProviderModel) => !!model && typeof model.id === "string" && typeof model.label === "string"));
 });
 
-export const toonflowProviderLoading = ref(false);
-export const toonflowProviderError = ref("");
+export const lumoProviderLoading = ref(false);
+export const lumoProviderError = ref("");
 let providerRequest: AbortController | undefined;
 
-export async function refreshToonflowProvider() {
+export async function refreshLumoProvider() {
   providerRequest?.abort();
-  toonflowProviderError.value = "";
-  toonflowProviderLoading.value = false;
-  const token = toonflowAccountToken.value;
+  lumoProviderError.value = "";
+  lumoProviderLoading.value = false;
+  const token = lumoAccountToken.value;
   if (multiTenantEnabled.value || !token) { providerRequest = undefined; return; }
   const request = new AbortController();
   providerRequest = request;
-  toonflowProviderLoading.value = true;
+  lumoProviderLoading.value = true;
   try {
     const sources = await http<ProviderSources>({
       method: "GET", url: "/api/channel/provider/getSource", signal: request.signal,
@@ -144,19 +144,19 @@ export async function refreshToonflowProvider() {
     request.signal.throwIfAborted();
     const { data } = await axios.post<{ code: number; data: { provider: CustomProvider }; message?: string }>(
       "/api/providers/account/install", { sources, token },
-      { signal: request.signal, headers: { "x-toonflow-workspace": "1", Authorization: `Bearer ${token}` }, timeout: 45000 },
+      { signal: request.signal, headers: { "x-lumo-workspace": "1", Authorization: `Bearer ${token}` }, timeout: 45000 },
     );
     if (data.code !== 200 || data.data?.provider?.id !== "算力汇") throw new Error(data.message || "安装账号供应商失败");
-    await saveSettings(() => request.signal.aborted || multiTenantEnabled.value || toonflowAccountToken.value !== token
-      ? undefined : { toonflowProvider: data.data.provider }, request.signal);
+    await saveSettings(() => request.signal.aborted || multiTenantEnabled.value || lumoAccountToken.value !== token
+      ? undefined : { lumoProvider: data.data.provider }, request.signal);
   } catch (error) {
-    if (!request.signal.aborted && !multiTenantEnabled.value && toonflowAccountToken.value === token) {
-      toonflowProviderError.value = axios.isAxiosError<{ message?: string }>(error)
+    if (!request.signal.aborted && !multiTenantEnabled.value && lumoAccountToken.value === token) {
+      lumoProviderError.value = axios.isAxiosError<{ message?: string }>(error)
         ? error.response?.data?.message || "安装账号供应商失败，请刷新重试"
         : error instanceof Error ? error.message : "安装账号供应商失败，请刷新重试";
     }
   } finally {
-    if (providerRequest === request) { providerRequest = undefined; toonflowProviderLoading.value = false; }
+    if (providerRequest === request) { providerRequest = undefined; lumoProviderLoading.value = false; }
   }
 }
 
@@ -181,18 +181,18 @@ subscribeNodeModels(type => {
 
 export async function loadSettings() {
   if (settingsReady) return;
-  const { data, headers } = await axios.get("/api/settings/get", { headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" } });
+  const { data, headers } = await axios.get("/api/settings/get", { headers: { "Cache-Control": "no-cache", "x-lumo-workspace": "1" } });
   if (settingsReady) return;
   if (data.code !== 200 || !data.data || typeof data.data !== "object" || Array.isArray(data.data)) {
     throw new Error("读取设置失败");
   }
   settings.value = data.data;
-  settingsRevision = headers["x-toonflow-settings-revision"] === undefined ? undefined : Number(headers["x-toonflow-settings-revision"]);
+  settingsRevision = headers["x-lumo-settings-revision"] === undefined ? undefined : Number(headers["x-lumo-settings-revision"]);
   await refreshModelChoices();
   // 等初始化引发的监听执行完，再允许自动保存。
   await nextTick();
   settingsReady = true;
-  void refreshToonflowProvider();
+  void refreshLumoProvider();
 }
 
 export function saveSettings(update?: (current: Record<string, unknown>) => Record<string, unknown> | undefined, signal?: AbortSignal) {
@@ -203,15 +203,15 @@ export function saveSettings(update?: (current: Record<string, unknown>) => Reco
     if (update && !patch) return false;
     const requestedSettings = { ...settings.value, ...patch };
     const requestedMultiTenantVersion = multiTenantVersion;
-    const providerFields = ["customProviders", "mediaProviderConfigs", "toonflowProvider"] as const;
+    const providerFields = ["customProviders", "mediaProviderConfigs", "lumoProvider"] as const;
     const requestedProviders = providerFields.map(field => JSON.stringify(requestedSettings[field]));
     const requestedNodeMenu = JSON.stringify(((patch?.general ?? settings.value.general) as { nodeMenu?: unknown } | undefined)?.nodeMenu);
-    const { data, headers } = await axios.put<{ code: number; data: { customProviders?: CustomProvider[]; mediaProviderConfigs?: Record<string, unknown>; toonflowProvider?: CustomProvider | null; nodeMenu?: StoredNodeMenuItem[] | null; aiModels?: ResolvedAiModel[]; multiTenantEnabled?: boolean } | null }>(
-      "/api/settings/save", { settings: requestedSettings, ...(settingsRevision === undefined ? {} : { expectedRevision: settingsRevision }) }, { signal, headers: { "x-toonflow-workspace": "1" } },
+    const { data, headers } = await axios.put<{ code: number; data: { customProviders?: CustomProvider[]; mediaProviderConfigs?: Record<string, unknown>; lumoProvider?: CustomProvider | null; nodeMenu?: StoredNodeMenuItem[] | null; aiModels?: ResolvedAiModel[]; multiTenantEnabled?: boolean } | null }>(
+      "/api/settings/save", { settings: requestedSettings, ...(settingsRevision === undefined ? {} : { expectedRevision: settingsRevision }) }, { signal, headers: { "x-lumo-workspace": "1" } },
     );
     signal?.throwIfAborted();
     if (data.code !== 200) throw new Error("保存设置失败");
-    if (headers["x-toonflow-settings-revision"] !== undefined) settingsRevision = Number(headers["x-toonflow-settings-revision"]);
+    if (headers["x-lumo-settings-revision"] !== undefined) settingsRevision = Number(headers["x-lumo-settings-revision"]);
     if (typeof data.data?.multiTenantEnabled === "boolean" && requestedMultiTenantVersion === multiTenantVersion) {
       applyMultiTenantEnabled(data.data.multiTenantEnabled);
     }
@@ -240,11 +240,11 @@ export function saveSettings(update?: (current: Record<string, unknown>) => Reco
         settings.value = { ...settings.value, general };
       } finally { applyingSettings = false; }
     }
-    const accountChanged = Object.hasOwn(savedPatch, "toonflowProvider") || Object.hasOwn(savedPatch, "toonflowAccount");
+    const accountChanged = Object.hasOwn(savedPatch, "lumoProvider") || Object.hasOwn(savedPatch, "lumoAccount");
     if (accountChanged || Object.hasOwn(savedPatch, "customProviders")) invalidateNodeModels("language");
     if (accountChanged) invalidateNodeModels("media");
     if (accountChanged || Object.hasOwn(savedPatch, "mediaProviderConfigs")) {
-      window.dispatchEvent(new Event("toonflow:provider-config-changed"));
+      window.dispatchEvent(new Event("lumo:provider-config-changed"));
     }
     return true;
   });
@@ -260,6 +260,6 @@ watch(settings, () => {
   });
 }, { deep: true, flush: "sync" });
 
-watch([() => settings.value.toonflowAccount, multiTenantEnabled], () => {
-  if (settingsReady) void refreshToonflowProvider();
+watch([() => settings.value.lumoAccount, multiTenantEnabled], () => {
+  if (settingsReady) void refreshLumoProvider();
 }, { flush: "sync" });

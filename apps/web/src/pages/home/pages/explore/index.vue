@@ -33,7 +33,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { IconPlus, IconSearch } from "@tabler/icons-vue";
-import type { ExploreCategory, ExplorePage, ExploreProject } from "@toonflow/server/channel";
+import type { ExploreCategory, ExplorePage, ExploreProject } from "@lumo/server/channel";
 import http from "@/lib/http";
 import exploreCard from "./exploreCard.vue";
 import exploreDetail from "./exploreDetail.vue";

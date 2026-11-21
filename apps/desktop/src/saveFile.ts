@@ -1,6 +1,6 @@
-import { t } from "@toonflow/server/i18n";
+import { t } from "@lumo/server/i18n";
 import { execFile } from "node:child_process";
-import { writeAtomic } from "@toonflow/file";
+import { writeAtomic } from "@lumo/file";
 import { isAbsolute, join } from "node:path";
 import { promisify } from "node:util";
 import { PATHS } from "electrobun/main";
@@ -46,7 +46,7 @@ export async function selectSaveFile(fileName: string): Promise<string | null> {
         ? await execFileAsync("/usr/bin/osascript", ["-e", macDialog, "--", fileName, t`另存为`], { encoding: "utf8" })
         : await execFileAsync("zenity", ["--file-selection", "--save", "--confirm-overwrite", "--title", t`另存为`, "--filename", fileName], { encoding: "utf8" });
     // Windows Shell 扩展可能夹带输出，只读取辅助进程的路径记录。
-    const results = process.platform === "win32" ? [...stdout.matchAll(/^toonflowSaveFile:([A-Za-z0-9+/]*={0,2})\r?$/gm)] : null;
+    const results = process.platform === "win32" ? [...stdout.matchAll(/^lumoSaveFile:([A-Za-z0-9+/]*={0,2})\r?$/gm)] : null;
     if (results && results.length !== 1) throw new Error(t`另存为窗口返回了无效的文件路径`);
     const selected = results ? Buffer.from(results[0]![1]!, "base64").toString("utf8") : stdout.replace(/\r?\n$/, "");
     if (!selected) return null;

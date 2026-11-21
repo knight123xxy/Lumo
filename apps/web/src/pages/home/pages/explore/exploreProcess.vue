@@ -113,11 +113,11 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { VueFlow, Panel, type Node, type Edge, type VueFlowStore } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { IconArrowLeft, IconFileText, IconFocusCentered, IconLayersIntersect, IconLock, IconMinus, IconMusic, IconPhoto, IconPlus, IconVideo, IconX } from "@tabler/icons-vue";
-import nodeSkeleton from "@toonflow/nodes-scaffold/nodeSkeleton";
-import videoPlayer from "@toonflow/node-video/videoPlayer";
-import markdownPreview from "@toonflow/node-text/markdownPreview";
+import nodeSkeleton from "@lumo/nodes-scaffold/nodeSkeleton";
+import videoPlayer from "@lumo/node-video/videoPlayer";
+import markdownPreview from "@lumo/node-text/markdownPreview";
 import groupNode from "@/pages/workspace/panels/canvas/components/groupNode.vue";
-import type { ExploreProcess } from "@toonflow/server/channel";
+import type { ExploreProcess } from "@lumo/server/channel";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 

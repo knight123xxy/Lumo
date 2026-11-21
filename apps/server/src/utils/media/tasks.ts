@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { dirname, join, relative } from "node:path";
-import { lstat, mkdir, readFile, realpath, writeAtomic } from "@toonflow/file";
-import type { ProviderTaskData } from "@toonflow/providers";
-import type { GeneratedMedia, MediaGenerationRequest } from "@toonflow/tools-scaffold/runtime";
-import type { AuthIdentity } from "@toonflow/multi-tenant-auth";
-import type { ModelOutcome } from "@toonflow/multi-tenant-gateway/types";
+import { lstat, mkdir, readFile, realpath, writeAtomic } from "@lumo/file";
+import type { ProviderTaskData } from "@lumo/providers";
+import type { GeneratedMedia, MediaGenerationRequest } from "@lumo/tools-scaffold/runtime";
+import type { AuthIdentity } from "@lumo/multi-tenant-auth";
+import type { ModelOutcome } from "@lumo/multi-tenant-gateway/types";
 import { audioGenerationSchema, imageGenerationSchema, videoGenerationSchema } from "@/utils/media/schemas";
 import { z } from "zod";
 import { error, errorFromCause, success } from "@/lib/responseFormat";

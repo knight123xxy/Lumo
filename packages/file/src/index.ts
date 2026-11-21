@@ -11,7 +11,7 @@ export type { FileHandle } from "node:fs/promises";
 
 const retryOptions = { timeout: 5000, interval: 100 };
 const useExclusiveRename = process.platform === "win32" && Boolean(process.versions.bun)
-  || process.platform === "android" || (process.platform === "linux" && process.env.TOONFLOW_PLATFORM === "ohos");
+  || process.platform === "android" || (process.platform === "linux" && process.env.LUMO_PLATFORM === "ohos");
 
 // 元数据查询不持有长期句柄；保留标准 API 的重载和错误语义。
 export const access = promises.access;

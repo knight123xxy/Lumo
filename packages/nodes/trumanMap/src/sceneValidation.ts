@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { assetThemes, assetStates, assetItemTypes, assetBlueprintPacks, primitiveShapes, type SceneDocument } from "./sceneDocument";
 import { modelSchema } from "./modelGeometry";
 import { cameraTrackSchema } from "./cameraDocument";

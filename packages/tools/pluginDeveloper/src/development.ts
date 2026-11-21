@@ -2,10 +2,10 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative } from "node:path";
-import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, unlink, writeAtomic } from "@toonflow/file";
+import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, unlink, writeAtomic } from "@lumo/file";
 import { z } from "zod";
-import nodeGuide from "@toonflow/nodes-scaffold/readme.md" with { type: "text" };
-import toolGuide from "@toonflow/tools-scaffold/readme.md" with { type: "text" };
+import nodeGuide from "@lumo/nodes-scaffold/readme.md" with { type: "text" };
+import toolGuide from "@lumo/tools-scaffold/readme.md" with { type: "text" };
 import instructions from "../readme.md" with { type: "text" };
 import { pluginDevelopmentSchema, pluginManifestSchema, type PluginManifest, type PluginUploadDraft, type PluginDevelopmentHost } from "./runtime";
 import { ensureSdk } from "./sdk";
@@ -79,7 +79,7 @@ export async function develop(directory: string, input: unknown, host: PluginDev
 }
 
 async function compileProject(projectFile: (path: string) => Promise<string>, manifest: PluginManifest, version: string, sdkDirectory: string, signal?: AbortSignal) {
-  const temporary = await mkdtemp(join(tmpdir(), "toonflowPlugin"));
+  const temporary = await mkdtemp(join(tmpdir(), "lumoPlugin"));
   try {
     const sourceRoot = join(temporary, "project");
     const output = join(temporary, "output");

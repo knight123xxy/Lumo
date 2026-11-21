@@ -52,14 +52,14 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { defineAsyncComponent, onMounted, onUnmounted, provide, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type ScrollbarInstance } from "element-plus";
 import { IconHome, IconCompass, IconFolder } from "@tabler/icons-vue";
-import type { HomeAdvertisement, HomeAdvertisements } from "@toonflow/server/channel";
-import logoUrl from "@toonflow/assets/logo.svg";
+import type { HomeAdvertisement, HomeAdvertisements } from "@lumo/server/channel";
+import logoUrl from "@lumo/assets/logo.svg";
 import { useWorkspaceStore, type Project } from "@/stores/workspace";
 import { currentUser, publicWeb } from "@/stores/multiTenant";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
@@ -142,7 +142,7 @@ async function loadAdvertisements() {
         <circle cx="330" cy="237" r="12" fill="#fff" opacity=".85"/>
         <path d="m495 146 25 14-25 14z" fill="#fff"/>
         <g fill="#fff" font-family="Arial, Microsoft YaHei, sans-serif">
-          <text x="40" y="58" font-size="17" letter-spacing="3" opacity=".7">TOONFLOW · PREVIEW</text>
+          <text x="40" y="58" font-size="17" letter-spacing="3" opacity=".7">LUMO · PREVIEW</text>
           <text x="40" y="136" font-size="38" font-weight="bold">${slide.title}</text>
           <text x="40" y="177" font-size="19" opacity=".7">${slide.subtitle}</text>
           <text x="40" y="303" font-size="16" opacity=".6">侧栏轮播预览 · ${index + 1} / 3</text>
@@ -269,7 +269,7 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
   try {
     const { directory, empty } = await useWorkspaceFiles(path).list();
     if (request && !empty) return ElMessage.warning("该文件夹不为空，请重新选择空文件夹；已有项目请使用“新建项目”入口或点击项目列表打开。");
-    if (empty) await useWorkspaceFiles(directory).writeJson("画布1.json", { toonflowCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
+    if (empty) await useWorkspaceFiles(directory).writeJson("画布1.json", { lumoCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
     await workspaceStore.openProject(directory);
     if (request && (request.prompt.trim() || request.attachments?.length)) {
       workspaceStore.pendingAgentMessage = { ...request, directory: workspaceStore.project!.directory };

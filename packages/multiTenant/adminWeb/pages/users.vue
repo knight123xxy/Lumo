@@ -134,12 +134,12 @@
 </template>
 
 <script setup lang="ts">
-import { locale, t, translate } from "@toonflow/i18n/vue";
+import { locale, t, translate } from "@lumo/i18n/vue";
 import { computed, h, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { IconPlus, IconRefresh, IconSearch } from "@tabler/icons-vue";
 import { ElAlert, ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElPagination, ElSelect, ElTable, ElTableColumn, ElTag, vLoading, type InputInstance } from "element-plus";
 import type { AdminRequest } from "../types";
-import { billingCreditSchema, type BillingCredit, type BillingCurrency, type BillingSnapshot, type BillingTransaction } from "@toonflow/multi-tenant-billing/config";
+import { billingCreditSchema, type BillingCredit, type BillingCurrency, type BillingSnapshot, type BillingTransaction } from "@lumo/multi-tenant-billing/config";
 import "element-plus/es/components/alert/style/css";
 import "element-plus/es/components/button/style/css";
 import "element-plus/es/components/dialog/style/css";

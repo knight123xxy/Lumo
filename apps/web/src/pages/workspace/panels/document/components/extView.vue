@@ -18,8 +18,8 @@
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, onBeforeUnmount, ref, shallowRef, watch } from "vue";
-import type { ExtContext } from "@toonflow/ext-scaffold/runtime";
-import { usePluginServerFactory } from "@toonflow/plugin-server/vue";
+import type { ExtContext } from "@lumo/ext-scaffold/runtime";
+import { usePluginServerFactory } from "@lumo/plugin-server/vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { IDockviewPanelProps } from "dockview-vue";
 import type { EditorParams } from "../documentSession";

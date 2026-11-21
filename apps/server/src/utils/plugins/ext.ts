@@ -1,4 +1,4 @@
-import { lstat, readFile } from "@toonflow/file";
+import { lstat, readFile } from "@lumo/file";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
 import { parse } from "@babel/parser";
@@ -50,7 +50,7 @@ const metadataSchema = z.object({
 export function parseExt(source: string, name: string) {
   extNameSchema.parse(name);
   try {
-    const header = source.match(/^\/\*! toonflowExt:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1];
+    const header = source.match(/^\/\*! lumoExt:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1];
     const metadata = metadataSchema.parse(JSON.parse(header ?? ""));
     if (metadata.id !== name || (metadata.resourceKind === "file" && !metadata.extensions.length)
       || new Set(metadata.extensions).size !== metadata.extensions.length) throw new Error("metadata");
@@ -89,7 +89,7 @@ export function validateExtSource(source: string, name: string) {
     const node = value as Record<string, unknown>;
     if (node.type === "AssignmentExpression" && node.operator === "=" && propertyName(node.left) === name) {
       const target = node.left as Record<string, unknown>;
-      if (propertyName(target.object) === "toonflowExts") return metadata;
+      if (propertyName(target.object) === "lumoExts") return metadata;
     }
     // 只识别真实语法节点，注释、字符串或源码中的示例不能冒充导出。
     for (const [key, child] of Object.entries(node)) {

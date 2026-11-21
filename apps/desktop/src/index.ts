@@ -1,16 +1,16 @@
-import { setLocaleFallback, t, translateMessage } from "@toonflow/server/i18n";
-import { setRuntimeHost } from "@toonflow/server/platform";
-import { detectLocale, normalizeLocale } from "@toonflow/i18n";
+import { setLocaleFallback, t, translateMessage } from "@lumo/server/i18n";
+import { setRuntimeHost } from "@lumo/server/platform";
+import { detectLocale, normalizeLocale } from "@lumo/i18n";
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { existsSync, writeAtomicSync } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import { existsSync, writeAtomicSync } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { dlopen, ptr } from "bun:ffi";
-import type { DesktopRuntime, PluginInstallRequest } from "@toonflow/server/desktop";
-import { showNativeSplash } from "@toonflow/startup";
+import type { DesktopRuntime, PluginInstallRequest } from "@lumo/server/desktop";
+import { showNativeSplash } from "@lumo/startup";
 import Electrobun, { ApplicationMenu, BrowserWindow, PATHS, Screen, Utils, Updater } from "electrobun/main";
 import { parseInstallUrl } from "./protocol";
 import saveFile, { selectSaveFile } from "./saveFile";
@@ -39,8 +39,8 @@ Electrobun.events.on("open-url", event => {
 });
 
 // ACT: 原生运行时准备窗口收到的安装链接，在主进程接管后交回同一安装队列。
-const pendingUrlData = process.env.TOONFLOW_PENDING_URLS;
-delete process.env.TOONFLOW_PENDING_URLS;
+const pendingUrlData = process.env.LUMO_PENDING_URLS;
+delete process.env.LUMO_PENDING_URLS;
 if (process.platform === "darwin" && pendingUrlData) {
   try {
     if (pendingUrlData.length > 65536) throw new Error("待处理安装链接过长");
@@ -64,7 +64,7 @@ async function restoreInstallRegistration(installDirectory: string) {
       }
       const protocolLauncher = resolve(PATHS.RESOURCES_FOLDER, "app/protocolLauncher.exe");
       if (existsSync(protocolLauncher)) {
-        const protocolKey = "HKCU\\Software\\Classes\\toonflow";
+        const protocolKey = "HKCU\\Software\\Classes\\lumo";
         const commandKey = `${protocolKey}\\shell\\open\\command`;
         const command = `"${protocolLauncher}" "%1"`;
         let protocolExists = true;
@@ -102,8 +102,8 @@ async function start() {
   try {
     // Linux 安装目录由包管理器管理，数据使用 XDG 用户目录；Windows/macOS 保留原位置。
     const installDirectory = resolve(PATHS.RESOURCES_FOLDER, process.platform === "darwin" ? "../../.." : "../..");
-    const dataDirectory = process.env.TOONFLOW_DATA_DIR ?? (process.platform === "linux"
-      ? resolve(Utils.paths.appData, "toonflow/data") : resolve(installDirectory, "data"));
+    const dataDirectory = process.env.LUMO_DATA_DIR ?? (process.platform === "linux"
+      ? resolve(Utils.paths.appData, "lumo/data") : resolve(installDirectory, "data"));
     // ACT: 先显示原生动画，再加载服务，避免初始化期间没有反馈。
     const startupSettings = await file(resolve(dataDirectory, "settings.json")).json().catch((error) => {
       if (error.code !== "ENOENT") console.error("读取启动设置失败，使用默认启动动画：", error);
@@ -151,8 +151,8 @@ async function start() {
       return;
     }
     setRuntimeHost("desktop");
-    const { createApp } = await import("@toonflow/server/app");
-    const { closeBrowsers } = await import("@toonflow/server/browser");
+    const { createApp } = await import("@lumo/server/app");
+    const { closeBrowsers } = await import("@lumo/server/browser");
     const { hash, version, identifier, channel } = await file(resolve(PATHS.RESOURCES_FOLDER, "version.json")).json();
     if (typeof hash !== "string" || !hash) throw new Error(t`应用构建标识缺失，无法同步内置插件`);
     const app = await createApp({
@@ -168,7 +168,7 @@ async function start() {
       pluginRevision: hash,
     });
     const hostSecret = randomBytes(32).toString("hex");
-    const { registerHostClient } = await import("@toonflow/server/multiTenant");
+    const { registerHostClient } = await import("@lumo/server/multiTenant");
     registerHostClient(app, hostSecret);
     const { default: createDesktopConnection } = await import("./connection");
     const connection = desktopConnection = await createDesktopConnection(app, dataDirectory, resolve(PATHS.VIEWS_FOLDER, "../mcp/stdio.js"), (port, remote, hostMode) => {
@@ -195,12 +195,12 @@ async function start() {
       // ACT: Windows SDK 未接管普通新窗口请求，在创建 WebView 弹窗前交给宿主。
       preload: `
         (() => {
-          window.toonflowHostReady = window !== window.top || location.protocol !== "http:" || location.hostname !== "127.0.0.1"
+          window.lumoHostReady = window !== window.top || location.protocol !== "http:" || location.hostname !== "127.0.0.1"
             || new URLSearchParams(location.search).get("remote") === "1" || new URLSearchParams(location.search).get("host") !== "1"
             ? Promise.resolve()
             : fetch("/api/multiTenant/hostSession", {
               method: "POST",
-              headers: { "x-toonflow-host-token": ${JSON.stringify(hostSecret)}, "x-toonflow-workspace": "1" },
+              headers: { "x-lumo-host-token": ${JSON.stringify(hostSecret)}, "x-lumo-workspace": "1" },
             }).then(async response => {
               if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
@@ -261,10 +261,10 @@ async function start() {
             mainWindow.activate();
             // ACT: 只限制页面接收请求的时间，不限制用户阅读弹窗；页面失去响应时仍可退出。
             quitAckTimer = setTimeout(() => request.resolve(undefined), 3000);
-            mainWindow.webview.executeJavascript(`window.dispatchEvent(new CustomEvent("toonflow:confirm-quit", { detail: ${JSON.stringify({ requestId: request.requestId })} }));`);
+            mainWindow.webview.executeJavascript(`window.dispatchEvent(new CustomEvent("lumo:confirm-quit", { detail: ${JSON.stringify({ requestId: request.requestId })} }));`);
             const confirmed = await promise;
             if (confirmed !== undefined) return confirmed;
-            mainWindow.webview.executeJavascript(`window.dispatchEvent(new CustomEvent("toonflow:confirm-quit", { detail: ${JSON.stringify({ requestId: request.requestId, cancelled: true })} }));`);
+            mainWindow.webview.executeJavascript(`window.dispatchEvent(new CustomEvent("lumo:confirm-quit", { detail: ${JSON.stringify({ requestId: request.requestId, cancelled: true })} }));`);
           } catch (error) {
             console.error("应用内退出弹窗显示失败：", error);
           } finally {
@@ -331,12 +331,12 @@ async function start() {
           preload: `
             (() => {
               if (window !== window.top || location.origin !== "http://127.0.0.1:10888") return;
-              const bootstrapKey = "toonflow.hostWebReady";
+              const bootstrapKey = "lumo.hostWebReady";
               let bootstrapped = window.name === bootstrapKey;
               try { bootstrapped ||= sessionStorage.getItem(bootstrapKey) === "1"; } catch {}
-              window.toonflowHostReady = bootstrapped ? Promise.resolve() : fetch("/api/multiTenant/user/host", {
+              window.lumoHostReady = bootstrapped ? Promise.resolve() : fetch("/api/multiTenant/user/host", {
                 method: "POST",
-                headers: { "x-toonflow-host-token": ${JSON.stringify(hostSecret)}, "x-toonflow-workspace": "1" },
+                headers: { "x-lumo-host-token": ${JSON.stringify(hostSecret)}, "x-lumo-workspace": "1" },
               }).then(async response => {
                 if (!response.ok) {
                   const body = await response.json().catch(() => ({}));
@@ -414,7 +414,7 @@ async function start() {
     let isShowing = false;
     const lifecycle = Utils as unknown as Parameters<typeof createWindowsUpdater>[1];
     const updater = process.platform === "win32" ? createWindowsUpdater(PATHS.RESOURCES_FOLDER, lifecycle)
-      : process.platform === "linux" && process.env.TOONFLOW_INSTALL_METHOD === "deb"
+      : process.platform === "linux" && process.env.LUMO_INSTALL_METHOD === "deb"
         ? createLinuxDebUpdater(PATHS.RESOURCES_FOLDER, dataDirectory, lifecycle) : Updater;
     app.locals.desktop = {
       openUrl,
@@ -481,7 +481,7 @@ async function start() {
           mainWindow.unminimize();
           mainWindow.show();
           mainWindow.activate();
-          mainWindow.webview.executeJavascript(`window.dispatchEvent(new CustomEvent("toonflow:install-plugin", { detail: ${JSON.stringify(request)} }));`);
+          mainWindow.webview.executeJavascript(`window.dispatchEvent(new CustomEvent("lumo:install-plugin", { detail: ${JSON.stringify(request)} }));`);
         };
         while (pendingInstalls.length) {
           deliverInstall(pendingInstalls[0]!);

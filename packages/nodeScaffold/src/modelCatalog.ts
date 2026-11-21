@@ -2,7 +2,7 @@ type ModelType = "language" | "media";
 type CatalogEntry = { models?: unknown[]; pending?: Promise<unknown[]>; expires: number };
 type CatalogState = { entries: Map<ModelType, CatalogEntry>; listeners: Set<(type: ModelType) => void> };
 
-const catalogKey = Symbol.for("toonflow.modelCatalog.v1");
+const catalogKey = Symbol.for("lumo.modelCatalog.v1");
 const catalogHost = globalThis as typeof globalThis & { [catalogKey]?: CatalogState };
 const catalogLifetime = 30000;
 // ACT: 独立节点 UMD 与宿主共用一份目录；只在读取、重新激活页面时检查有效期，不后台轮询。
@@ -18,14 +18,14 @@ function createCatalog(): CatalogState {
       }
     };
     const invalidate = (event: Event) => {
-      if (event.type === "toonflow:plugin-installed" && (event as CustomEvent<{ type?: string }>).detail?.type !== "provider") return;
+      if (event.type === "lumo:plugin-installed" && (event as CustomEvent<{ type?: string }>).detail?.type !== "provider") return;
       invalidateNodeModels("language");
       invalidateNodeModels("media");
     };
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
-    window.addEventListener("toonflow:provider-config-changed", invalidate);
-    window.addEventListener("toonflow:plugin-installed", invalidate);
+    window.addEventListener("lumo:provider-config-changed", invalidate);
+    window.addEventListener("lumo:plugin-installed", invalidate);
   }
   return state;
 }
@@ -53,7 +53,7 @@ export async function readNodeModels<T>(type: ModelType, signal?: AbortSignal, f
     const next: CatalogEntry = { models: previous, expires: Infinity };
     catalog.entries.set(type, next);
     next.pending = fetch(type === "language" ? "/api/ai/models" : "/api/ai/media/models", {
-      cache: "no-store", headers: { "x-toonflow-workspace": "1" }, signal: AbortSignal.timeout(15000),
+      cache: "no-store", headers: { "x-lumo-workspace": "1" }, signal: AbortSignal.timeout(15000),
     }).then(async response => {
       const result = await response.json();
       if (!response.ok || result.code !== 200 || !Array.isArray(result.data)) throw new Error(result.message || "读取模型失败，请稍后重试");

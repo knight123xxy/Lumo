@@ -1,7 +1,7 @@
 import { createReadToolDefinition } from "@earendil-works/pi-coding-agent";
-import { lstat, readFile, realpath } from "@toonflow/file";
-import { assetRequestSchema } from "@toonflow/tool-asset-operator/runtime";
-import type { ToolContext } from "@toonflow/tools-scaffold/runtime";
+import { lstat, readFile, realpath } from "@lumo/file";
+import { assetRequestSchema } from "@lumo/tool-asset-operator/runtime";
+import type { ToolContext } from "@lumo/tools-scaffold/runtime";
 import { resolve } from "node:path";
 import { createAssetDirectory, getAssetsDirectory, importAssetFile, moveAsset, readAssetFile, removeAsset, writeAssetFile } from "@/utils/assets";
 import { lockWorkspaceFiles, protectWorkspaceRoot, resolveWorkspacePath } from "@/utils/workspace/files";

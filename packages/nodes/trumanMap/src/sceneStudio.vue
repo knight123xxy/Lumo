@@ -351,7 +351,7 @@ import { getAssetSearchText, isCatalogDerivative, matchesSearchToken } from "./a
 import { summarizeScene, type StudioEventFile, type StudioEventInput, type StudioEventName } from "./editorEvents";
 import { createOccupancy, faceRotation, measureAssetFootprint, rectFor, rectsOverlap, replaceObjectsAsset } from "./setDressing";
 import { buildSetTemplate, findSetTemplateSpot, getWorldHalf, matchSetTemplate, setTemplates, type SetTemplate } from "./setTemplates";
-import { createBrowserAsr, isBrowserAsrSupported, type BrowserAsrState, type NodeAiModel } from "@toonflow/nodes-scaffold/runtime";
+import { createBrowserAsr, isBrowserAsrSupported, type BrowserAsrState, type NodeAiModel } from "@lumo/nodes-scaffold/runtime";
 import { answerAgentQuestion, type AgentSteering, type CreationImage, type CreationProgress, type ThinkingLevel } from "./singleAgent";
 import agentModelPicker from "./agentConversation/agentModelPicker.vue";
 import agentPromptMenu, { type PromptMenuItem } from "./agentConversation/agentPromptMenu.vue";

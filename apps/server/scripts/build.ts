@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import { cp, mkdir, realpath, rm } from "@toonflow/file";
+import { cp, mkdir, realpath, rm } from "@lumo/file";
 import { dirname, resolve } from "node:path";
 import config from "../../../electrobun.config";
 import copyDocumentPackages from "./copyDocumentPackages";

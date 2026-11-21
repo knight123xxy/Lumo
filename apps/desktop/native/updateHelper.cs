@@ -68,7 +68,7 @@ internal static class updateHelper
                 throw new InvalidOperationException("安装目录不完整。");
             string identifier = text(plan, "identifier");
             string channel = text(plan, "channel");
-            if (identifier != "local.toonflow.desktop" || (channel != "stable" && channel != "canary"))
+            if (identifier != "local.lumo.desktop" || (channel != "stable" && channel != "canary"))
                 throw new InvalidOperationException("更新计划的应用标识或通道无效。");
             version = matching(plan, "version", "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$");
             hash = matching(plan, "hash", "^[a-zA-Z0-9]{1,128}$");
@@ -330,8 +330,8 @@ internal static class updateHelper
             CreateNoWindow = true,
             WindowStyle = ProcessWindowStyle.Normal
         };
-        options.EnvironmentVariables.Remove("TOONFLOW_UPDATE_TRANSACTION");
-        if (transaction != null) options.EnvironmentVariables["TOONFLOW_UPDATE_TRANSACTION"] = transaction;
+        options.EnvironmentVariables.Remove("LUMO_UPDATE_TRANSACTION");
+        if (transaction != null) options.EnvironmentVariables["LUMO_UPDATE_TRANSACTION"] = transaction;
         process = Process.Start(options);
         if (process == null) throw new InvalidOperationException("更新后无法启动 Lumo。");
         // 在应用确认就绪或清理完成前保持句柄，不能用进程名称定位本次启动。
@@ -611,7 +611,7 @@ internal static class updateHelper
         string uninstaller = Path.Combine(root, "UninstallNSIS.exe");
         if (!File.Exists(uninstaller)) return;
         ensurePlainPath(uninstaller);
-        string ini = Path.Combine(root, "toonflow.ini");
+        string ini = Path.Combine(root, "lumo.ini");
         ensurePlainPath(ini);
         var oldDirectory = new StringBuilder(32768);
         GetPrivateProfileString("application", "installDirectory", "", oldDirectory, (uint)oldDirectory.Capacity, ini);
@@ -620,7 +620,7 @@ internal static class updateHelper
         {
             if (registry != null)
             {
-                string registered = registry.GetValue("toonflowInstallDirectory") as string ?? registry.GetValue("InstallLocation") as string;
+                string registered = registry.GetValue("lumoInstallDirectory") as string ?? registry.GetValue("InstallLocation") as string;
                 if (!String.IsNullOrEmpty(registered) && !samePath(registered, root) && !samePath(registered, Path.Combine(root, "app"))
                     && (oldDirectory.Length == 0 || !samePath(registered, oldDirectory.ToString())))
                 {
@@ -632,7 +632,7 @@ internal static class updateHelper
         writeFile(ini, "[application]\r\nidentifier=" + identifier + "\r\ninstallDirectory=" + root + "\r\n");
         using (var registry = Registry.CurrentUser.CreateSubKey(registryPath))
         {
-            registry.SetValue("toonflowInstallDirectory", root);
+            registry.SetValue("lumoInstallDirectory", root);
             registry.SetValue("InstallLocation", root);
             registry.SetValue("DisplayName", "Lumo");
             registry.SetValue("DisplayVersion", version);

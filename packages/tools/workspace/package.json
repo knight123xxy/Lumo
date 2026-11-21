@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/tool-workspace",
+  "name": "@lumo/tool-workspace",
   "version": "2.0.0",
   "private": true,
   "type": "module",
@@ -12,6 +12,6 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
-    "@toonflow/tools-scaffold": "workspace:*"
+    "@lumo/tools-scaffold": "workspace:*"
   }
 }

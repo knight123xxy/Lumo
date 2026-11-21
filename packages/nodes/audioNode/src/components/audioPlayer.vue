@@ -51,8 +51,8 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { ElButton, ElInputNumber, ElMessage, ElOption, ElSelect } from "element-plus";
 import { IconPlayerPlay, IconPlayerPause, IconVolume, IconVolumeOff } from "@tabler/icons-vue";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
-import { getPcmOptions, isPcmMimeType, pcmFormats, pcmToWav, type PcmOptions } from "@toonflow/node-shared/pcmPreview";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
+import { getPcmOptions, isPcmMimeType, pcmFormats, pcmToWav, type PcmOptions } from "@lumo/node-shared/pcmPreview";
 import { getWaveformPeaks } from "../audioWaveform";
 
 const { src, mimeType, label = "节点音频" } = defineProps<{ src: string; mimeType?: string; label?: string }>();

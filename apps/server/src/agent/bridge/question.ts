@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { QuestionAnswer, QuestionContext, QuestionRequest } from "@toonflow/tools-scaffold/runtime";
+import type { QuestionAnswer, QuestionContext, QuestionRequest } from "@lumo/tools-scaffold/runtime";
 import type { AgentEvent } from "@/agent/runtime/types";
 
 type PendingQuestion = { cwd: string; request: QuestionRequest & { requiresLocalApproval?: boolean }; cancel(): void; finish(result: QuestionAnswer | Error): void };

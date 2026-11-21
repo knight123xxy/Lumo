@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import waveform from "./waveform.vue";
 import type { TimelineClip, TrackType } from "../timelineTypes";
 

@@ -1,6 +1,6 @@
-import { mkdir, readFile, realpath } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
-import { t } from "@toonflow/server/i18n";
+import { mkdir, readFile, realpath } from "@lumo/file";
+import { file } from "@lumo/file/bun";
+import { t } from "@lumo/server/i18n";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { request } from "node:http";
@@ -19,7 +19,7 @@ async function start() {
   const configured = process.env.XDG_DATA_HOME;
   const appData = configured && isAbsolute(configured) && resolve(configured) !== "/"
     ? resolve(configured) : join(homedir(), ".local/share");
-  const directory = resolve(process.env.TOONFLOW_DATA_DIR ?? join(appData, "toonflow/data"));
+  const directory = resolve(process.env.LUMO_DATA_DIR ?? join(appData, "lumo/data"));
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const bin = await realpath(resolve(import.meta.dirname, "../../bin"));
 
@@ -52,7 +52,7 @@ async function start() {
     return;
   }
 
-  const childEnv: NodeJS.ProcessEnv = { ...process.env, TOONFLOW_DATA_DIR: directory };
+  const childEnv: NodeJS.ProcessEnv = { ...process.env, LUMO_DATA_DIR: directory };
   if (childEnv.XDG_SESSION_TYPE === "wayland" && childEnv.WEBKIT_DISABLE_DMABUF_RENDERER === undefined) {
     // ACT: 仅对已验证白屏的 VMware Wayland 会话禁用 DMA-BUF；保留用户显式配置，厂商信息不可读时沿用默认渲染。
     const vendor = await readFile("/sys/class/dmi/id/sys_vendor", "utf8").catch(() => "");
@@ -91,7 +91,7 @@ async function sendUrl(port: number, url: string) {
     const req = request(`${origin}/api/desktop/openUrl`, {
       method: "POST", signal: AbortSignal.timeout(3000),
       headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body),
-        Origin: origin, "x-toonflow-desktop": "1" },
+        Origin: origin, "x-lumo-desktop": "1" },
     }, resolve);
     req.once("error", reject);
     req.end(body);

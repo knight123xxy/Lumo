@@ -64,10 +64,10 @@
 import { computed, ref, watch } from "vue";
 import { IconMusic, IconUpload, IconFolder, IconTransfer, IconScissors, IconGauge, IconTextRecognition, IconPlayerStop } from "@tabler/icons-vue";
 import { ElButton, ElMessage } from "element-plus";
-import { nodeSkeleton, nodeTools, useNode, z, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
-import { useAudioTranscription } from "@toonflow/node-shared/useAudioTranscription";
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
-import type { PcmOptions } from "@toonflow/node-shared/pcmPreview";
+import { nodeSkeleton, nodeTools, useNode, z, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
+import { useAudioTranscription } from "@lumo/node-shared/useAudioTranscription";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
+import type { PcmOptions } from "@lumo/node-shared/pcmPreview";
 import audioPlayer from "./components/audioPlayer.vue";
 import audioActions from "./components/audioActions.vue";
 

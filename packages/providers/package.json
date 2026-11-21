@@ -1,10 +1,10 @@
 {
-  "name": "@toonflow/providers",
+  "name": "@lumo/providers",
   "version": "2.0.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@toonflow/ffmpeg": "workspace:*"
+    "@lumo/ffmpeg": "workspace:*"
   },
   "exports": {
     ".": "./index.ts",

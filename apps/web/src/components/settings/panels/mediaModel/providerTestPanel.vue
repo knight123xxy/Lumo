@@ -104,14 +104,14 @@
 </template>
 
 <script setup lang="ts">
-import { locale, translate } from "@toonflow/i18n/vue";
+import { locale, translate } from "@lumo/i18n/vue";
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import axios from "axios";
 import { IconPlus, IconX, IconMusic, IconPlayerPlay, IconPlayerStop } from "@tabler/icons-vue";
-import type { Provider } from "@toonflow/providers";
+import type { Provider } from "@lumo/providers";
 import videoPlayer from "@/components/videoPlayer.vue";
-import formCreate, { copyProviderRules, type Api, type Options } from "@toonflow/provider-web/formCreate";
-import type { MediaProvider, MediaProviderModel } from "@toonflow/provider-web/types";
+import formCreate, { copyProviderRules, type Api, type Options } from "@lumo/provider-web/formCreate";
+import type { MediaProvider, MediaProviderModel } from "@lumo/provider-web/types";
 
 type DebugLog = { id: number; method: string; url: string; state: string; status?: number; duration?: number; request?: string; response?: string; error?: string };
 const props = defineProps<{
@@ -306,7 +306,7 @@ async function run() {
     const request = await buildRequest(signal);
     signal.throwIfAborted();
     lastRequest = request;
-    const response = await fetch("/api/providers/debug/run", { method: "POST", headers: { "x-toonflow-workspace": "1", "Accept-Language": locale.value, "Content-Type": "application/json" }, body: JSON.stringify({ source, config, request, models }), signal });
+    const response = await fetch("/api/providers/debug/run", { method: "POST", headers: { "x-lumo-workspace": "1", "Accept-Language": locale.value, "Content-Type": "application/json" }, body: JSON.stringify({ source, config, request, models }), signal });
     if (!response.ok) throw new Error((await response.json()).message || "测试请求失败");
     if (!response.body) throw new Error("未收到运行结果");
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();

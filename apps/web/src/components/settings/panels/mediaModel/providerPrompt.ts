@@ -1,4 +1,4 @@
-import providerTypes from "@toonflow/providers/types?raw";
+import providerTypes from "@lumo/providers/types?raw";
 
 export const providerPrompt = `你是一位耐心的 Lumo 媒体模型接入助手，也负责完成适配代码。我是完全不懂编程的普通用户，可能不知道「供应商」「模型」「API」「接口地址」是什么。我想让 Lumo 能调用某个平台或 ComfyUI 工作流生成图片、视频或音频。请通过多轮对话带我确认需求，再帮我生成一个能在 Lumo 导入的 .ts 文件。
 

@@ -7,9 +7,9 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount } from "vue";
-import adminWeb from "@toonflow/multi-tenant-admin-web";
-import type { UserIdentity } from "@toonflow/multi-tenant-user-web/types";
-import logoUrl from "@toonflow/assets/logo.svg";
+import adminWeb from "@lumo/multi-tenant-admin-web";
+import type { UserIdentity } from "@lumo/multi-tenant-user-web/types";
+import logoUrl from "@lumo/assets/logo.svg";
 import desktopQuit from "@/components/desktopQuit.vue";
 import http from "@/lib/http";
 import { actualPlatform } from "@/lib/platform";

@@ -98,19 +98,19 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import axios from "axios";
-import { t } from "@toonflow/i18n/vue";
+import { t } from "@lumo/i18n/vue";
 import { ElMessage, ElTree, type InputInstance, type TreeNodeData } from "element-plus";
 import { IconChevronRight, IconDots, IconEye, IconFile, IconFolder, IconFolderOpen, IconFolderPlus, IconMusic, IconPhoto, IconSearch, IconUpload, IconVideo, IconX } from "@tabler/icons-vue";
-import type { NodeOutput } from "@toonflow/nodes-scaffold/values";
-import { mentionAssetType } from "@toonflow/server/agent/mentionSources";
+import type { NodeOutput } from "@lumo/nodes-scaffold/values";
+import { mentionAssetType } from "@lumo/server/agent/mentionSources";
 import mentionThumbnail from "@/components/agent/mentionThumbnail.vue";
 import { startAssetDrag } from "../canvasDrop";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { generalSettings } from "@/stores/settings";
 import assetMenu from "./assetMenu.vue";
 import assetBrowser from "./assetBrowser.vue";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
 
 type AssetEntry = { name: string; path: string; type: "file" | "directory"; children?: AssetEntry[]; draft?: boolean };
 type AssetOutput = { label: string; output: NodeOutput };

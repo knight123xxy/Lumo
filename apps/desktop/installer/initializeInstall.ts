@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { copyFileSync, rmSync, writeAtomicSync } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import { copyFileSync, rmSync, writeAtomicSync } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { basename, isAbsolute, join } from "node:path";
 
 const directories = process.argv.slice(2);

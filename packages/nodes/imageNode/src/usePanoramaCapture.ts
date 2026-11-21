@@ -1,8 +1,8 @@
 import { inject, onScopeDispose, ref, watch } from "vue";
 import { useNode, useVueFlow, type Node } from "@vue-flow/core";
 import { ElMessage } from "element-plus";
-import { uploadNodeFile, useNodeFiles } from "@toonflow/nodes-scaffold/runtime";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
+import { uploadNodeFile, useNodeFiles } from "@lumo/nodes-scaffold/runtime";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
 import type { PanoramaCapture } from "./imagePanorama";
 
 export function usePanoramaCapture(source: () => string) {

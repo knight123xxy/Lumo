@@ -34,8 +34,8 @@
 
 <script setup lang="ts">
 import { computed, useId, watch } from "vue";
-import { translate } from "@toonflow/i18n/vue";
-import type { ModelPrice, ModelRoute } from "@toonflow/multi-tenant-models/config";
+import { translate } from "@lumo/i18n/vue";
+import type { ModelPrice, ModelRoute } from "@lumo/multi-tenant-models/config";
 import { ElFormItem, ElInput, ElOption, ElSelect, ElSwitch } from "element-plus";
 import "element-plus/es/components/form-item/style/css";
 import "element-plus/es/components/input/style/css";

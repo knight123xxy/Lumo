@@ -35,7 +35,7 @@ import { ElButton } from "element-plus";
 import { IconArrowBackUp, IconArrowForwardUp, IconLink, IconScissors, IconTrash } from "@tabler/icons-vue";
 import type { AudioSegment } from "../audioProcessing";
 import audioPlayer from "./audioPlayer.vue";
-import type { PcmOptions } from "@toonflow/node-shared/pcmPreview";
+import type { PcmOptions } from "@lumo/node-shared/pcmPreview";
 
 type EditState = { groups: AudioSegment[][]; selectedIndex: number; playhead: number };
 const props = defineProps<{ src: string; mimeType?: string; disabled?: boolean }>();

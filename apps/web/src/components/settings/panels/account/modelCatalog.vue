@@ -90,11 +90,11 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { IconChevronRight, IconSearch } from "@tabler/icons-vue";
-import { modelIcon } from "@toonflow/model-icons";
+import { modelIcon } from "@lumo/model-icons";
 import DOMPurify from "dompurify";
-import type { ModelData, ModelPriceStep, ModelType } from "@toonflow/server/channel";
+import type { ModelData, ModelPriceStep, ModelType } from "@lumo/server/channel";
 import http from "@/lib/http";
 
 const props = withDefaults(defineProps<{ visible: boolean; token: string; scope?: "all" | "text" | "media" }>(), { scope: "all" });

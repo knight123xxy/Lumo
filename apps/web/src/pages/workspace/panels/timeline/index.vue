@@ -123,7 +123,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onScopeDispose, ref } from "vue";
 import { ElButton, ElInput, ElMessage, ElTooltip } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import {
   IconArrowBackUp,
   IconArrowForwardUp,

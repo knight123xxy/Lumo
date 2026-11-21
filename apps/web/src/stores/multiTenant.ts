@@ -1,5 +1,5 @@
 import { ref, shallowRef } from "vue";
-import type { UserIdentity } from "@toonflow/multi-tenant-user-web/types";
+import type { UserIdentity } from "@lumo/multi-tenant-user-web/types";
 
 export const currentUser = shallowRef<UserIdentity | null>(null);
 export const publicWeb = ref(false);

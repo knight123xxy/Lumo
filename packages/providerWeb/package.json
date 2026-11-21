@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/provider-web",
+  "name": "@lumo/provider-web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@toonflow/i18n": "workspace:*"
+    "@lumo/i18n": "workspace:*"
   },
   "peerDependencies": {
     "@form-create/element-ui": "^3",

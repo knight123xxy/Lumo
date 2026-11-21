@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { lstat, mkdir, mkdtemp, readFile, rename, rm, writeAtomic } from "@toonflow/file";
+import { lstat, mkdir, mkdtemp, readFile, rename, rm, writeAtomic } from "@lumo/file";
 import { z } from "zod";
 import { fullSdkVersion as version } from "../package.json";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/node-shared",
+  "name": "@lumo/node-shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -34,12 +34,12 @@
   "dependencies": {
     "@form-create/element-ui": "^3",
     "@tabler/icons-vue": "^3.46.0",
-    "@toonflow/model-icons": "workspace:*",
+    "@lumo/model-icons": "workspace:*",
     "vue-draggable-plus": "^0.6.1",
     "x-sender": "1.4.6"
   },
   "devDependencies": {
-    "@toonflow/nodes-scaffold": "workspace:*",
+    "@lumo/nodes-scaffold": "workspace:*",
     "typescript": "~6.0.3",
     "vite": "^8.2.2",
     "vue-tsc": "^3.3.11"

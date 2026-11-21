@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync } from "@toonflow/file";
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync } from "@lumo/file";
 import { dirname, join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
@@ -26,7 +26,7 @@ if (typeof archiveName !== "string" || !archiveName.startsWith(prefix) || !/^[a-
 }
 const files = [archiveName, ...names.filter((name) => name.startsWith(prefix) && name.endsWith(".patch")), manifestName];
 if (manifest.platform === "linux" && manifest.deb) {
-  const debName = `toonflow-${version}-linux-${manifest.arch}.deb`;
+  const debName = `lumo-${version}-linux-${manifest.arch}.deb`;
   if (manifest.deb.file !== debName || !names.includes(debName)) throw new Error("Linux 更新清单引用的 Debian 安装包不存在或文件名无效");
   files.unshift(debName);
 }

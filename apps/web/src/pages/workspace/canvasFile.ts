@@ -32,16 +32,16 @@ export async function isCanvasFile(files: Pick<ReturnType<typeof useWorkspaceFil
     signal?.throwIfAborted();
     if (!/^\s*\{/.test(header)) return false;
     // ACT: 自有保存格式将标记置于根对象首字段；其他顺序完整解析，避免嵌套标记误判。
-    if (/^\s*\{\s*"toonflowCanvas"\s*:\s*true\s*[,}]/.test(header)) return true;
+    if (/^\s*\{\s*"lumoCanvas"\s*:\s*true\s*[,}]/.test(header)) return true;
     try {
-      return JSON.parse(header.trimStart())?.toonflowCanvas === true;
+      return JSON.parse(header.trimStart())?.lumoCanvas === true;
     } catch (error) {
       if (!(error instanceof SyntaxError)) throw error;
       if (new TextEncoder().encode(header).byteLength < headerBytes) return false;
     }
     const content = await files.readText(path, undefined, signal);
     signal?.throwIfAborted();
-    return JSON.parse(content.trimStart())?.toonflowCanvas === true;
+    return JSON.parse(content.trimStart())?.lumoCanvas === true;
   } catch (error) {
     signal?.throwIfAborted();
     if (error instanceof SyntaxError) return false;

@@ -1,9 +1,9 @@
-import { readFile, readdir, realpath } from "@toonflow/file";
+import { readFile, readdir, realpath } from "@lumo/file";
 import { createHash } from "node:crypto";
 import { dirname, join, posix, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "vite";
-import { createNodeConfig } from "@toonflow/nodes-scaffold";
+import { createNodeConfig } from "@lumo/nodes-scaffold";
 
 type PackageInfo = {
   name: string;
@@ -43,14 +43,14 @@ export async function browserModules(optionalInputPaths: string[] = []): Promise
     noticeDirectories.add(path.slice(0, start) + segments.slice(0, segments[0]!.startsWith("@") ? 2 : 1).join("/"));
   }
   for (const path of optionalInputPaths) collectInputNotice(path);
-  const nodePackage = await readPackage("@toonflow/nodes-scaffold");
-  const pluginServerPackage = await readPackage("@toonflow/plugin-server", nodePackage.directory);
-  const sharedPackage = await readPackage("@toonflow/node-shared");
-  const toolPackage = await readPackage("@toonflow/tools-scaffold");
-  const asrPackage = await readPackage("@toonflow/asr", nodePackage.directory);
-  const ffmpegPackage = await readPackage("@toonflow/ffmpeg", nodePackage.directory);
+  const nodePackage = await readPackage("@lumo/nodes-scaffold");
+  const pluginServerPackage = await readPackage("@lumo/plugin-server", nodePackage.directory);
+  const sharedPackage = await readPackage("@lumo/node-shared");
+  const toolPackage = await readPackage("@lumo/tools-scaffold");
+  const asrPackage = await readPackage("@lumo/asr", nodePackage.directory);
+  const ffmpegPackage = await readPackage("@lumo/ffmpeg", nodePackage.directory);
   const iconsPackage = await readPackage("@tabler/icons-vue", nodePackage.directory);
-  const filePackage = await readPackage("@toonflow/file", toolPackage.directory);
+  const filePackage = await readPackage("@lumo/file", toolPackage.directory);
   const nodeLibraries = await Promise.all(["@form-create/element-ui", "vue-draggable-plus", "x-sender", "zod"]
     .map(name => readPackage(name, name === "zod" ? projectDirectory : sharedPackage.directory)));
   const browserPackages = [nodePackage, sharedPackage, toolPackage, pluginServerPackage, asrPackage, ffmpegPackage, iconsPackage, filePackage, ...nodeLibraries];
@@ -59,12 +59,12 @@ export async function browserModules(optionalInputPaths: string[] = []): Promise
   const nodeOutput = nodeConfig.build!.rolldownOptions!.output as { globals: Record<string, string> };
   const nodeGlobals = nodeOutput.globals;
   const toolGlobals = {
-    vue: "toonflowToolHost.vue",
-    "@vue/runtime-core": "toonflowToolHost.vue",
-    "@vue/runtime-dom": "toonflowToolHost.vue",
-    "element-plus": "toonflowToolHost.elementPlus",
-    axios: "toonflowToolHost.axios",
-    "@form-create/element-ui": "toonflowToolHost.formCreate",
+    vue: "lumoToolHost.vue",
+    "@vue/runtime-core": "lumoToolHost.vue",
+    "@vue/runtime-dom": "lumoToolHost.vue",
+    "element-plus": "lumoToolHost.elementPlus",
+    axios: "lumoToolHost.axios",
+    "@form-create/element-ui": "lumoToolHost.formCreate",
   };
 
   function entry(entries: Record<string, string>, pkg: BrowserPackage, subpath: string, source: string) {
@@ -134,8 +134,8 @@ export async function browserModules(optionalInputPaths: string[] = []): Promise
           external,
           output: {
             entryFileNames: "[name].js",
-            chunkFileNames: `node_modules/@toonflow/browserModules/${scope}[name][hash].js`,
-            assetFileNames: `node_modules/@toonflow/browserModules/${scope}[name][hash][extname]`,
+            chunkFileNames: `node_modules/@lumo/browserModules/${scope}[name][hash].js`,
+            assetFileNames: `node_modules/@lumo/browserModules/${scope}[name][hash][extname]`,
           },
         },
       },
@@ -147,10 +147,10 @@ export async function browserModules(optionalInputPaths: string[] = []): Promise
       if (item.type !== "asset" || !item.fileName.endsWith(".css")) continue;
       const css = typeof item.source === "string" ? item.source : new TextDecoder().decode(item.source);
       const id = createHash("sha256").update(css).digest("hex").slice(0, 16);
-      const name = `node_modules/@toonflow/browserModules/style${id}.js`;
+      const name = `node_modules/@lumo/browserModules/style${id}.js`;
       styles.set(item.fileName, name);
       // ACT: 每份样式只保留一个有副作用的 ESM；共享组件按实际引用导入，不重复携带整包 CSS。
-      files[name] = encoder.encode(`if(typeof document!=="undefined"&&!document.querySelector('style[data-toonflow-sdk="${id}"]')){const style=document.createElement("style");style.dataset.toonflowSdk=${JSON.stringify(id)};style.textContent=${JSON.stringify(css)};document.head.append(style);}`);
+      files[name] = encoder.encode(`if(typeof document!=="undefined"&&!document.querySelector('style[data-lumo-sdk="${id}"]')){const style=document.createElement("style");style.dataset.lumoSdk=${JSON.stringify(id)};style.textContent=${JSON.stringify(css)};document.head.append(style);}`);
     }
     for (const item of output) {
       if (item.type === "asset") {
@@ -220,7 +220,7 @@ export async function browserModules(optionalInputPaths: string[] = []): Promise
   }
   for (const pkg of browserPackages) {
     const prefix = `node_modules/${pkg.info.name}`;
-    await copyTypes(pkg.directory, prefix, pkg.info.name.startsWith("@toonflow/"));
+    await copyTypes(pkg.directory, prefix, pkg.info.name.startsWith("@lumo/"));
     await copyNotices(pkg.directory, prefix);
     files[`${prefix}/package.json`] = encoder.encode(JSON.stringify({
       name: pkg.info.name,

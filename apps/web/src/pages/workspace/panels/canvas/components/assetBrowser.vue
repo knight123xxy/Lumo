@@ -87,12 +87,12 @@
 </template>
 
 <script setup lang="ts">
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
 import { computed, nextTick, ref, watch } from "vue";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import type { InputInstance } from "element-plus";
 import { IconChevronRight, IconDots, IconFile, IconFolder, IconFolderOpen, IconFolderPlus, IconLayoutGrid, IconMusic, IconPhoto, IconPlayerPlay, IconSearch, IconUpload, IconVideo } from "@tabler/icons-vue";
-import { mentionAssetType } from "@toonflow/server/agent/mentionSources";
+import { mentionAssetType } from "@lumo/server/agent/mentionSources";
 import mentionThumbnail from "@/components/agent/mentionThumbnail.vue";
 import { generalSettings } from "@/stores/settings";
 

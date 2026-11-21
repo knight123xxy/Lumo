@@ -1,6 +1,6 @@
 import { computed, watch, type Ref } from "vue";
 import formCreate, { type Rule } from "@form-create/element-ui";
-import { findNodeModel, type NodeMediaModel } from "@toonflow/nodes-scaffold/runtime";
+import { findNodeModel, type NodeMediaModel } from "@lumo/nodes-scaffold/runtime";
 
 export function useModelForm(data: Ref<{ model: string; other: Record<string, unknown> }>, model: Ref<NodeMediaModel | undefined>) {
   let previousModel = data.value.model;

@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import type { SceneDocument, SceneTerrain } from "./sceneDocument";
 import { createTerrain, getTerrainHeight, getTerrainWaterLevel, paintTerrain, reconcileTerrainWater, terrainWaterColor, type TerrainBrush } from "./terrainModel";
 import { getTerrainSurfaceId, terrainSurfaceOptions } from "./terrainSurfaces";

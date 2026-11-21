@@ -1,7 +1,7 @@
 import { loadSkillsFromDir } from "@earendil-works/pi-coding-agent";
-import type { McpOptions } from "@toonflow/mcp";
-import { readFile } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import type { McpOptions } from "@lumo/mcp";
+import { readFile } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { resolve } from "node:path";
 import * as skillFile from "@/utils/skills/files";
 
@@ -16,7 +16,7 @@ export const skillResources: NonNullable<McpOptions["resources"]> = {
       for (const path of files) {
         const main = path === mainPath;
         resources.push({
-          uri: `toonflow://skills/${encodeURIComponent(skill.name)}/${path.split("/").map(encodeURIComponent).join("/")}`,
+          uri: `lumo://skills/${encodeURIComponent(skill.name)}/${path.split("/").map(encodeURIComponent).join("/")}`,
           name: `${skill.name}/${path}`,
           description: main ? skill.description : `${skill.name} 的附属资料：${path}`,
           mimeType: file(main ? skill.filePath : resolve(skill.baseDir, path)).type || "application/octet-stream",
@@ -27,7 +27,7 @@ export const skillResources: NonNullable<McpOptions["resources"]> = {
   },
   async read(uri, signal) {
     signal.throwIfAborted();
-    const match = /^toonflow:\/\/skills\/([^/]+)\/(.+)$/.exec(uri);
+    const match = /^lumo:\/\/skills\/([^/]+)\/(.+)$/.exec(uri);
     if (!match) throw Object.assign(new Error("技能资源地址无效"), { status: 400 });
     const name = decodeURIComponent(match[1]!);
     if (!skillFile.isEnabled(name)) throw Object.assign(new Error("技能已禁用"), { status: 404 });

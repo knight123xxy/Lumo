@@ -1,5 +1,5 @@
 import { dirname, isAbsolute, relative, resolve } from "node:path";
-import { lstat, mkdir, open, readFile, realpath, writeAtomic } from "@toonflow/file";
+import { lstat, mkdir, open, readFile, realpath, writeAtomic } from "@lumo/file";
 import { z } from "zod";
 import type { AdminDatabase } from "./schema";
 

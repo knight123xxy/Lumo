@@ -102,7 +102,7 @@
 <script setup lang="ts">
 /// <reference path="./env.d.ts" />
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { ElAlert, ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElInputNumber, ElOption, ElSegmented, ElSelect, ElTable, ElTableColumn, ElTag } from "element-plus";
 import formCreate, { copyProviderRules, type Api, type Options } from "./formCreate";
 import modelEditor from "./modelEditorDialog.vue";

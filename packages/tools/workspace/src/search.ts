@@ -1,7 +1,7 @@
 import { basename, join, relative } from "node:path";
 import { RE2JS } from "re2js";
 import { z } from "zod";
-import type { ToolContext, ToolDefinition } from "@toonflow/tools-scaffold/runtime";
+import type { ToolContext, ToolDefinition } from "@lumo/tools-scaffold/runtime";
 
 const pathSchema = z.string().min(1).max(4096).optional().describe("当前工作区内的搜索路径，默认工作区根目录");
 const globSchema = z.string().min(1).max(512)

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const sourceMappingTargetSchema = z.enum(["backend", "toonflowCloud"]);
+const sourceMappingTargetSchema = z.enum(["backend", "lumoCloud"]);
 
 export const sourceMappingSchema = z.strictObject({
   models: sourceMappingTargetSchema,
@@ -13,5 +13,5 @@ export type SourceMapping = z.infer<typeof sourceMappingSchema>;
 export type SourceMappingSnapshot = { mappings: SourceMapping; revision: number; applied: false };
 
 export function getDefaultSourceMapping(): SourceMapping {
-  return { models: "toonflowCloud", providers: "toonflowCloud", plugins: "toonflowCloud", community: "toonflowCloud" };
+  return { models: "lumoCloud", providers: "lumoCloud", plugins: "lumoCloud", community: "lumoCloud" };
 }

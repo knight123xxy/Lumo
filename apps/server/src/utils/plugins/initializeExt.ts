@@ -1,4 +1,4 @@
-import { lstat, mkdir, readFile, readdir, writeAtomic } from "@toonflow/file";
+import { lstat, mkdir, readFile, readdir, writeAtomic } from "@lumo/file";
 import { resolve } from "node:path";
 import { extFileName, extNameFromFile, extPaths, parseExt, resolveExtPath, validateExtSource } from "@/utils/plugins/ext";
 import { requireNewerVersion } from "@/utils/plugins/install";

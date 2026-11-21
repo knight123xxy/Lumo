@@ -1,11 +1,11 @@
 import { t, translateMessage, validationOptions } from "@/lib/i18n";
 
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, readdir, unlink, writeAtomicSync } from "@toonflow/file";
+import { lstat, mkdir, readFile, readdir, unlink, writeAtomicSync } from "@lumo/file";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createContext, SourceTextModule } from "node:vm";
-import type { AudioConvertOptions, Provider, ProviderTaskData, ProviderTools } from "@toonflow/providers";
+import type { AudioConvertOptions, Provider, ProviderTaskData, ProviderTools } from "@lumo/providers";
 import { parse, parseExpression } from "@babel/parser";
 import { z } from "zod";
 import { getRuntimePlatform } from "@/lib/platform";
@@ -21,7 +21,7 @@ type Expression = Extract<ReturnType<typeof parseExpression>, { type: "Parenthes
 type ObjectExpression = Extract<Expression, { type: "ObjectExpression" }>;
 
 const providerTranspiler = new Bun.Transpiler({ loader: "ts", target: "bun", define: { require: "undefined" } });
-const accountSourcePrefix = "// Toonflow account provider\n";
+const accountSourcePrefix = "// Lumo account provider\n";
 
 const providerIdSchema = z.string().max(96).regex(/^[a-z][a-zA-Z0-9]*$/)
   .refine(value => !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(value), "供应商 ID 不能是系统保留文件名");
@@ -323,7 +323,7 @@ function parseProvider(source: string, accountLanguage = false) {
         : target.computed && target.property.type === "StringLiteral" ? target.property.value : "";
       return ["vendor", "textRequest", "imageRequest", "videoRequest", "ttsRequest"].includes(name);
     });
-    if (legacy) invalid("检测到旧版 Toonflow 供应商 TS，无法在 Toonflow 2.0 中使用。请在「添加自定义媒体供应商」中点击「一键复制提示词」，结合旧代码和接口资料重新生成新版代码后再导入。");
+    if (legacy) invalid("检测到旧版 Lumo 供应商 TS，无法在 Lumo 2.0 中使用。请在「添加自定义媒体供应商」中点击「一键复制提示词」，结合旧代码和接口资料重新生成新版代码后再导入。");
     invalid("供应商须通过 export default 导出对象");
   }
   const object = unwrap(exported.declaration as Expression);
@@ -351,7 +351,7 @@ function parseProvider(source: string, accountLanguage = false) {
   const readme = value("readme");
   const modelsUrl = value("modelsUrl");
   if (accountLanguage) {
-    if (id !== "Toonflow") invalid("账号文本供应商 ID 必须为 Toonflow");
+    if (id !== "Lumo") invalid("账号文本供应商 ID 必须为 Lumo");
   } else if (!providerIdSchema.safeParse(id).success) invalid("供应商 ID 必须为小驼峰文件名");
   if (typeof label !== "string" || !label.trim() || label.length > 200) invalid("供应商名称无效");
   if (icon !== undefined && typeof icon !== "string") invalid("供应商图标必须为字符串");
@@ -444,7 +444,7 @@ export async function getMediaProvider(id: string) {
 
 export async function getMediaProviderSource(fileName: string) {
   if (!mediaProviderFileSchema.safeParse(fileName).success) invalid("供应商文件名无效");
-  if (fileName.toLowerCase() === "toonflow.ts") invalid("算力汇 供应商由账号与余额管理，请在账号页刷新");
+  if (fileName.toLowerCase() === "lumo.ts") invalid("算力汇 供应商由账号与余额管理，请在账号页刷新");
   const path = await directory();
   if (!path) invalid("供应商文件不存在", 404);
   return readProvider(path, fileName).catch((error: NodeJS.ErrnoException) => {
@@ -474,7 +474,7 @@ export async function listMediaProviders() {
 export async function addMediaProvider(source: string, signal?: AbortSignal, allowTerminal = false) {
   signal?.throwIfAborted();
   const result = validateMediaProviderSource(source);
-  if (result.id.toLowerCase() === "toonflow") invalid("算力汇 供应商由账号与余额管理，请登录后刷新");
+  if (result.id.toLowerCase() === "lumo") invalid("算力汇 供应商由账号与余额管理，请登录后刷新");
   if (result.terminal && !allowTerminal) requireTerminalConfirmation(result.label);
   const { fileName } = result;
   const path = join((await directory(true))!, fileName);
@@ -495,7 +495,7 @@ export function parseAccountProviderSources(sources: ProviderSources) {
   const mediaSource = sources.media;
   if (Buffer.byteLength(accountSourcePrefix + mediaSource, "utf8") > 2 * 1024 * 1024) invalid("供应商文件不能超过 2 MB");
   const media = parseProvider(mediaSource);
-  if (media.id !== "toonflow") invalid("账号媒体供应商 ID 必须为 toonflow");
+  if (media.id !== "lumo") invalid("账号媒体供应商 ID 必须为 lumo");
   const mediaToken = media.value("token");
   if (mediaToken !== undefined && (typeof mediaToken !== "string" || !mediaToken.trim())) invalid("账号媒体供应商 token 无效");
   const parsed = parseProvider(sources.language, true);
@@ -517,12 +517,12 @@ export async function installAccountProvider(sources: ProviderSources, token: st
   }
   requireAccount();
   const customProviders = conf.get("settings", {}).customProviders;
-  if (Array.isArray(customProviders) && customProviders.some(provider => typeof provider?.id === "string" && provider.id.toLowerCase() === "toonflow")) {
-    invalid("已有自定义文本供应商使用 toonflow ID，请先修改该 ID", 409);
+  if (Array.isArray(customProviders) && customProviders.some(provider => typeof provider?.id === "string" && provider.id.toLowerCase() === "lumo")) {
+    invalid("已有自定义文本供应商使用 lumo ID，请先修改该 ID", 409);
   }
   const { language, mediaSource } = parseAccountProviderSources(sources);
   const folder = (await directory(true))!;
-  const fileName = "toonflow.ts";
+  const fileName = "lumo.ts";
   const path = join(folder, fileName);
   const release = lockWorkspaceFiles([path]);
   try {
@@ -540,7 +540,7 @@ export async function installAccountProvider(sources: ProviderSources, token: st
 
 export async function saveMediaProvider(fileName: string, content: string | z.infer<typeof mediaModelsSchema>, revision: string, expectedApiKey?: string, allowTerminal = false) {
   if (!mediaProviderFileSchema.safeParse(fileName).success) invalid("供应商文件名无效");
-  if (fileName.toLowerCase() === "toonflow.ts") invalid("算力汇 供应商由账号与余额管理，请在账号页刷新");
+  if (fileName.toLowerCase() === "lumo.ts") invalid("算力汇 供应商由账号与余额管理，请在账号页刷新");
   const path = await directory();
   if (!path) invalid("供应商文件不存在", 404);
   const release = lockWorkspaceFiles([join(path, fileName)]);
@@ -565,7 +565,7 @@ function getMediaProviderApiKey(id: string) {
 
 export async function refreshMediaProviderModels(fileName: string, revision: string) {
   if (!mediaProviderFileSchema.safeParse(fileName).success) invalid("供应商文件名无效");
-  if (fileName.toLowerCase() === "toonflow.ts") invalid("算力汇 供应商由账号与余额管理，请在账号页刷新");
+  if (fileName.toLowerCase() === "lumo.ts") invalid("算力汇 供应商由账号与余额管理，请在账号页刷新");
   const provider = await getMediaProvider(fileName.slice(0, -3));
   if (revision !== provider.revision) invalid("供应商文件已被修改，请刷新页面后再获取", 409);
   if (!provider.modelsUrl) invalid("供应商未配置 modelsUrl");
@@ -605,7 +605,7 @@ export async function refreshMediaProviderModels(fileName: string, revision: str
 
 export async function deleteMediaProvider(fileName: string, revision: string) {
   if (!mediaProviderFileSchema.safeParse(fileName).success) invalid("供应商文件名无效");
-  if (fileName.toLowerCase() === "toonflow.ts") invalid("算力汇 供应商由账号与余额管理");
+  if (fileName.toLowerCase() === "lumo.ts") invalid("算力汇 供应商由账号与余额管理");
   const path = await directory();
   if (!path) invalid("供应商文件不存在", 404);
   const file = join(path, fileName);
@@ -622,8 +622,8 @@ export async function loadMediaProviderSource(source: string, config: Record<str
   saveTaskData?: (data: ProviderTaskData) => Promise<void>, platformAccount = false) {
   signal?.throwIfAborted();
   const { id, value, terminal } = parseProvider(source);
-  if (platformAccount && id !== "toonflow") invalid("账号媒体供应商 ID 必须为 toonflow", 403);
-  if (id === "toonflow") {
+  if (platformAccount && id !== "lumo") invalid("账号媒体供应商 ID 必须为 lumo", 403);
+  if (id === "lumo") {
     if (!platformAccount) {
       const installed = await getMediaProvider(id);
       if (source !== installed.source || !source.startsWith(accountSourcePrefix)) invalid("只能运行已安装的 算力汇 账号供应商", 403);
@@ -684,7 +684,7 @@ export async function loadMediaProviderSource(source: string, config: Record<str
       },
       terminal: async (command, options) => {
         // 只放行已安装且经过命令行确认的源码；调试、预览中的未安装源码与账号供应商不能调用。
-        const allowed = terminal && id !== "toonflow" && getRuntimePlatform().local && !isEnabled()
+        const allowed = terminal && id !== "lumo" && getRuntimePlatform().local && !isEnabled()
           && (await getMediaProvider(id).catch(() => undefined))?.source === source;
         if (!allowed) invalid("只有已安装并确认命令行调用的桌面端供应商才能运行本机命令", 403);
         return runTerminal(command, options, signal, cwd);
@@ -742,7 +742,7 @@ export async function loadMediaProviderSource(source: string, config: Record<str
         const info = error as { name?: unknown; message?: unknown; code?: unknown; status?: unknown } | null;
         if (signal?.aborted || info?.name === "AbortError") throw error;
         // ACT: 兼容旧 算力汇 供应商的普通错误；仅明确任务终态补标，查询异常仍保留复查。
-        const taskFailed = id === "toonflow" && !overlappingRequests && failure?.taskFailed === true && info?.code === undefined;
+        const taskFailed = id === "lumo" && !overlappingRequests && failure?.taskFailed === true && info?.code === undefined;
         let message = mediaErrorMessage(error, provider.config) || (taskFailed ? "媒体生成失败" : "");
         if (!message) throw error;
         // ACT: 只补充串行请求中匹配的错误；并发时无法精确关联响应，由适配器使用 errorMessage 提取。

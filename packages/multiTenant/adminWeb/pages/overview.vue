@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { ElTag } from "element-plus";
 import { RouterLink } from "vue-router";
 import "element-plus/es/components/tag/style/css";

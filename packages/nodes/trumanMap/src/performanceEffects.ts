@@ -23,7 +23,7 @@ function collectParts(source: Object3D) {
   function visit(node: Object3D, path: string) {
     if (node instanceof Mesh && !("isSkinnedMesh" in node) && node.geometry.getAttribute("position")) {
       if (node instanceof InstancedMesh) {
-        const names: unknown = node.userData.toonflowPartNames;
+        const names: unknown = node.userData.lumoPartNames;
         for (let index = 0; index < node.count; index++) parts.push({ id: path + "@" + index, name: Array.isArray(names) && typeof names[index] === "string" ? names[index] : node.name || "实例部件", mesh: node, instance: index });
       } else parts.push({ id: path, name: node.name || "部件", mesh: node });
     }

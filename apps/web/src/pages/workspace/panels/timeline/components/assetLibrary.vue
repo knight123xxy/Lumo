@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElButton } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { IconMusic, IconPhoto, IconSubtitles, IconUpload, IconVideo } from "@tabler/icons-vue";
 import type { AssetItem } from "../timelineTypes";
 import { timelineAssetMime } from "../timelineModel";

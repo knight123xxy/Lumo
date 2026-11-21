@@ -13,7 +13,7 @@ export default async function http<T>(config: HttpRequestConfig): Promise<T> {
     const { data } = await axios.request<HttpResponse<T>>({
       timeout: 25000,
       ...config,
-      headers: { ...config.headers, "x-toonflow-workspace": "1" },
+      headers: { ...config.headers, "x-lumo-workspace": "1" },
     });
     if (!data || typeof data.code !== "number") throw new Error("接口响应格式不正确");
     if (data.code !== 200) throw Object.assign(new Error(data.message || "请求失败"), { status: data.code });

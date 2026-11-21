@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { isAbsolute } from "node:path";
 import { DEFAULT_MAX_BYTES, formatSize, type ToolDefinition } from "@earendil-works/pi-coding-agent";
-import { connectMcpServer, getMcpError, mcpServerSchema } from "@toonflow/mcp/client";
-import type { McpServerConfig, SavedMcpServer } from "@toonflow/mcp/client";
+import { connectMcpServer, getMcpError, mcpServerSchema } from "@lumo/mcp/client";
+import type { McpServerConfig, SavedMcpServer } from "@lumo/mcp/client";
 import conf from "@/utils/conf";
 import { getRuntimePlatform } from "@/lib/platform";
 import { removeMcpBundle } from "@/utils/mcp/dxt";

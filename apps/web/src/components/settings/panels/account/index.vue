@@ -152,12 +152,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { IconChartBar, IconCreditCard, IconExternalLink, IconGift, IconLogout, IconRefresh, IconWallet } from "@tabler/icons-vue";
-import logoUrl from "@toonflow/assets/logo.svg";
-import type { Captcha, Login, PreviewData, UsageStatistics } from "@toonflow/server/channel";
+import logoUrl from "@lumo/assets/logo.svg";
+import type { Captcha, Login, PreviewData, UsageStatistics } from "@lumo/server/channel";
 import http from "@/lib/http";
-import { refreshToonflowProvider, saveSettings, settings, toonflowProviderError, toonflowProviderLoading } from "@/stores/settings";
+import { refreshLumoProvider, saveSettings, settings, lumoProviderError, lumoProviderLoading } from "@/stores/settings";
 import smsCodeButton from "./smsCodeButton.vue";
 import forgotPasswordDialog from "./forgotPasswordDialog.vue";
 import accountChart from "./accountChart.vue";
@@ -174,13 +174,13 @@ type AccountData = {
 const props = withDefaults(defineProps<{ visible?: boolean }>(), { visible: true });
 const emit = defineEmits<{ loggedIn: [] }>();
 const account = computed<AccountData | null>(() => {
-  const saved = settings.value.toonflowAccount as Partial<Login> | null | undefined;
+  const saved = settings.value.lumoAccount as Partial<Login> | null | undefined;
   if (!saved || typeof saved.token !== "string" || !saved.token.trim()
     || typeof saved.info?.userName !== "string" || typeof saved.info.phone !== "string") return null;
   return { nickname: saved.info.userName, contact: saved.info.phone };
 });
 const accountToken = computed(() => {
-  const saved = settings.value.toonflowAccount as Partial<Login> | null | undefined;
+  const saved = settings.value.lumoAccount as Partial<Login> | null | undefined;
   return account.value && typeof saved?.token === "string" ? saved.token.trim() : "";
 });
 const accountTab = ref("overview");
@@ -197,10 +197,10 @@ const previewData = ref<PreviewData>();
 const usageStatistics = ref<UsageStatistics>();
 const previewLoading = ref(false);
 const usageLoading = ref(false);
-const overviewLoading = computed(() => previewLoading.value || usageLoading.value || toonflowProviderLoading.value || modelsLoading.value || recordsLoading.value || walletLoading.value || subAccountsLoading.value);
+const overviewLoading = computed(() => previewLoading.value || usageLoading.value || lumoProviderLoading.value || modelsLoading.value || recordsLoading.value || walletLoading.value || subAccountsLoading.value);
 const previewError = ref("");
 const usageError = ref("");
-const overviewError = computed(() => [...new Set([previewError.value, usageError.value, toonflowProviderError.value].filter(Boolean))].join("；"));
+const overviewError = computed(() => [...new Set([previewError.value, usageError.value, lumoProviderError.value].filter(Boolean))].join("；"));
 const trendData = computed(() => {
   const daily = [...(previewData.value?.daily ?? [])].sort((left, right) => left.date.localeCompare(right.date));
   return { dates: daily.map(item => item.date), series: [{ name: translate("消费金额"), data: daily.map(item => item.total) }] };
@@ -292,7 +292,7 @@ function refreshOverview() {
 
 function refreshAccount() {
   refreshOverview();
-  void refreshToonflowProvider();
+  void refreshLumoProvider();
   if (accountTab.value === "models") void catalog.value?.refresh();
   if (accountTab.value === "taskRecords") void records.value?.refresh();
   if (accountTab.value === "wallet") void walletPanel.value?.refresh();
@@ -333,7 +333,7 @@ async function submitLogin() {
         captcha: loginForm.captcha.trim(), originalCaptcha: originalCaptcha.value,
       },
     });
-    const saved = await saveSettings(() => request.signal.aborted ? undefined : { toonflowAccount: result });
+    const saved = await saveSettings(() => request.signal.aborted ? undefined : { lumoAccount: result });
     if (saved && !request.signal.aborted) {
       ElMessage.success("登录成功");
       emit("loggedIn");
@@ -378,7 +378,7 @@ async function logout() {
   if (loggingOut.value) return;
   loggingOut.value = true;
   try {
-    await saveSettings(() => ({ toonflowAccount: null }));
+    await saveSettings(() => ({ lumoAccount: null }));
     ElMessage.success("已退出登录");
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "退出登录失败");

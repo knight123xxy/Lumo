@@ -18,8 +18,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ElButton } from "element-plus";
-import type { ExtContext } from "@toonflow/ext-scaffold/runtime";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import type { ExtContext } from "@lumo/ext-scaffold/runtime";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 
 const props = defineProps<{ context: ExtContext }>();
 const viewport = ref<HTMLElement>();

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { DesktopRuntime } from "@toonflow/server/desktop";
+import type { DesktopRuntime } from "@lumo/server/desktop";
 import { generalSettings } from "@/stores/settings";
 import { actualPlatform } from "./platform";
 
@@ -21,7 +21,7 @@ export async function showNotification(options: Parameters<DesktopRuntime["showN
   if (document.visibilityState === "visible" && document.hasFocus()) return;
   if (actualPlatform.isDesktop) {
     const { data } = await axios.post<{ code: number; message: string }>("/api/desktop/notification", options, {
-      headers: { "x-toonflow-desktop": "1" },
+      headers: { "x-lumo-desktop": "1" },
     });
     if (data.code !== 200) throw new Error(data.message || "发送系统通知失败");
     return;

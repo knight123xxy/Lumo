@@ -1,17 +1,17 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { calculateModelPrice, createModelRouting } from "@toonflow/multi-tenant-models";
-import { getPublicModelId, modelRouteSchema, modelRoutesSchema, modelRoutingRevisionSchema, publicModelIdSchema, modelProviderSchema, modelProvidersSchema } from "@toonflow/multi-tenant-models/config";
-import type { ManagedModelProvider, ModelProvider, ModelRoute, ProviderConfigurationSnapshot } from "@toonflow/multi-tenant-models/config";
-import { createBilling } from "@toonflow/multi-tenant-billing";
-import { billingUsageSchema } from "@toonflow/multi-tenant-billing/config";
-import type { BillingCredit, BillingReleaseMetadata, BillingUsage } from "@toonflow/multi-tenant-billing/config";
+import { calculateModelPrice, createModelRouting } from "@lumo/multi-tenant-models";
+import { getPublicModelId, modelRouteSchema, modelRoutesSchema, modelRoutingRevisionSchema, publicModelIdSchema, modelProviderSchema, modelProvidersSchema } from "@lumo/multi-tenant-models/config";
+import type { ManagedModelProvider, ModelProvider, ModelRoute, ProviderConfigurationSnapshot } from "@lumo/multi-tenant-models/config";
+import { createBilling } from "@lumo/multi-tenant-billing";
+import { billingUsageSchema } from "@lumo/multi-tenant-billing/config";
+import type { BillingCredit, BillingReleaseMetadata, BillingUsage } from "@lumo/multi-tenant-billing/config";
 import type { AvailableModel, ModelExecution, ModelFinalization, ModelGatewayOptions, ModelMap, ModelOutcome, ModelRequestContext, ModelRunFailure, ModelRunInput, ModelType, ModelExecutionResources, PublicModel } from "./types";
 
 export type * from "./types";
 
 const modelTypes = ["text", "image", "video", "audio"] as const;
-const modelTargets = ["backend", "toonflowCloud"] as const;
+const modelTargets = ["backend", "lumoCloud"] as const;
 const revisionSchema = z.number().int().min(1).max(2147483647);
 const providerConfigurationSchema = z.strictObject({ providers: modelProvidersSchema });
 const managedProviderSchema = modelProviderSchema.extend({
@@ -325,7 +325,7 @@ export function createModelGateway<Upstreams extends ModelMap, Catalogs extends 
         const label = options.formatPrice(route.salePrice);
         const attributes = await routeAccess(() => adapter.publicModel(execution));
         if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) fail("平台模型能力配置无效", 503);
-        catalog.push({ ...attributes, providerId: "multiTenant", providerLabel: "Toonflow", routeId: route.id, modelId: getPublicModelId(route),
+        catalog.push({ ...attributes, providerId: "multiTenant", providerLabel: "Lumo", routeId: route.id, modelId: getPublicModelId(route),
           label: `${route.label} · ${label}`, salePrice: route.salePrice, priceLabel: label });
       }
       return catalog;

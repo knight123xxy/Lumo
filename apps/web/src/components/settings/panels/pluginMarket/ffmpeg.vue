@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import axios from "axios";
 import { ElMessage } from "element-plus";
@@ -109,7 +109,7 @@ type FfmpegStatus = {
 };
 
 const props = withDefaults(defineProps<{ visible?: boolean; downloadOnOpen?: boolean }>(), { visible: true, downloadOnOpen: false });
-const headers = { "x-toonflow-workspace": "1" };
+const headers = { "x-lumo-workspace": "1" };
 const toolNames = ["ffmpeg", "ffprobe"] as const;
 const modeDescriptions = {
   auto: "优先使用已下载的版本；未下载时，从当前 Lumo 服务的系统 PATH 查找。",

@@ -10,9 +10,9 @@ export const desktopTarget = process.platform === "darwin" ? (process.arch === "
 export default {
   app: {
     name: "Lumo",
-    identifier: "local.toonflow.desktop",
+    identifier: "local.lumo.desktop",
     version: process.env.appVersion ?? "2.0.0",
-    urlSchemes: ["toonflow"],
+    urlSchemes: ["lumo"],
   },
   build: {
     mainProcess: "bun",
@@ -20,7 +20,7 @@ export default {
     bun: {
       entrypoint: "apps/desktop/src/bootstrap.ts", minify: true,
       external: ["@silvia-odwyer/photon-node", "@firecrawl/anydoc", "@firecrawl/anydoc-wasm", "just-bash"],
-      ...(process.platform === "darwin" && process.env.TOONFLOW_EXTERNAL_RUNTIME === "1" ? {
+      ...(process.platform === "darwin" && process.env.LUMO_EXTERNAL_RUNTIME === "1" ? {
         alias: { "electrobun/main": fileURLToPath(new URL("./build/desktop/runtime/electrobunMain.js", import.meta.url)) },
       } : {}),
     },

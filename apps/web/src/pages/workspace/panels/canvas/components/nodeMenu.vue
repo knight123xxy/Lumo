@@ -92,13 +92,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch, type Component } from "vue";
 import { useVueFlow, type ConnectingHandle, type GraphNode, type HandleType } from "@vue-flow/core";
-import { getAssetOutputs, isTypeCompatible, useNodeEvent, validateConnection, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
+import { getAssetOutputs, isTypeCompatible, useNodeEvent, validateConnection, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
 import { ElMessage } from "element-plus";
 import type { DropdownInstance } from "element-plus";
 import selectionHandle from "./selectionHandle.vue";
 import nodeMenuItems from "./nodeMenuItems.vue";
 import { generalSettings } from "@/stores/settings";
-import { filterNodeMenu, resolveNodeMenu } from "@toonflow/server/nodeMenu";
+import { filterNodeMenu, resolveNodeMenu } from "@lumo/server/nodeMenu";
 import { getSelectionConnections } from "../selectionConnections";
 import { getSelectionRoots, getSelectionTree } from "../selectionNodes";
 import { arrangeSelection } from "../arrangeSelection";

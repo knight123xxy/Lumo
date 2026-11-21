@@ -21,12 +21,12 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
-import type { ThinkingLevel } from "@toonflow/server/modelReasoning";
-import { useNodeModelSelection } from "@toonflow/nodes-scaffold/nodeAi";
+import type { ThinkingLevel } from "@lumo/server/modelReasoning";
+import { useNodeModelSelection } from "@lumo/nodes-scaffold/nodeAi";
 import modelPopover from "@/components/modelPopover.vue";
 import workspacePicker from "@/pages/home/workspacePicker.vue";
 import { modelChoices } from "@/stores/settings";
@@ -46,7 +46,7 @@ const loading = ref(true);
 const loaded = ref(false);
 const saving = ref(false);
 const error = ref("");
-const headers = { "x-toonflow-workspace": "1" };
+const headers = { "x-lumo-workspace": "1" };
 const controller = new AbortController();
 onBeforeUnmount(() => controller.abort());
 onMounted(async () => {

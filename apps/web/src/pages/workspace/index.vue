@@ -137,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import axios from "axios";
@@ -146,7 +146,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
 import modelLoginGuide from "@/components/modelLoginGuide.vue";
-import { multiTenantEnabled, toonflowAccountToken } from "@/stores/settings";
+import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
@@ -185,7 +185,7 @@ const agentWidth = ref(0);
 const settingsVisible = ref(false);
 const settingsDialog = ref<InstanceType<typeof settings>>();
 provide("openSettingsPanel", (id: string) => settingsDialog.value?.openPanel(id));
-provide("modelLoginGuide", computed(() => !multiTenantEnabled.value && !toonflowAccountToken.value ? modelLoginGuide : undefined));
+provide("modelLoginGuide", computed(() => !multiTenantEnabled.value && !lumoAccountToken.value ? modelLoginGuide : undefined));
 const helpVisible = ref(false);
 const contactVisible = ref(false);
 const contactType = ref<"community" | "business">("community");

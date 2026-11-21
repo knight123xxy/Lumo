@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, rename, rm } from "@toonflow/file";
+import { copyFile, mkdir, readFile, rename, rm } from "@lumo/file";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
@@ -8,23 +8,23 @@ import { z } from "zod";
 import postcssConfig from "../../postcss.config.ts";
 
 const tiptapGlobals = {
-  "@tiptap/core": "toonflowTiptapHost.core",
-  "@tiptap/vue-3": "toonflowTiptapHost.vue3",
-  "@tiptap/starter-kit": "toonflowTiptapHost.starterKit",
-  "@tiptap/markdown": "toonflowTiptapHost.markdown",
-  "@tiptap/extension-find-and-replace": "toonflowTiptapHost.findAndReplace",
-  "@tiptap/extension-highlight": "toonflowTiptapHost.highlight",
-  "@tiptap/extension-image": "toonflowTiptapHost.image",
-  "@tiptap/extension-list": "toonflowTiptapHost.list",
-  "@tiptap/extension-subscript": "toonflowTiptapHost.subscript",
-  "@tiptap/extension-superscript": "toonflowTiptapHost.superscript",
-  "@tiptap/extension-table": "toonflowTiptapHost.table",
-  "@tiptap/extension-text-align": "toonflowTiptapHost.textAlign",
-  "@tiptap/pm/model": "toonflowTiptapHost.model",
-  "@tiptap/pm/state": "toonflowTiptapHost.state",
-  "@tiptap/pm/view": "toonflowTiptapHost.view",
-  "marked": "toonflowTiptapHost.marked",
-  "dompurify": "toonflowTiptapHost.dompurify",
+  "@tiptap/core": "lumoTiptapHost.core",
+  "@tiptap/vue-3": "lumoTiptapHost.vue3",
+  "@tiptap/starter-kit": "lumoTiptapHost.starterKit",
+  "@tiptap/markdown": "lumoTiptapHost.markdown",
+  "@tiptap/extension-find-and-replace": "lumoTiptapHost.findAndReplace",
+  "@tiptap/extension-highlight": "lumoTiptapHost.highlight",
+  "@tiptap/extension-image": "lumoTiptapHost.image",
+  "@tiptap/extension-list": "lumoTiptapHost.list",
+  "@tiptap/extension-subscript": "lumoTiptapHost.subscript",
+  "@tiptap/extension-superscript": "lumoTiptapHost.superscript",
+  "@tiptap/extension-table": "lumoTiptapHost.table",
+  "@tiptap/extension-text-align": "lumoTiptapHost.textAlign",
+  "@tiptap/pm/model": "lumoTiptapHost.model",
+  "@tiptap/pm/state": "lumoTiptapHost.state",
+  "@tiptap/pm/view": "lumoTiptapHost.view",
+  "marked": "lumoTiptapHost.marked",
+  "dompurify": "lumoTiptapHost.dompurify",
 };
 
 export interface NodeConfig {
@@ -87,13 +87,13 @@ export function createNodeConfig(config: NodeConfig, configUrl: string, options:
             const toolPath = resolve(root, config.serverTool);
             this.addWatchFile(toolPath);
             serverTool = await readFile(toolPath, "utf8");
-            const toolHeader = serverTool.match(/^\/\*! toonflowTool:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1];
+            const toolHeader = serverTool.match(/^\/\*! lumoTool:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1];
             if (!toolHeader || JSON.parse(toolHeader).name !== nodeName || Buffer.byteLength(serverTool, "utf8") > 20 * 1024 * 1024) {
               throw new Error(`节点配套服务必须是同名且不超过 20 MB 的已构建工具：${nodeName}`);
             }
           }
           // 压缩后再写入，防止元数据注释被移除。
-          chunk.code = `/*! toonflowNode:${JSON.stringify({ ...metadata, version, readme, ...(serverTool ? { serverTool } : {}) }).replaceAll("/", "\\u002f")} */\n${chunk.code}`;
+          chunk.code = `/*! lumoNode:${JSON.stringify({ ...metadata, version, readme, ...(serverTool ? { serverTool } : {}) }).replaceAll("/", "\\u002f")} */\n${chunk.code}`;
           if (Buffer.byteLength(chunk.code, "utf8") > 20 * 1024 * 1024) throw new Error(`节点与配套服务合计不能超过 20 MB：${nodeName}`);
         },
         async writeBundle() {
@@ -119,25 +119,25 @@ export function createNodeConfig(config: NodeConfig, configUrl: string, options:
       cssCodeSplit: true,
       lib: {
         entry: resolve(root, "src/index.vue"),
-        name: `toonflowNodes.${nodeName}`,
+        name: `lumoNodes.${nodeName}`,
         formats: ["umd"],
         fileName: () => fileName,
       },
       rolldownOptions: {
-        external: ["vue", "@vue/runtime-core", "@vue/runtime-dom", "@vue-flow/core", "element-plus", "three", "@toonflow/model-icons", "@earendil-works/pi-agent-core", "@earendil-works/pi-ai", ...Object.keys(tiptapGlobals)],
+        external: ["vue", "@vue/runtime-core", "@vue/runtime-dom", "@vue-flow/core", "element-plus", "three", "@lumo/model-icons", "@earendil-works/pi-agent-core", "@earendil-works/pi-ai", ...Object.keys(tiptapGlobals)],
         output: {
           exports: "default",
           globals: {
             ...tiptapGlobals,
-            vue: "toonflowNodeHost.vue",
-            "@vue/runtime-core": "toonflowNodeHost.vue",
-            "@vue/runtime-dom": "toonflowNodeHost.vue",
-            "@vue-flow/core": "toonflowNodeHost.vueFlow",
-            "element-plus": "toonflowNodeHost.elementPlus",
-            three: "toonflowNodeHost.three",
-            "@toonflow/model-icons": "toonflowNodeHost.modelIcons",
-            "@earendil-works/pi-agent-core": "toonflowNodeHost.ai",
-            "@earendil-works/pi-ai": "toonflowNodeHost.ai",
+            vue: "lumoNodeHost.vue",
+            "@vue/runtime-core": "lumoNodeHost.vue",
+            "@vue/runtime-dom": "lumoNodeHost.vue",
+            "@vue-flow/core": "lumoNodeHost.vueFlow",
+            "element-plus": "lumoNodeHost.elementPlus",
+            three: "lumoNodeHost.three",
+            "@lumo/model-icons": "lumoNodeHost.modelIcons",
+            "@earendil-works/pi-agent-core": "lumoNodeHost.ai",
+            "@earendil-works/pi-ai": "lumoNodeHost.ai",
           },
         },
       },

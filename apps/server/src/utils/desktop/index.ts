@@ -1,10 +1,10 @@
 import { basename } from "node:path";
-import { file } from "@toonflow/file/bun";
+import { file } from "@lumo/file/bun";
 import type { Request } from "express";
 import conf from "@/utils/conf";
 import type { DesktopRuntime, desktopUpdateAttempt, updateSnapshot } from "@/types/desktop";
 import { msg, translateError, translateMessage } from "@/lib/i18n";
-import { messageError } from "@toonflow/i18n/errors";
+import { messageError } from "@lumo/i18n/errors";
 
 const updateBaseUrls = {
   official: "https://api.toonflow.net/web/version/desktopUpdates",

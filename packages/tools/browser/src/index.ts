@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolDefinition, ToolPlugin } from "@toonflow/tools-scaffold/runtime";
+import type { ToolDefinition, ToolPlugin } from "@lumo/tools-scaffold/runtime";
 import { browserActionSchema, browserConfigSchema } from "./protocol";
 
 const actionParameters = browserActionSchema.options.map(schema => ({

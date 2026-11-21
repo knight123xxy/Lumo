@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/desktop",
+  "name": "@lumo/desktop",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,10 +9,10 @@
     "typecheck": "bun scripts/build.ts typecheck"
   },
   "dependencies": {
-    "@toonflow/file": "workspace:*",
-    "@toonflow/server": "workspace:*",
-    "@toonflow/startup": "workspace:*",
-    "@toonflow/i18n": "workspace:*",
+    "@lumo/file": "workspace:*",
+    "@lumo/server": "workspace:*",
+    "@lumo/startup": "workspace:*",
+    "@lumo/i18n": "workspace:*",
     "express": "^5.2.1"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import { locale } from "@toonflow/i18n/vue";
+import { locale } from "@lumo/i18n/vue";
 
 const stopListeners = new Set<(runIds: string[]) => void>();
 
@@ -12,7 +12,7 @@ export async function stopAgent(directory: string, runIds: string[]) {
   for (const listener of stopListeners) listener(runIds);
   const response = await fetch("/api/agent/stop", {
     method: "POST",
-    headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+    headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
     body: JSON.stringify({ directory, runIds: [...new Set(runIds)] }),
     keepalive: true,
     signal: AbortSignal.timeout(10000),

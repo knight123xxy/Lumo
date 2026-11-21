@@ -58,9 +58,9 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
 import { ElButton, ElMessage } from "element-plus";
 import { IconBrush, IconEraser, IconSquare, IconCircle, IconTypography, IconArrowBackUp, IconArrowForwardUp, IconTrash, IconCheck, IconX } from "@tabler/icons-vue";
-import { uploadNodeFile, useNodeFiles } from "@toonflow/nodes-scaffold/runtime";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import { uploadNodeFile, useNodeFiles } from "@lumo/nodes-scaffold/runtime";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 import { useImageVariationNode } from "../useImageVariationNode";
 import { buildInpaintPrompt, type InpaintDraftInput } from "../imageInpaint";
 

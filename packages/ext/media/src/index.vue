@@ -20,9 +20,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { ElInputNumber, ElOption, ElSelect } from "element-plus";
-import type { ExtContext } from "@toonflow/ext-scaffold/runtime";
-import { pcmFormats, pcmToWav, type PcmFormat } from "@toonflow/node-shared/pcmPreview";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import type { ExtContext } from "@lumo/ext-scaffold/runtime";
+import { pcmFormats, pcmToWav, type PcmFormat } from "@lumo/node-shared/pcmPreview";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 
 const props = defineProps<{ context: ExtContext }>();
 const suffix = computed(() => props.context.resource.path.split(".").at(-1)?.toLowerCase());

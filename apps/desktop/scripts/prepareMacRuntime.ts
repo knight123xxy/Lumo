@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import { mkdirSync, readFileSync } from "@toonflow/file";
+import { mkdirSync, readFileSync } from "@lumo/file";
 import { resolve } from "node:path";
 import prepareRuntime from "./prepareRuntime";
 
@@ -23,7 +23,7 @@ export async function prepareMacSdk() {
     target: "bun",
     minify: true,
     plugins: [{
-      name: "toonflowMacRuntimePaths",
+      name: "lumoMacRuntimePaths",
       setup(builder) {
         builder.onLoad({ filter: /[\\/]core[\\/]Updater\.ts$/ }, ({ path }) => {
           if (resolve(path) !== resolve(sdkDirectory, "core/Updater.ts")) return;

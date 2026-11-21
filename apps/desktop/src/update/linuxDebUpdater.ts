@@ -1,7 +1,7 @@
-import { createWriteStream, lstatSync, mkdir, mkdtemp, rename, rm } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
-import type { updateSnapshot } from "@toonflow/server/desktop";
-import { t } from "@toonflow/server/i18n";
+import { createWriteStream, lstatSync, mkdir, mkdtemp, rename, rm } from "@lumo/file";
+import { file } from "@lumo/file/bun";
+import type { updateSnapshot } from "@lumo/server/desktop";
+import { t } from "@lumo/server/i18n";
 import { execFile, spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
@@ -58,7 +58,7 @@ async function fetchAsset(baseUrl: string, name: string, signal: AbortSignal) {
 
 export default function createLinuxDebUpdater(resourcesDirectory: string, dataDirectory: string, lifecycle: lifecycle) {
   const cacheHome = process.env.XDG_CACHE_HOME;
-  const cache = join(cacheHome && isAbsolute(cacheHome) ? cacheHome : join(homedir(), ".cache"), "toonflow", "debUpdates");
+  const cache = join(cacheHome && isAbsolute(cacheHome) ? cacheHome : join(homedir(), ".cache"), "lumo", "debUpdates");
   const bin = resolve(resourcesDirectory, "../bin");
   let local: versionInfo;
   let target: manifestInfo | undefined;
@@ -69,7 +69,7 @@ export default function createLinuxDebUpdater(resourcesDirectory: string, dataDi
   async function getLocalInfo() {
     if (!local) {
       const info = await file(join(resourcesDirectory, "version.json")).json();
-      if (info?.identifier !== "local.toonflow.desktop" || info.channel !== "stable" || typeof info.version !== "string"
+      if (info?.identifier !== "local.lumo.desktop" || info.channel !== "stable" || typeof info.version !== "string"
         || !versionPattern.test(info.version) || typeof info.hash !== "string" || !buildPattern.test(info.hash)
         || typeof info.baseUrl !== "string") throw new Error(t`桌面安装标识无效，请重新安装`);
       local = info;
@@ -97,7 +97,7 @@ export default function createLinuxDebUpdater(resourcesDirectory: string, dataDi
         || typeof next.hash !== "string" || !buildPattern.test(next.hash)) throw new Error(t`更新清单不匹配当前应用`);
       if (Bun.semver.order(next.version, info.version) < 0) throw new Error(t`更新源版本 ${next.version} 早于当前版本 ${info.version}，已阻止降级`);
       // 旧版清单未记录 DEB 摘要；同构建无须更新，不能用缺少校验值的包执行系统安装。
-      if (next.hash !== info.hash && !validAsset(next.deb, `toonflow-${next.version}-linux-${process.arch}.deb`)) {
+      if (next.hash !== info.hash && !validAsset(next.deb, `lumo-${next.version}-linux-${process.arch}.deb`)) {
         throw new Error(t`更新清单不匹配当前应用`);
       }
       target = next;
@@ -128,8 +128,8 @@ export default function createLinuxDebUpdater(resourcesDirectory: string, dataDi
   }
 
   async function findBase(sha256: string) {
-    const name = `toonflow-${local.version}-linux-${process.arch}.deb`;
-    const candidates = [join(cache, `${local.hash}.deb`), join("/var/cache/apt/archives", `toonflow_${local.version}_${process.arch === "arm64" ? "arm64" : "amd64"}.deb`)];
+    const name = `lumo-${local.version}-linux-${process.arch}.deb`;
+    const candidates = [join(cache, `${local.hash}.deb`), join("/var/cache/apt/archives", `lumo_${local.version}_${process.arch === "arm64" ? "arm64" : "amd64"}.deb`)];
     const downloads = await execFileAsync("/usr/bin/xdg-user-dir", ["DOWNLOAD"], { timeout: 3000 }).then(result => result.stdout.trim()).catch(() => "");
     for (const directory of new Set([downloads, join(homedir(), "Downloads"), join(homedir(), "下载")])) {
       if (isAbsolute(directory)) candidates.push(join(directory, name));
@@ -152,7 +152,7 @@ export default function createLinuxDebUpdater(resourcesDirectory: string, dataDi
       const deb = target.deb;
       if (!await matches(finalPath, deb.sha256, deb.size)) {
         staging = await mkdtemp(join(cache, "download"));
-        const nextPath = join(staging, "toonflow.deb");
+        const nextPath = join(staging, "lumo.deb");
         const prefix = `${local.channel}-linux-${process.arch}`;
         const patch = deb.patch;
         let patched = false;
@@ -203,7 +203,7 @@ export default function createLinuxDebUpdater(resourcesDirectory: string, dataDi
       }
       approval = lifecycle.requestQuitApproval();
       if (!approval) throw new Error(t`更新重启已取消`);
-      const child = Bun.spawn(["/usr/bin/pkexec", "--disable-internal-agent", "/opt/toonflow/bin/applyLinuxDeb",
+      const child = Bun.spawn(["/usr/bin/pkexec", "--disable-internal-agent", "/opt/lumo/bin/applyLinuxDeb",
         target.version, String(target.deb.size), target.deb.sha256], { stdin: file(path), stdout: "ignore", stderr: "pipe" });
       const [code, stderr] = await Promise.all([child.exited, new Response(child.stderr).text()]);
       if (code === 126) throw new Error(t`更新重启已取消`);
@@ -212,8 +212,8 @@ export default function createLinuxDebUpdater(resourcesDirectory: string, dataDi
       if (installed.hash !== target.hash || installed.version !== target.version) throw new Error(t`更新包版本与清单不一致`);
       // 等待旧桌面进程及 SDK 启动器释放单实例锁；由原用户启动，绝不继承安装器的 root 身份。
       const restart = spawn("/bin/sh", ["-c",
-        '/usr/bin/timeout 120 /usr/bin/tail --pid="$1" -f /dev/null && /usr/bin/flock -w 90 "$2" /bin/true && exec /usr/bin/toonflow',
-        "toonflow", String(process.pid), join(dataDirectory, "desktopInstance.lock")], { detached: true, stdio: "ignore" });
+        '/usr/bin/timeout 120 /usr/bin/tail --pid="$1" -f /dev/null && /usr/bin/flock -w 90 "$2" /bin/true && exec /usr/bin/lumo',
+        "lumo", String(process.pid), join(dataDirectory, "desktopInstance.lock")], { detached: true, stdio: "ignore" });
       await once(restart, "spawn");
       restart.unref();
       await rm(join(cache, `${local.hash}.deb`), { force: true }).catch(error => console.warn("无法清理旧 DEB 缓存：", error));

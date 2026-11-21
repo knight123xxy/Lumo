@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { modelRoutesSchema, modelRoutingRevisionSchema } from "@toonflow/multi-tenant-models/config";
+import { modelRoutesSchema, modelRoutingRevisionSchema } from "@lumo/multi-tenant-models/config";
 import u from "@/utils";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";

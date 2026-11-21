@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, realpath, rm, stat, writeFile } from "@toonflow/file";
+import { mkdtemp, readFile, realpath, rm, stat, writeFile } from "@lumo/file";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { prepareWorkspaceFfmpeg } from "@/utils/ffmpeg";
@@ -49,7 +49,7 @@ export async function createPreview(content: Buffer, kind: PreviewKind, signal: 
     const paths = await prepareWorkspaceFfmpeg(active);
     active.throwIfAborted();
     temporaryRoot = await realpath(tmpdir());
-    directory = await mkdtemp(join(temporaryRoot, "toonflowMediaPreview"));
+    directory = await mkdtemp(join(temporaryRoot, "lumoMediaPreview"));
     const source = join(directory, "source");
     const output = join(directory, kind === "video" ? "preview.mp4" : kind === "image" ? "preview.png" : "preview.mp3");
     await writeFile(source, content, { flag: "wx", mode: 0o600, signal: active });

@@ -1,5 +1,5 @@
-import { canvasSchemas, isNodeToolAllowed, type CanvasToolCall, type NodeToolPermissions } from "@toonflow/tool-canvas/runtime";
-import type { NodeToolsContext } from "@toonflow/tools-scaffold/runtime";
+import { canvasSchemas, isNodeToolAllowed, type CanvasToolCall, type NodeToolPermissions } from "@lumo/tool-canvas/runtime";
+import type { NodeToolsContext } from "@lumo/tools-scaffold/runtime";
 
 type CanvasNode = { id: string; type?: string; label?: unknown; position: { x: number; y: number }; selected?: boolean; data: Record<string, unknown> };
 type CanvasEdge = { id: string; source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null };

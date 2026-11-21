@@ -117,17 +117,17 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef, watch, type Component } from "vue";
-import formCreate, { copyProviderRules, type Api, type Options } from "@toonflow/provider-web/formCreate";
+import formCreate, { copyProviderRules, type Api, type Options } from "@lumo/provider-web/formCreate";
 import { IconFileCode, IconCode, IconFolderOpen, IconCopy, IconSparkles, IconLink } from "@tabler/icons-vue";
 import { ElMessage } from "element-plus";
 import { useBuiltinProviders } from "@/lib/builtinProviders";
-import { modelIcon } from "@toonflow/model-icons";
+import { modelIcon } from "@lumo/model-icons";
 import messageMarkdown from "@/components/messageMarkdown.vue";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
-import type { MediaProvider } from "@toonflow/provider-web/types";
+import { invalidateNodeModels } from "@lumo/nodes-scaffold/nodeAi";
+import type { MediaProvider } from "@lumo/provider-web/types";
 import { providerPrompt } from "./providerPrompt";
 import { modelChoices, saveSettings } from "@/stores/settings";
 import { writeClipboardText } from "@/lib/clipboard";
@@ -209,7 +209,7 @@ async function loadSource(fileName: string) {
   loadingSource.value = true;
   try {
     const { data } = await axios.get<{ code: number; data: { source: string; revision: string }; message?: string }>("/api/providers/media/source", {
-      params: { fileName }, headers: { "x-toonflow-workspace": "1" }, signal: controller.signal,
+      params: { fileName }, headers: { "x-lumo-workspace": "1" }, signal: controller.signal,
     });
     if (controller.signal.aborted) return;
     if (data.code !== 200 || !data.data) throw new Error(data.message || "读取供应商代码失败");
@@ -278,7 +278,7 @@ async function addProvider() {
     if (provider) {
       const response = await withTerminalConfirm(allowTerminal => axios.put<{ code: number; data: MediaProvider; message?: string }>("/api/providers/media/save", {
         fileName: provider.fileName, revision: revision.value, source: code.value, allowTerminal,
-      }, { headers: { "x-toonflow-workspace": "1" } }));
+      }, { headers: { "x-lumo-workspace": "1" } }));
       if (!response) return;
       const { data } = response;
       if (data.code !== 200 || !data.data) throw new Error(data.message || "保存供应商代码失败");

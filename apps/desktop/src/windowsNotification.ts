@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { resolve } from "node:path";
-import type { DesktopRuntime } from "@toonflow/server/desktop";
+import type { DesktopRuntime } from "@lumo/server/desktop";
 
 const execFileAsync = promisify(execFile);
 

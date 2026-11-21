@@ -24,11 +24,11 @@ import { computed, onMounted, onScopeDispose, ref, watch } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
 import { ElButton, ElOption, ElOptionGroup, ElPopover, ElSelect } from "element-plus";
 import { IconSparkles } from "@tabler/icons-vue";
-import { getNodeModelKey, useNodeAi, useNodeModelSelection, useNodeToolsContext, type NodeMediaModel, type NodeMediaValue } from "@toonflow/nodes-scaffold/runtime";
-import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
-import modelLabel from "@toonflow/node-shared/modelLabel";
-import modelSelect from "@toonflow/node-shared/modelSelect";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
+import { getNodeModelKey, useNodeAi, useNodeModelSelection, useNodeToolsContext, type NodeMediaModel, type NodeMediaValue } from "@lumo/nodes-scaffold/runtime";
+import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
+import modelLabel from "@lumo/node-shared/modelLabel";
+import modelSelect from "@lumo/node-shared/modelSelect";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
 import { useImageVariationNode } from "../useImageVariationNode";
 
 const props = defineProps<{

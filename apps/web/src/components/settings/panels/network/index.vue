@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
@@ -104,7 +104,7 @@ async function testNetwork() {
   testLatency.value = null;
   try {
     const { data } = await axios.post<{ code: number; data: { latency: number }; message?: string }>(
-      "/api/settings/network/test", { network: readForm() }, { headers: { "x-toonflow-workspace": "1" }, signal: controller.signal },
+      "/api/settings/network/test", { network: readForm() }, { headers: { "x-lumo-workspace": "1" }, signal: controller.signal },
     );
     if (data.code !== 200) throw new Error(data.message || "代理连接测试失败");
     testLatency.value = Math.round(data.data.latency);

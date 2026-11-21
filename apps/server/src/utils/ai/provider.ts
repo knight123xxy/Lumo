@@ -48,26 +48,26 @@ export const providerSchema = z.object({
 });
 
 export const accountProviderSchema = providerSchema.extend({
-  id: z.enum(["Toonflow", "toonflow"]), label: z.string().min(1), apiKey: z.literal(""),
+  id: z.enum(["Lumo", "lumo"]), label: z.string().min(1), apiKey: z.literal(""),
   token: z.string().trim().min(1).max(16384).optional(),
   icon: z.string().optional(), version: z.string().optional(),
 });
 
 export function getAccountToken() {
-  const account = conf.get("settings", {}).toonflowAccount as { token?: unknown } | null | undefined;
+  const account = conf.get("settings", {}).lumoAccount as { token?: unknown } | null | undefined;
   return typeof account?.token === "string" ? account.token.trim() : "";
 }
 
 export function getAccountProvider() {
   const accountToken = getAccountToken();
-  const parsed = accountProviderSchema.safeParse(conf.get("settings", {}).toonflowProvider);
+  const parsed = accountProviderSchema.safeParse(conf.get("settings", {}).lumoProvider);
   return accountToken && parsed.success && parsed.data.token ? { ...parsed.data, apiKey: parsed.data.token } : undefined;
 }
 
 export function getConfiguredProviders() {
   const providers = conf.get("settings", {}).customProviders;
   const account = getAccountProvider();
-  return [...(account ? [account] : []), ...(Array.isArray(providers) ? providers.filter(item => typeof item?.id !== "string" || item.id.toLowerCase() !== "toonflow") : [])];
+  return [...(account ? [account] : []), ...(Array.isArray(providers) ? providers.filter(item => typeof item?.id !== "string" || item.id.toLowerCase() !== "lumo") : [])];
 }
 
 const builtinModels: Model<KnownApi>[] = getBuiltinProviders().flatMap(provider => getBuiltinModels(provider));

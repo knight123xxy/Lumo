@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import type { LifeAnchor, LifeGroup, SceneLife } from "./lifeDocument";
 import type { SceneObject, SceneObjectGroup } from "./sceneDocument";
 import { skeletalMotionSchema } from "./skeletalMotion";

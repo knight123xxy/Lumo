@@ -1,5 +1,5 @@
 import { z } from "zod";
-export type { CanvasToolCall, CanvasInfo, CanvasContext } from "@toonflow/tools-scaffold/runtime";
+export type { CanvasToolCall, CanvasInfo, CanvasContext } from "@lumo/tools-scaffold/runtime";
 
 const additionalNodeToolNames = z.array(z.string().regex(/^[a-z][a-zA-Z0-9]{0,63}$/, "名称需以小写字母开头，只能包含字母和数字，最多 64 个字符")).max(100, "每类最多追加 100 个工具名称").default([]);
 export const nodeToolPermissionsSchema = z.strictObject({

@@ -11,7 +11,7 @@ import { createFileTransport, FileRequestLimitError } from "@/utils/ai/files";
 import { getConfiguredProviders, portableTools, publicAiMessage } from "@/utils/ai";
 import { createBillingUsageTracker } from "@/utils/ai/billingUsage";
 import { modelGateway, requireDirectModelAccess } from "@/utils/multiTenant/gateway";
-import type { ModelOutcome } from "@toonflow/multi-tenant-gateway/types";
+import type { ModelOutcome } from "@lumo/multi-tenant-gateway/types";
 import { getRuntimeModelConfiguration } from "@/agent/runtime/model";
 import { t } from "@/lib/i18n";
 
@@ -48,7 +48,7 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
     }
     if (event.type === "message_start" && event.message.role === "assistant" && event.message.stopReason !== "aborted" && retryMessage) {
       // ACT: 真正开始下一次生成才替换失败片段；退避期间停止仍保留原回复，原始记录与用量不删除。
-      history.appendCustomEntry("toonflowRetriedMessage", { messageId: retryMessage.id });
+      history.appendCustomEntry("lumoRetriedMessage", { messageId: retryMessage.id });
       const { replyTo } = retryMessage;
       retryMessage = undefined;
       onRetry?.(replyTo);
@@ -105,7 +105,7 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
         const provider = configured?.route ? configured.provider : getConfiguredProviders().find(item => item?.id === model.provider);
         const auth = await session.modelRuntime.getAuth(model, { apiKey: options?.apiKey, env: options?.env, signal: options?.signal });
         const apiKey = options?.apiKey ?? auth?.auth.apiKey;
-        if (!configured?.route && model.provider.toLowerCase() === "toonflow" && (!provider || provider.apiKey !== apiKey)) {
+        if (!configured?.route && model.provider.toLowerCase() === "lumo" && (!provider || provider.apiKey !== apiKey)) {
           throw new Error("算力汇 账号已变更，请重新发起请求");
         }
         const files = createFileTransport({
@@ -127,12 +127,12 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
         const messageEntries = new Map(branch.flatMap(entry => entry.type === "message" ? [[contentHash(entry.message), entry.id] as const] : []));
         for (const entry of branch) {
           if (entry.type !== "custom") continue;
-          if (entry.customType === "toonflowImageAttachment") {
-            const reference = getAgentImageReference({ type: "text", text: "", toonflowImage: entry.data });
+          if (entry.customType === "lumoImageAttachment") {
+            const reference = getAgentImageReference({ type: "text", text: "", lumoImage: entry.data });
             if (!reference) throw new Error("历史图片附件记录无效");
             references.set(reference.id, reference);
           }
-          if (entry.customType === "toonflowImageOffload") {
+          if (entry.customType === "lumoImageOffload") {
             const data = entry.data as { images?: unknown; thinking?: unknown } | null;
             if (!data || !Array.isArray(data.images) || !data.images.every(id => typeof id === "string")
               || !Array.isArray(data.thinking) || !data.thinking.every(id => typeof id === "string")) throw new Error("历史图片卸载记录无效");
@@ -151,7 +151,7 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
             .map(contentHash).filter(key => !invalidThinking.has(key));
           if (!images.length && !thinking.length) return false;
           options?.signal?.throwIfAborted();
-          history.appendCustomEntry("toonflowImageOffload", { images, thinking });
+          history.appendCustomEntry("lumoImageOffload", { images, thinking });
           for (const id of images) offloaded.add(id);
           for (const key of thinking) invalidThinking.add(key);
           return true;
@@ -171,15 +171,15 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
             const content: (TextContent | ImageContent)[] = [];
             for (const [index, part] of message.content.entries()) {
               let reference = getAgentImageReference(part);
-              if ("toonflowImage" in part && !reference) throw new Error("图片附件引用无效");
+              if ("lumoImage" in part && !reference) throw new Error("图片附件引用无效");
               if (part.type === "image") {
                 const entryId = messageEntries.get(contentHash(message)) ?? contentHash(message);
                 const id = `legacy:${entryId}:${index}`;
                 reference = references.get(id);
                 if (!reference) {
                   const saved = await saveAgentImage(cwd, part, id, options?.signal);
-                  reference = saved.toonflowImage;
-                  history.appendCustomEntry("toonflowImageAttachment", reference);
+                  reference = saved.lumoImage;
+                  history.appendCustomEntry("lumoImageAttachment", reference);
                   references.set(id, reference);
                   // 附件路径文本也改变历史前缀；首次迁移时退出旧 thinking 链，后续新 thinking 正常保留。
                   if (context.messages.slice(messageIndex + 1).some(item => item.role === "assistant")) recordOffload([]);
@@ -262,11 +262,11 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
                   if (!image.id) imageCursors.set(imageKey, cursor + 1);
                   const fromContext = !image.id && Boolean(reference);
                   if (!reference) {
-                    if (!image.id) throw new Error("onPayload 注入的图片必须提供稳定的 toonflowImageId，每次重新观察图片时使用新 ID");
+                    if (!image.id) throw new Error("onPayload 注入的图片必须提供稳定的 lumoImageId，每次重新观察图片时使用新 ID");
                     const saved = await saveAgentImage(cwd, { type: "image", data: image.data, mimeType: image.mimeType }, image.id, options?.signal);
                     streamSignal.throwIfAborted();
-                    reference = saved.toonflowImage;
-                    history.appendCustomEntry("toonflowImageAttachment", reference);
+                    reference = saved.lumoImage;
+                    history.appendCustomEntry("lumoImageAttachment", reference);
                     references.set(image.id, reference);
                     const fixed = await readImage(reference);
                     if ((fixed.data !== image.data || fixed.mimeType !== image.mimeType || reference.note) && hasLaterAssistant(image.id)) {

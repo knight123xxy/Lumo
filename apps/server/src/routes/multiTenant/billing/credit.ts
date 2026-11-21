@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { billingCreditSchema } from "@toonflow/multi-tenant-billing/config";
+import { billingCreditSchema } from "@lumo/multi-tenant-billing/config";
 import u from "@/utils";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";

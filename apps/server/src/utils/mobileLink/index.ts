@@ -6,7 +6,7 @@ import type { Socket } from "node:net";
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { hostname, networkInterfaces } from "node:os";
 import { isAbsolute, posix } from "node:path";
-import { realpath, stat } from "@toonflow/file";
+import { realpath, stat } from "@lumo/file";
 import conf from "@/utils/conf";
 import { errorFromCause } from "@/lib/responseFormat";
 import { isEnabled } from "@/utils/multiTenant/mode";
@@ -51,7 +51,7 @@ export function assertMobileLinkControl(req: Request) {
   const localSocket = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "");
   const localHost = ["localhost", "127.0.0.1", "[::1]"].includes(req.hostname);
   if (isMobileLinkRequest(req) || !localSocket || !localHost || !sameOrigin ||
-    (req.get("x-toonflow-mobile-link") !== "1" && req.get("x-toonflow-workspace") !== "1")) {
+    (req.get("x-lumo-mobile-link") !== "1" && req.get("x-lumo-workspace") !== "1")) {
     throw Object.assign(new Error("只允许本机 Lumo 页面管理设备互联"), { status: 403 });
   }
   if (!getRuntime(req.app).supported) throw Object.assign(new Error("当前运行环境不支持共享后端"), { status: 403 });
@@ -109,12 +109,12 @@ async function listen(app: Application, port: number) {
     if (path === "/api/desktop" || path.startsWith("/api/desktop/") || (!heartbeat && (path === "/api/mobilelink" || path.startsWith("/api/mobilelink/")))) {
       throw Object.assign(new Error("共享连接不能访问本机管理接口"), { status: 403 });
     }
-    const token = req.get("x-toonflow-device-token") ?? "";
+    const token = req.get("x-lumo-device-token") ?? "";
     const device = token.length >= 32 && token.length <= 128 && getMobileLinkConfig().devices.find(item => matchesHash(token, item.tokenHash));
     if (!device) throw Object.assign(new Error("设备未配对或授权已撤销"), { status: 401 });
     Object.defineProperty(res.locals, deviceKey, { value: device.id });
     const lastSeen = getRuntime(app).lastSeen;
-    const version = req.get("x-toonflow-app-version");
+    const version = req.get("x-lumo-app-version");
     const appVersion = version && /^[\w.+-]{1,64}$/.test(version) ? version : undefined;
     lastSeen.set(device.id, { at: Date.now(), appVersion: heartbeat ? appVersion : lastSeen.get(device.id)?.appVersion });
     listener.sockets.get(req.socket)?.add(device.id);
@@ -220,7 +220,7 @@ export function createMobilePairing(app: Application, source: string) {
   const code = randomBytes(32).toString("base64url");
   const manualCode = randomInt(1_000_000_000_000).toString().padStart(12, "0");
   runtime.pairing = { codeHash: digest(code), manualCodeHash: digest(manualCode), manualAttempts: 0, manualWindowStartedAt: Date.now() };
-  return { qrCode: JSON.stringify({ type: "toonflowMobile", version: 1, appVersion: app.locals.appVersion, url: url.origin, name: hostname(), code }), manualCode, url: url.origin };
+  return { qrCode: JSON.stringify({ type: "lumoMobile", version: 1, appVersion: app.locals.appVersion, url: url.origin, name: hostname(), code }), manualCode, url: url.origin };
 }
 
 export function pairMobileDevice(req: Request, code: string, name: string) {

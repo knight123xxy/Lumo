@@ -61,13 +61,13 @@
 </template>
 
 <script setup lang="ts">
-import { locale, translate } from "@toonflow/i18n/vue";
+import { locale, translate } from "@lumo/i18n/vue";
 import { computed, inject, onBeforeUnmount, reactive, ref, watch } from "vue";
 import axios from "axios";
 import { IconCornerDownRight, IconListDetails, IconLoader2, IconPencil, IconTrash } from "@tabler/icons-vue";
 import { ElMessage } from "element-plus";
-import { getReadableFileExtension, getReadableFileMimeType } from "@toonflow/server/documentFormats";
-import { useNodeModelSelection } from "@toonflow/nodes-scaffold/nodeAi";
+import { getReadableFileExtension, getReadableFileMimeType } from "@lumo/server/documentFormats";
+import { useNodeModelSelection } from "@lumo/nodes-scaffold/nodeAi";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { onAgentStopped, stopAgent } from "@/lib/agentControl";
 import { writeClipboardText } from "@/lib/clipboard";
@@ -76,10 +76,10 @@ import anonymousData from "@/lib/anonymousData";
 import { modelChoices, refreshModelChoices } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
 import type { AgentAttachment, AgentConversation, AgentMessage } from "./types";
-import type { AgentEvent, AgentQueue, AgentQueuedMessage } from "@toonflow/server/agent/types";
+import type { AgentEvent, AgentQueue, AgentQueuedMessage } from "@lumo/server/agent/types";
 import { createConversationStream, createReplyStream, readAgentEvents } from "./replyStream";
 import { mentionPlainText } from "./mentionText";
-import type { CanvasContext } from "@toonflow/tool-canvas/runtime";
+import type { CanvasContext } from "@lumo/tool-canvas/runtime";
 import messageList from "./conversation/messageList.vue";
 import messageInput from "./conversation/messageInput.vue";
 
@@ -235,7 +235,7 @@ async function sendQueuedMessage(streamingBehavior: "steer" | "followUp") {
     if (!currentModel) throw new Error("请先选择模型");
     const response = await fetch("/api/agent", {
       method: "POST",
-      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body: JSON.stringify({ prompt, directory, sessionFile, runId: requestRunId, expectedRunId,
         providerId: currentModel.providerId, modelId: currentModel.modelId, thinkingLevel: reasoningEffort.value || undefined, streamingBehavior }),
       signal: requestController.signal,
@@ -258,7 +258,7 @@ async function sendQueuedMessage(streamingBehavior: "steer" | "followUp") {
       if ((error as { terminal?: boolean })?.terminal && !controller && !busy.value && runId === expectedRunId) {
         try {
           const { data } = await axios.get<{ code: number; data: AgentConversation; message?: string }>("/api/agent/get", {
-            params: { directory, sessionFile }, headers: { "x-toonflow-workspace": "1" }, signal: requestController.signal, timeout: 10000,
+            params: { directory, sessionFile }, headers: { "x-lumo-workspace": "1" }, signal: requestController.signal, timeout: 10000,
           });
           if (data.code !== 200) throw new Error(data.message || "读取对话失败");
           const session = data.data;
@@ -320,7 +320,7 @@ async function updateQueuedMessage(message: AgentQueuedMessage, action: "steer" 
       url: action === "steer" ? "/api/agent/queue/steer" : "/api/agent/queue",
       method: action === "steer" ? "POST" : "DELETE",
       data: { directory, sessionFile: props.sessionFile, runId: queueRunId, messageId: message.id },
-      headers: { "x-toonflow-workspace": "1" },
+      headers: { "x-lumo-workspace": "1" },
       timeout: 10000,
     });
     if (data.code !== 200) throw new Error(data.message || "操作排队消息失败");
@@ -354,7 +354,7 @@ async function deleteMessage(item: AgentMessage) {
           directory, sessionFile: props.sessionFile,
           ...(item.replyTo ? { replyTo: item.replyTo } : { entryIds: [item.entryId!] }),
         },
-        headers: { "x-toonflow-workspace": "1" },
+        headers: { "x-lumo-workspace": "1" },
       });
       if (data.code !== 200) throw new Error(data.message || "删除消息失败");
       stats.value = data.data.stats;
@@ -455,7 +455,7 @@ async function sendCanvasResult(event: Extract<AgentEvent, { type: "canvasCall" 
   try {
     const response = await fetch("/api/agent/canvasResult", {
       method: "POST",
-      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body,
       keepalive: cancelled,
       signal: cancelled ? AbortSignal.timeout(5000) : signal,
@@ -533,7 +533,7 @@ async function sendMessage(source?: AgentMessage) {
     pendingRunIds.add(requestRunId);
     const response = await fetch("/api/agent", {
       method: "POST",
-      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body: JSON.stringify({ prompt, mentions, attachments: attachments.map(({ name, path, mimeType }) => ({ name, path, mimeType })), directory, runId: requestRunId, providerId: currentModel.providerId, modelId: currentModel.modelId, thinkingLevel: reasoningEffort.value || undefined, sessionFile: props.sessionFile, resendFrom, canvas: canvasContext ? { id: canvasContext.id, tools: canvasContext.tools } : undefined }),
       signal: requestController.signal,
     });
@@ -577,8 +577,8 @@ async function sendMessage(source?: AgentMessage) {
           const result = JSON.parse(toolEvent.tool.result);
           if (result.installed === true) {
             const { type, name } = result;
-            window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type, name } }));
-            if (type === "ext") window.dispatchEvent(new CustomEvent("toonflow:ext-updated", { detail: { name } }));
+            window.dispatchEvent(new CustomEvent("lumo:plugin-installed", { detail: { type, name } }));
+            if (type === "ext") window.dispatchEvent(new CustomEvent("lumo:ext-updated", { detail: { name } }));
           }
         }
       }
@@ -682,7 +682,7 @@ async function sendMessage(source?: AgentMessage) {
     // ACT: Bun 的流断开事件可能不触发；主动结束仍在等待的提问，不依赖断开通知。
     for (const callId of pendingQuestions.values()) {
       void fetch("/api/agent/answer", {
-        method: "POST", headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+        method: "POST", headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
         body: JSON.stringify({ directory, callId, cancelled: true }), keepalive: true,
       }).catch(() => {});
     }

@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, onUnmounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";

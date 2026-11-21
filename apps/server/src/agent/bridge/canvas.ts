@@ -1,7 +1,7 @@
-import { canvasOperations } from "@toonflow/tool-canvas/runtime";
+import { canvasOperations } from "@lumo/tool-canvas/runtime";
 import { pluginDevelopmentSchema } from "@/lib/pluginDevelopment";
-import type { CanvasInfo, CanvasContext } from "@toonflow/tools-scaffold/runtime";
-import { asrRequestSchema } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasInfo, CanvasContext } from "@lumo/tools-scaffold/runtime";
+import { asrRequestSchema } from "@lumo/tools-scaffold/runtime";
 import type { AgentEvent } from "@/agent/runtime/types";
 
 type CanvasResult = { result?: unknown; error?: string; cancelled?: boolean; unavailable?: boolean };

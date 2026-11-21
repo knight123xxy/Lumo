@@ -1,5 +1,5 @@
-import { existsSync, mkdir, writeAtomic } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import { existsSync, mkdir, writeAtomic } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { resolve } from "node:path";
 
 const runtimeRoot = resolve(import.meta.dir, "../../build/ohos/runtime");

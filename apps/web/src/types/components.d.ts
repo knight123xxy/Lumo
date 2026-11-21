@@ -156,7 +156,7 @@ declare module 'vue' {
     SubAccounts: typeof import('./../components/settings/panels/account/subAccounts.vue')['default']
     TaskRecords: typeof import('./../components/settings/panels/account/taskRecords.vue')['default']
     ToolMessage: typeof import('./../components/agent/toolMessage.vue')['default']
-    ToonflowProviderCard: typeof import('./../components/settings/toonflowProviderCard.vue')['default']
+    LumoProviderCard: typeof import('./../components/settings/lumoProviderCard.vue')['default']
     Ui: typeof import('./../components/settings/panels/general/ui.vue')['default']
     UpdateBox: typeof import('./../components/updateBox.vue')['default']
     VideoPlayer: typeof import('./../components/videoPlayer.vue')['default']

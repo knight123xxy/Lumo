@@ -19,12 +19,12 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { t } from "@toonflow/i18n/vue";
+import { t } from "@lumo/i18n/vue";
 import axios from "axios";
 import { IconAt, IconFile } from "@tabler/icons-vue";
-import type { AgentMention } from "@toonflow/server/agent/types";
+import type { AgentMention } from "@lumo/server/agent/types";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 import { mentionName, mentionParts, mentionThumbnailProps } from "./mentionText";
 import mentionThumbnail from "./mentionThumbnail.vue";
 

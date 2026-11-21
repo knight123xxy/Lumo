@@ -1,7 +1,7 @@
 import { msg, t, translateError } from "@/lib/i18n";
-import { messageError } from "@toonflow/i18n/errors";
+import { messageError } from "@lumo/i18n/errors";
 import { once } from "node:events";
-import { existsSync, readFileSync, rmSync, writeAtomicSync } from "@toonflow/file";
+import { existsSync, readFileSync, rmSync, writeAtomicSync } from "@lumo/file";
 import { createServer, type Server } from "node:http";
 import { dirname, resolve } from "node:path";
 import type { Socket } from "node:net";

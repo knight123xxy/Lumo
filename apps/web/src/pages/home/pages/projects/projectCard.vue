@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { IconDotsVertical, IconFolderOpen } from "@tabler/icons-vue";
-import { locale, translate } from "@toonflow/i18n/vue";
+import { locale, translate } from "@lumo/i18n/vue";
 import type { Project } from "@/stores/workspace";
 import projectCover from "./projectCover.vue";
 

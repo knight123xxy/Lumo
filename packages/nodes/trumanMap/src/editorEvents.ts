@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { sceneAtmosphereSchema, sceneLightingSchema, sceneTimeSchema, sceneWeatherLayersSchema } from "./sceneValidation";
 import type { SceneDocument } from "./sceneDocument";
 import { exportItemKeys } from "./exportBundle";

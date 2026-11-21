@@ -1,9 +1,9 @@
 import { createApp, watch, type App } from "vue";
 import { createPinia } from "pinia";
 import { createPersistedState } from "pinia-plugin-persistedstate";
-import type { UserSession } from "@toonflow/multi-tenant-user-web/types";
+import type { UserSession } from "@lumo/multi-tenant-user-web/types";
 import { actualPlatform } from "@/lib/platform";
-import { pluginServerKey } from "@toonflow/plugin-server/vue";
+import { pluginServerKey } from "@lumo/plugin-server/vue";
 import { createPluginServerHost } from "@/lib/pluginServer";
 
 export async function createCreationApp(session: UserSession): Promise<App<Element>> {

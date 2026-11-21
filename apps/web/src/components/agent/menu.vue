@@ -87,7 +87,7 @@
 import { nextTick, ref, watch } from "vue";
 import { ElMessageBox, type InputInstance } from "element-plus";
 import type { AgentHistory } from "./types";
-import type { AgentSubAgent } from "@toonflow/server/agent/types";
+import type { AgentSubAgent } from "@lumo/server/agent/types";
 import nodeToolsDialog from "./nodeToolsDialog.vue";
 import {
   IconMessagePlus, IconHistory,

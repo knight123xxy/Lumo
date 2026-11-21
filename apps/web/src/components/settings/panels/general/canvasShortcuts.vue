@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { IconRestore, IconChevronDown, IconChevronUp, IconKeyboard, IconEdit, IconHandTwoFingers, IconMouse } from "@tabler/icons-vue";
 import { generalSettings, updateGeneralSettings } from "@/stores/settings";
 import { canvasShortcutFields, defaultCanvasShortcuts, getShortcutBindings, isShortcutAllowed, normalizeShortcut, type CanvasShortcutAction } from "@/lib/canvasShortcuts";

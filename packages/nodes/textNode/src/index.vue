@@ -55,16 +55,16 @@
 import { computed, inject, onMounted, ref, watch } from "vue";
 import { ElAlert, ElButton, ElCard, ElDialog, ElOption, ElOptionGroup, ElMessage, ElMessageBox } from "element-plus";
 import { IconEdit, IconFileText, IconSparkles, IconArrowUp } from "@tabler/icons-vue";
-import { getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelSelection, z, type NodeAiModel, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
-import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
-import modelLabel from "@toonflow/node-shared/modelLabel";
-import modelSelect from "@toonflow/node-shared/modelSelect";
-import { useNodeReferences } from "@toonflow/node-shared/useNodeReferences";
+import { getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelSelection, z, type NodeAiModel, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
+import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
+import modelLabel from "@lumo/node-shared/modelLabel";
+import modelSelect from "@lumo/node-shared/modelSelect";
+import { useNodeReferences } from "@lumo/node-shared/useNodeReferences";
 import markdownEditor from "./markdownEditor.vue";
 import markdownPreview from "./markdownPreview.vue";
-import referenceItem from "@toonflow/node-shared/referenceItem";
-import promptInput from "@toonflow/node-shared/promptInput";
-import { useNodeDocumentState, type NodeDocumentContext } from "@toonflow/nodes-scaffold/nodeDocument";
+import referenceItem from "@lumo/node-shared/referenceItem";
+import promptInput from "@lumo/node-shared/promptInput";
+import { useNodeDocumentState, type NodeDocumentContext } from "@lumo/nodes-scaffold/nodeDocument";
 
 type PromptModel = NonNullable<InstanceType<typeof promptInput>["$props"]["modelValue"]>;
 

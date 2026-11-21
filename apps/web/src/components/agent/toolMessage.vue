@@ -27,10 +27,10 @@
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, shallowRef, watch, type Component } from "vue";
-import { getCachedToolComponent, loadToolComponent } from "@toonflow/tools-scaffold/client";
+import { getCachedToolComponent, loadToolComponent } from "@lumo/tools-scaffold/client";
 import { IconChevronDown, IconChevronRight, IconCopy, IconTool } from "@tabler/icons-vue";
 import chatReasoning from "@tdesign-vue-next/chat/es/chat-reasoning";
-import type { AgentToolCall } from "@toonflow/server/agent/types";
+import type { AgentToolCall } from "@lumo/server/agent/types";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 import marketInstallApproval from "./marketInstallApproval.vue";
 

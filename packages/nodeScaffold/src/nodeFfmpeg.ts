@@ -1,7 +1,7 @@
 import { inject, onScopeDispose } from "vue";
-import { createBrowserFfmpeg } from "@toonflow/ffmpeg/browser";
+import { createBrowserFfmpeg } from "@lumo/ffmpeg/browser";
 
-export type { BrowserFfmpegFactory, BrowserFfmpegCommand, BrowserFfmpegOptions, FfprobeData } from "@toonflow/ffmpeg/browser";
+export type { BrowserFfmpegFactory, BrowserFfmpegCommand, BrowserFfmpegOptions, FfprobeData } from "@lumo/ffmpeg/browser";
 
 export function useNodeFfmpeg() {
   const getDirectory = inject<(() => string) | undefined>("workspaceDirectory", undefined);

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { BrowserFfmpegRequest, FfmpegRemoteEvent } from "@toonflow/ffmpeg";
+import type { BrowserFfmpegRequest, FfmpegRemoteEvent } from "@lumo/ffmpeg";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";
 import u from "@/utils";

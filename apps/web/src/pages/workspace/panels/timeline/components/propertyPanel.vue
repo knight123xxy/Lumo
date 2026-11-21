@@ -87,7 +87,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
 import { ElButton, ElInput, ElInputNumber, ElOption, ElSelect, ElSlider, ElSwitch } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import type { ClipFilter, ClipCrop, TimelineClip } from "../timelineTypes";
 
 const props = defineProps<{ clip: TimelineClip | null; busy: boolean }>();

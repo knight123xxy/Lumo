@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import axios from "axios";
 import { computed, ref, shallowRef, toRaw, watch } from "vue";
-import formCreate, { type Api, type Options } from "@toonflow/provider-web/formCreate";
+import formCreate, { type Api, type Options } from "@lumo/provider-web/formCreate";
 import { ElMessage } from "element-plus";
 import type { Plugin } from "./types";
 import { extensionConfig, saveExtensionConfig } from "@/pages/workspace/panels/document/extensions";
@@ -45,11 +45,11 @@ async function saveConfig() {
       await saveExtensionConfig(plugin.name, formApi.value.formData());
       plugin.config = extensionConfig(plugin.name);
     } else {
-      const { data } = await axios.put(`/api/${path}/save`, { name: plugin.name, config: formApi.value.formData() }, { headers: { "x-toonflow-workspace": "1" } });
+      const { data } = await axios.put(`/api/${path}/save`, { name: plugin.name, config: formApi.value.formData() }, { headers: { "x-lumo-workspace": "1" } });
       if (data.code !== 200) throw new Error(data.message || "保存插件配置失败");
       plugin.config = data.data;
     }
-    if (plugin.type === "node") window.dispatchEvent(new Event("toonflow:node-config-updated"));
+    if (plugin.type === "node") window.dispatchEvent(new Event("lumo:node-config-updated"));
     visible.value = false;
     ElMessage.success("插件配置已保存");
   } catch (error) {

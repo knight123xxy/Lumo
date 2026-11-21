@@ -4,7 +4,7 @@ import {
   Shape, SphereGeometry, TorusGeometry, Vector2, Vector3,
 } from "three";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { disposeObject } from "./sceneResources";
 import { validateModel } from "./assetLibrary";
 import { createTubeGeometry, tubeSegments } from "./assetModelParts";
@@ -190,7 +190,7 @@ export function createModelGroup(definition: ModelDefinition, signal?: AbortSign
       const batch = new InstancedMesh(first.geometry, first.material, parts.length);
       modelPartBatches.add(batch);
       batch.name = first.name;
-      batch.userData.toonflowPartNames = parts.map(part => part.name);
+      batch.userData.lumoPartNames = parts.map(part => part.name);
       parts.forEach((part, index) => batch.setMatrixAt(index, part.matrix));
       batch.instanceMatrix.needsUpdate = true;
       group.remove(...parts);

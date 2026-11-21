@@ -254,7 +254,7 @@
                 </el-button>
               </el-badge>
               <el-popconfirm
-                v-if="plugin.author !== 'Toonflow' || plugin.type === 'skill' || plugin.type === 'agent' || plugin.type === 'ext'"
+                v-if="plugin.author !== 'Lumo' || plugin.type === 'skill' || plugin.type === 'agent' || plugin.type === 'ext'"
                 :title="`确定卸载“${plugin.displayName}”${plugin.type === 'skill' ? '及其附属文件' : ''}吗？`"
                 width="280"
                 confirmButtonText="卸载"
@@ -356,16 +356,16 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import parse from "semver/functions/parse";
 import { computed, defineAsyncComponent, markRaw, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { IconBox, IconBook, IconTool, IconFileText, IconExternalLink, IconSparkles2, IconUpload, IconCloudUpload, IconShare, IconStar, IconStarFilled, IconLink, IconSettings, IconCopy } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { toonflowAccountToken as accountToken } from "@/stores/settings";
+import { lumoAccountToken as accountToken } from "@/stores/settings";
 import http from "@/lib/http";
 import videoPlayer from "@/components/videoPlayer.vue";
-import type { Plugin as MarketPlugin } from "@toonflow/server/channel";
+import type { Plugin as MarketPlugin } from "@lumo/server/channel";
 import saveFile from "@/lib/saveFile";
 import { writeClipboardText } from "@/lib/clipboard";
 import pluginConfigDialog from "./pluginConfigDialog.vue";
@@ -458,8 +458,8 @@ const refreshKey = ref(0);
 const refreshInstalled = () => {
   refreshKey.value++;
 };
-onMounted(() => window.addEventListener("toonflow:plugin-installed", refreshInstalled));
-onBeforeUnmount(() => window.removeEventListener("toonflow:plugin-installed", refreshInstalled));
+onMounted(() => window.addEventListener("lumo:plugin-installed", refreshInstalled));
+onBeforeUnmount(() => window.removeEventListener("lumo:plugin-installed", refreshInstalled));
 onBeforeUnmount(() => marketMutationController.abort());
 watch(
   () => [visible, activeTab.value, accountToken.value],
@@ -482,7 +482,7 @@ const selectedSkill = ref<Plugin>();
 const detailsVisible = ref(false);
 const demoVideoFailed = ref(false);
 const messageMarkdown = defineAsyncComponent(() => import("@/components/messageMarkdown.vue"));
-const requestHeaders = { "x-toonflow-workspace": "1" };
+const requestHeaders = { "x-lumo-workspace": "1" };
 
 function getPluginTagStyle(color: string) {
   const backgroundColor = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i.test(color) ? color : "#0052D9";
@@ -826,8 +826,8 @@ async function installMarketPlugin(plugin: Plugin) {
     const { data } = await axios.post(`/api/${path}/install`, { url: plugin.url, fileName: plugin.fileName, version: plugin.version, identifier: plugin.name }, { headers: requestHeaders });
     if (data.code !== 200) throw new Error(data.message || "安装插件失败");
     if (typeof data.data?.name !== "string" || !data.data.name.trim()) throw new Error("安装接口未返回有效的插件名称，请先检查插件列表，确认插件是否已安装。");
-    window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type: plugin.type, name: data.data.name } }));
-    if (plugin.type === "ext") window.dispatchEvent(new CustomEvent("toonflow:ext-updated", { detail: { name: data.data.name } }));
+    window.dispatchEvent(new CustomEvent("lumo:plugin-installed", { detail: { type: plugin.type, name: data.data.name } }));
+    if (plugin.type === "ext") window.dispatchEvent(new CustomEvent("lumo:ext-updated", { detail: { name: data.data.name } }));
     ElMessage.success(action === "更新" ? `${plugin.displayName}已更新` : `${plugin.displayName}已安装`);
   } catch (error) {
     refreshInstalled();
@@ -908,7 +908,7 @@ async function updatePlugin(plugin: Plugin, action: "setEnabled" | "uninstall", 
     loading.value ||
     pendingPlugins.value.has(plugin.key) ||
     exportingPlugins.value.has(plugin.key) ||
-    (action === "uninstall" && plugin.author === "Toonflow" && (plugin.type === "node" || plugin.type === "tool"))
+    (action === "uninstall" && plugin.author === "Lumo" && (plugin.type === "node" || plugin.type === "tool"))
   )
     return;
   pendingPlugins.value.add(plugin.key);
@@ -935,8 +935,8 @@ async function updatePlugin(plugin: Plugin, action: "setEnabled" | "uninstall", 
       ElMessage.success("插件已卸载");
     } else plugin.enabled = enabled;
     if (plugin.type === "node")
-      window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type: plugin.type, name: plugin.name } }));
-    if (plugin.type === "ext") window.dispatchEvent(new CustomEvent("toonflow:ext-updated", { detail: { name: plugin.name } }));
+      window.dispatchEvent(new CustomEvent("lumo:plugin-installed", { detail: { type: plugin.type, name: plugin.name } }));
+    if (plugin.type === "ext") window.dispatchEvent(new CustomEvent("lumo:ext-updated", { detail: { name: plugin.name } }));
   } catch (error) {
     ElMessage.error(errorMessage(error, `${actionLabel}失败，请重试`));
   } finally {

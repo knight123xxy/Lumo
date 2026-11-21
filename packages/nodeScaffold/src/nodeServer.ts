@@ -1,3 +1,3 @@
-export { usePluginServer as useNodeServer } from "@toonflow/plugin-server/vue";
-export { createServerClient } from "@toonflow/plugin-server/client";
-export type { PluginServer } from "@toonflow/plugin-server";
+export { usePluginServer as useNodeServer } from "@lumo/plugin-server/vue";
+export { createServerClient } from "@lumo/plugin-server/client";
+export type { PluginServer } from "@lumo/plugin-server";

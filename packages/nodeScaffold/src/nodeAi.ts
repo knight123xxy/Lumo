@@ -2,7 +2,7 @@ import { computed, inject, onScopeDispose, toValue, watch, type MaybeRefOrGetter
 import { runAgentLoop, type AgentTool, type AgentToolResult } from "@earendil-works/pi-agent-core";
 import { createAssistantMessageEventStream, type AssistantMessage, type Context, type Message, type Model } from "@earendil-works/pi-ai";
 import { EventSourceParserStream } from "eventsource-parser/stream";
-import type { MediaGenerationRequest, MediaModel } from "@toonflow/tools-scaffold/runtime";
+import type { MediaGenerationRequest, MediaModel } from "@lumo/tools-scaffold/runtime";
 import type { NodeOutput } from "./values";
 import { readNodeModels, subscribeNodeModels } from "./modelCatalog";
 export { invalidateNodeModels, readNodeModels, subscribeNodeModels } from "./modelCatalog";
@@ -116,7 +116,7 @@ type MediaPriceCache = {
   prices: Map<string, { expires: number; value: Promise<NodeMediaPrice | null> }>;
   requestedAt: Map<string, number>;
 };
-const mediaPriceCacheKey = Symbol.for("toonflow.nodeMediaPrices");
+const mediaPriceCacheKey = Symbol.for("lumo.nodeMediaPrices");
 const mediaPriceCacheHost = globalThis as typeof globalThis & { [mediaPriceCacheKey]?: MediaPriceCache };
 const mediaPriceCache = mediaPriceCacheHost[mediaPriceCacheKey] ??= (() => {
   const cache: MediaPriceCache = { prices: new Map(), requestedAt: new Map() };
@@ -145,7 +145,7 @@ export type NodeMediaTaskOptions = {
   isCancelled?: () => boolean;
 };
 type PendingMediaTask = { directory: string; failedAt?: number; resume?: boolean; onStatus?: NodeMediaTaskOptions["onStatus"]; finish: (result: MediaTaskResult) => void; fail: (error: unknown) => void };
-const mediaTasksKey = Symbol.for("toonflow.nodeMediaTasks.v2");
+const mediaTasksKey = Symbol.for("lumo.nodeMediaTasks.v2");
 const mediaTasksHost = globalThis as typeof globalThis & { [mediaTasksKey]?: ReturnType<typeof createMediaTasks> };
 // ACT: 图片、视频等独立 UMD 共用短轮询；每批最多 100 项，不按节点占用长连接。
 const mediaTasks = mediaTasksHost[mediaTasksKey] ??= createMediaTasks();
@@ -173,7 +173,7 @@ function createMediaTasks() {
           const waitingTasks = new Map(batch.map(id => [id, pending.get(id)]));
           try {
             const results = await fetch("/api/ai/media/tasks/status", {
-              method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+              method: "POST", headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
               body: JSON.stringify({ directory, taskIds: batch, ...(resume ? { resume: true } : {}) }), signal: AbortSignal.timeout(10000),
             }).then(readResult<NodeMediaTaskStatus[]>);
             const byId = new Map(results.map(result => [result.taskId, result]));
@@ -241,7 +241,7 @@ async function requestModel(input: NodeAiRequest, context: Context, model: Model
   try {
     signal.throwIfAborted();
     const response = await fetch("/api/ai/generate", {
-      method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      method: "POST", headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body: JSON.stringify({ providerId, modelId, context, directory, references, requestId: crypto.randomUUID() }), signal,
     });
     if (!response.ok) await readResult(response);
@@ -346,7 +346,7 @@ export function useNodeAi(options: { onModelsChanged?: () => unknown } = {}) {
       // ACT: 最多缓存 500 条 / 30 秒；参考文件没有前端修订号，只合并进行中的查询，避免同路径覆盖后复用旧价。
       pending.value = fetch("/api/ai/media/price", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+        headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
         body: JSON.stringify(input),
         signal: AbortSignal.timeout(15000),
       }).then(readResult<NodeMediaPrice | null>).then(price => {
@@ -389,7 +389,7 @@ export function useNodeAi(options: { onModelsChanged?: () => unknown } = {}) {
     // 提交使用独立超时；断线或卸载只结束等待，任务仍可按提交前保存的 ID 查询。
     const submitted = fetch("/api/ai/media/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body: JSON.stringify({ ...input, mediaType, taskId, nodeId: options.nodeId, canvasPath: options.canvasPath }), signal: AbortSignal.timeout(30000),
     }).then(response => readResult<{ taskId: string }>(response).catch(error => {
       // 仅标记提交响应的明确拒绝；取消请求和后续状态查询失败不能释放任务身份。
@@ -448,7 +448,7 @@ export function useNodeAi(options: { onModelsChanged?: () => unknown } = {}) {
 
   async function cancelMedia(directory: string, taskId: string) {
     await fetch("/api/ai/media/tasks/cancel", {
-      method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      method: "POST", headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body: JSON.stringify({ directory, taskIds: [taskId] }), signal: AbortSignal.timeout(10000),
     }).then(readResult);
   }

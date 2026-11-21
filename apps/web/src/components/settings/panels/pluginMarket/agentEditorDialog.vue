@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -40,7 +40,7 @@ const readme = ref("");
 const files = ref<{ path: string; content: string; original: string }[]>([]);
 const selectedPath = ref("");
 const selectedFile = computed(() => files.value.find(file => file.path === selectedPath.value));
-const headers = { "x-toonflow-workspace": "1" };
+const headers = { "x-lumo-workspace": "1" };
 const controller = new AbortController();
 onBeforeUnmount(() => controller.abort());
 onMounted(async () => {

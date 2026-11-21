@@ -1,4 +1,4 @@
-import { writeFileSync } from "@toonflow/file";
+import { writeFileSync } from "@lumo/file";
 import { resolve } from "node:path";
 import { formatWithOptions } from "node:util";
 

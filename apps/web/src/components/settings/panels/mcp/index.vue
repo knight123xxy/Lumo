@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, onMounted, ref, watch } from "vue";
 import axios from "axios";
 import { ElMessage, type InputInstance } from "element-plus";
@@ -89,7 +89,7 @@ type McpStatus = {
   error: string | null;
 };
 
-const headers = { "x-toonflow-workspace": "1" };
+const headers = { "x-lumo-workspace": "1" };
 const mcpSettings = computed(() => {
   const raw = settings.value.mcp;
   const value = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
@@ -179,7 +179,7 @@ async function copyConfig(transport: "http" | "stdio") {
     headers: { Authorization: `Bearer ${mcpSettings.value.token}` },
   };
   if (!config) return;
-  await copyText(JSON.stringify({ mcpServers: { toonflow: config } }, null, 2), translate("MCP 配置"), transport === "http");
+  await copyText(JSON.stringify({ mcpServers: { lumo: config } }, null, 2), translate("MCP 配置"), transport === "http");
 }
 
 async function copyText(content: string, title: string, hasCredential = false) {

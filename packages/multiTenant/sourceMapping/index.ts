@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { openDatabase } from "@toonflow/multi-tenant-db";
-import type { AdminDatabase } from "@toonflow/multi-tenant-db";
+import { openDatabase } from "@lumo/multi-tenant-db";
+import type { AdminDatabase } from "@lumo/multi-tenant-db";
 import { getDefaultSourceMapping, sourceMappingRevisionSchema, sourceMappingSchema } from "./config";
 import type { SourceMapping, SourceMappingSnapshot } from "./config";
 

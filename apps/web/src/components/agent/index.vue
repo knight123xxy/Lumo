@@ -39,13 +39,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch, type ComponentPublicInstance } from "vue";
 import axios from "axios";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { ElMessage } from "element-plus";
 import { useWorkspaceStore } from "@/stores/workspace";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { stopAgent } from "@/lib/agentControl";
 import type { AgentConversation, AgentHistory, AgentMessage } from "./types";
-import type { AgentEvent, AgentSubAgent } from "@toonflow/server/agent/types";
+import type { AgentEvent, AgentSubAgent } from "@lumo/server/agent/types";
 import agentMenu from "./menu.vue";
 import conversation from "./conversation.vue";
 
@@ -197,7 +197,7 @@ async function newConversation(source?: { file?: string; message: AgentMessage }
     const { data } = await axios.post<{ code: number; data: AgentConversation; message?: string }>(source ? "/api/agent/branch" : "/api/agent/create", {
       directory,
       ...(source ? { sessionFile: source.file, ...(source.message.entryId ? { entryId: source.message.entryId } : { replyTo: source.message.replyTo }) } : {}),
-    }, { headers: { "x-toonflow-workspace": "1" } });
+    }, { headers: { "x-lumo-workspace": "1" } });
     if (data.code !== 200) throw new Error(data.message || errorMessage);
     if (currentRequest !== requestId) return;
     const session = data.data;
@@ -218,7 +218,7 @@ async function newConversation(source?: { file?: string; message: AgentMessage }
 
 async function readConversation(directory: string, file: string) {
   const { data } = await axios.get<{ code: number; data: AgentConversation; message?: string }>("/api/agent/get", {
-    params: { directory, sessionFile: file }, headers: { "x-toonflow-workspace": "1" },
+    params: { directory, sessionFile: file }, headers: { "x-lumo-workspace": "1" },
   });
   if (data.code !== 200) throw new Error(data.message || "读取对话失败");
   return data.data;
@@ -232,7 +232,7 @@ async function loadHistory(openLatest = false) {
   loading.value = openLatest;
   try {
     const { data } = await axios.get<{ code: number; data: AgentHistory[]; message?: string }>("/api/agent/list", {
-      params: { directory }, headers: { "x-toonflow-workspace": "1" },
+      params: { directory }, headers: { "x-lumo-workspace": "1" },
     });
     if (data.code !== 200) throw new Error(data.message || "读取历史对话失败");
     if (currentRequest !== requestId) return;
@@ -289,7 +289,7 @@ async function renameConversation(file: string, value: string) {
   try {
     const { data } = await axios.patch<{ code: number; data: { name: string }; message?: string }>("/api/agent/rename", {
       directory, sessionFile: file, name: nextName,
-    }, { headers: { "x-toonflow-workspace": "1" } });
+    }, { headers: { "x-lumo-workspace": "1" } });
     if (data.code !== 200) throw new Error(data.message || "重命名对话失败");
     if (currentRequest !== requestId) return;
     if (item) item.name = data.data.name;

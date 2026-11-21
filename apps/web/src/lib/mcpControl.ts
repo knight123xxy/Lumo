@@ -1,8 +1,8 @@
-import { locale } from "@toonflow/i18n/vue";
+import { locale } from "@lumo/i18n/vue";
 import { onScopeDispose, shallowRef, watch, type WatchSource } from "vue";
 import { useRouter } from "vue-router";
-import type { NodeToolInfo } from "@toonflow/tools-scaffold/runtime";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
+import type { NodeToolInfo } from "@lumo/tools-scaffold/runtime";
+import { invalidateNodeModels } from "@lumo/nodes-scaffold/nodeAi";
 import { saveSettings, settings } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { confirmPluginInstall } from "@/lib/pluginInstallConfirmation";
@@ -78,7 +78,7 @@ export function useMcpControl() {
       const connectionId = crypto.randomUUID();
       const connection = new AbortController();
       const signal = AbortSignal.any([lifetime.signal, connection.signal]);
-      const headers = { Authorization: `Bearer ${token}`, "x-toonflow-workspace": "1" };
+      const headers = { Authorization: `Bearer ${token}`, "x-lumo-workspace": "1" };
       let revision = 0;
       async function post(path: "state" | "result", body: object, callSignal?: AbortSignal) {
         const response = await fetch(`/api/mcp/control/${path}`, {
@@ -135,8 +135,8 @@ export function useMcpControl() {
               });
               invalidateNodeModels("media");
             }
-            window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type, name: typeof name === "string" ? name : "" } }));
-            if (type === "ext" && typeof name === "string") window.dispatchEvent(new CustomEvent("toonflow:ext-updated", { detail: { name } }));
+            window.dispatchEvent(new CustomEvent("lumo:plugin-installed", { detail: { type, name: typeof name === "string" ? name : "" } }));
+            if (type === "ext" && typeof name === "string") window.dispatchEvent(new CustomEvent("lumo:ext-updated", { detail: { name } }));
             result = { refreshed: true };
           } else if (request.name === "openProject") {
             const directory = request.args.directory;

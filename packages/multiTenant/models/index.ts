@@ -1,5 +1,5 @@
-import { openDatabase } from "@toonflow/multi-tenant-db";
-import type { AdminDatabase } from "@toonflow/multi-tenant-db";
+import { openDatabase } from "@lumo/multi-tenant-db";
+import type { AdminDatabase } from "@lumo/multi-tenant-db";
 import { z } from "zod";
 import { modelProvidersSchema, modelRoutesSchema, modelRoutingRevisionSchema } from "./config";
 import type { ModelProvider, ModelRoute, ModelRoutingSnapshot } from "./config";

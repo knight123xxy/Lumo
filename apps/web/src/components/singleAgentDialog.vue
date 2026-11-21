@@ -54,7 +54,7 @@
 </template>
 
 <script lang="ts">
-import type { SingleAgentToolDescriptor, SingleAgentToolReference, SingleAgentToolResult, SingleAgentResult } from "@toonflow/server/singleAgent/types";
+import type { SingleAgentToolDescriptor, SingleAgentToolReference, SingleAgentToolResult, SingleAgentResult } from "@lumo/server/singleAgent/types";
 import type { AgentMessage } from "./agent/types";
 
 export type SingleAgentTool = SingleAgentToolReference | (SingleAgentToolDescriptor & {
@@ -65,14 +65,14 @@ export type SingleAgentDialogResult = SingleAgentResult & { messages: AgentMessa
 
 <script setup lang="ts">
 import axios from "axios";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, nextTick, onBeforeUnmount, reactive, ref, useSlots, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { IconArrowUp, IconChevronRight, IconPlayerPause, IconPlayerPlay, IconPlayerStopFilled } from "@tabler/icons-vue";
-import type { SingleAgentEvent } from "@toonflow/server/singleAgent/types";
-import type { ThinkingLevel } from "@toonflow/server/modelReasoning";
-import type { ToolCall } from "@toonflow/tools-scaffold/runtime";
-import { useNodeModelSelection } from "@toonflow/nodes-scaffold/nodeAi";
+import type { SingleAgentEvent } from "@lumo/server/singleAgent/types";
+import type { ThinkingLevel } from "@lumo/server/modelReasoning";
+import type { ToolCall } from "@lumo/tools-scaffold/runtime";
+import { useNodeModelSelection } from "@lumo/nodes-scaffold/nodeAi";
 import modelPopover from "@/components/modelPopover.vue";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 import toolMessage from "./agent/toolMessage.vue";
@@ -111,7 +111,7 @@ const messageList = ref<HTMLElement>();
 const tools = computed<ToolCall[]>(() => msgList.value.flatMap(message => message.parts?.flatMap(part => part.type === "tool" ? [part.tool] : []) ?? []));
 const reasoningEffort = computed({ get: () => thinkingLevel.value ?? "", set: (value: string) => { thinkingLevel.value = value ? value as ThinkingLevel : undefined; } });
 const statusLabels = { idle: "", running: "执行中", pausing: "等待当前操作结束…", paused: "已暂停，可人工操作" };
-const requestHeaders = { "x-toonflow-workspace": "1" };
+const requestHeaders = { "x-lumo-workspace": "1" };
 let lifecycle = new AbortController();
 let turnController: AbortController | undefined;
 let turnId: string | undefined;

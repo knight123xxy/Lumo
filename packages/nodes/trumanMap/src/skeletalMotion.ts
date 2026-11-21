@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { Bone, Box3, Euler, Group, MathUtils, Matrix4, Quaternion, SkinnedMesh, Sphere, Vector3 } from "three";
 import type { Object3D } from "three";
 import { findCapsuleRigs, poseCapsuleRig, resetCapsuleRig, type CapsuleRig } from "./capsuleRig";

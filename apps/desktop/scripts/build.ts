@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import { cpSync, existsSync, mkdirSync, readdirSync, realpathSync, rmSync, writeAtomicSync } from "@toonflow/file";
+import { cpSync, existsSync, mkdirSync, readdirSync, realpathSync, rmSync, writeAtomicSync } from "@lumo/file";
 import { dirname, resolve } from "node:path";
 import copyDocumentPackages from "../../server/scripts/copyDocumentPackages";
 import copySandboxPackages from "../../server/scripts/copySandboxPackages";
@@ -23,7 +23,7 @@ if (mode === "typecheck") {
 if (!["darwin", "win32", "linux"].includes(process.platform) || !["x64", "arm64"].includes(process.arch)) {
   throw new Error("桌面构建需要 Windows、macOS 或 Linux 的 x64/arm64 环境。");
 }
-if (mode === "dev") process.env.TOONFLOW_DATA_DIR = resolve(projectDir, "data");
+if (mode === "dev") process.env.LUMO_DATA_DIR = resolve(projectDir, "data");
 if (isMac) {
   const startupTarget = process.arch === "x64" ? "macX64" : "macArm64";
   for (const name of ["libthorvg.dylib", "nativeSplash.dylib"]) {
@@ -78,10 +78,10 @@ if (isWindows) {
   const assemblyInfo = resolve(protocolDir, "assemblyInfo.cs");
   writeAtomicSync(assemblyInfo, [
     "using System.Reflection;",
-    '[assembly: AssemblyTitle("Toonflow")]',
-    '[assembly: AssemblyProduct("Toonflow")]',
+    '[assembly: AssemblyTitle("Lumo")]',
+    '[assembly: AssemblyProduct("Lumo")]',
     '[assembly: AssemblyCompany("HBAI-Ltd")]',
-    '[assembly: AssemblyDescription("Toonflow desktop component")]',
+    '[assembly: AssemblyDescription("Lumo desktop component")]',
     '[assembly: AssemblyCopyright("Copyright (c) HBAI-Ltd")]',
     `[assembly: AssemblyVersion("${version}.0")]`,
     `[assembly: AssemblyFileVersion("${version}.0")]`,
@@ -129,7 +129,7 @@ await copySandboxPackages(resolve(projectDir, "build/desktop/node_modules"));
 const cli = resolve(projectDir, "apps/desktop/node_modules/electrobun/bin/electrobun.cjs");
 if (isMac && mode !== "dev") {
   // ACT: 外置 Bun 的 macOS Bundle 身份尚待实机验证，正式构建继续内置；显式开启仅用于验证精简安装包。
-  if (process.env.TOONFLOW_EXTERNAL_RUNTIME === "1") await prepareMacRuntime();
+  if (process.env.LUMO_EXTERNAL_RUNTIME === "1") await prepareMacRuntime();
 }
 // ACT: SDK 调用 Windows PowerShell 压缩产物，避免继承 PowerShell 7 的同名模块。
 const buildEnv = { ...process.env };

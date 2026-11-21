@@ -18,8 +18,8 @@
 import { computed, ref } from "vue";
 import { ElButton, ElCard, ElInput, ElLoading } from "element-plus";
 import { IconMovie } from "@tabler/icons-vue";
-import { nodeSkeleton, useNode, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
+import { nodeSkeleton, useNode, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
 
 defineOptions({
   inheritAttrs: false,

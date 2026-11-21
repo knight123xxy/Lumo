@@ -1,7 +1,7 @@
 <template>
   <div class="providerList">
     <div class="itemList">
-      <toonflowProviderCard scope="text" :provider="customProviders.find(item => item.id.toLowerCase() === 'toonflow')" />
+      <lumoProviderCard scope="text" :provider="customProviders.find(item => item.id.toLowerCase() === 'lumo')" />
       <el-card v-for="item in visibleProviders" :key="item.id" class="providerItem" shadow="never">
         <div class="providerHeader">
           <div v-if="item.icon" class="providerMark" aria-hidden="true">
@@ -45,7 +45,7 @@ import { ElMessage } from "element-plus";
 import { customProviders, saveSettings, type CustomProvider } from "@/stores/settings";
 import { IconPlus, IconEdit, IconTrash, IconArrowUp } from "@tabler/icons-vue";
 import { getBuiltinSource, useBuiltinUpgrades, type BuiltinLanguageProvider } from "@/lib/builtinProviders";
-import toonflowProviderCard from "../../toonflowProviderCard.vue";
+import lumoProviderCard from "../../lumoProviderCard.vue";
 
 defineProps<{ visible?: boolean }>();
 const upgradeVersion = useBuiltinUpgrades("language");
@@ -55,7 +55,7 @@ const editingProvider = ref<CustomProvider>();
 const deletingId = ref("");
 const upgradingId = ref("");
 const busy = computed(() => !!deletingId.value || !!upgradingId.value);
-const visibleProviders = computed(() => customProviders.value.filter(item => item.id.toLowerCase() !== "toonflow"));
+const visibleProviders = computed(() => customProviders.value.filter(item => item.id.toLowerCase() !== "lumo"));
 
 function getProviderVersion(provider: CustomProvider) {
   const version = provider.version;
@@ -63,14 +63,14 @@ function getProviderVersion(provider: CustomProvider) {
 }
 
 function openProvider(provider?: CustomProvider) {
-  if (provider?.id.toLowerCase() === "toonflow") return;
+  if (provider?.id.toLowerCase() === "lumo") return;
   addCustomProviderDialog.value ??= defineAsyncComponent(() => import("./addCustomProviderDialog.vue"));
   editingProvider.value = provider;
   providerDialogVisible.value = true;
 }
 
 async function upgradeProvider(provider: CustomProvider) {
-  if (provider.id.toLowerCase() === "toonflow" || busy.value || !upgradeVersion(provider)) return;
+  if (provider.id.toLowerCase() === "lumo" || busy.value || !upgradeVersion(provider)) return;
   upgradingId.value = provider.id;
   try {
     const { provider: latest } = await getBuiltinSource<BuiltinLanguageProvider>("language", provider.id);
@@ -93,7 +93,7 @@ async function upgradeProvider(provider: CustomProvider) {
 }
 
 async function deleteProvider(id: string) {
-  if (id.toLowerCase() === "toonflow" || busy.value) return;
+  if (id.toLowerCase() === "lumo" || busy.value) return;
   deletingId.value = id;
   try {
     await saveSettings(settings => {

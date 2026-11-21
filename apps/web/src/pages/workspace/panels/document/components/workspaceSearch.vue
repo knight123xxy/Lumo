@@ -65,7 +65,7 @@
 import axios from "axios";
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { ElAlert, ElButton, ElCheckbox, ElDialog, ElInput, type InputInstance } from "element-plus";
-import { msg, t, translate, type MessageDescriptor } from "@toonflow/i18n/vue";
+import { msg, t, translate, type MessageDescriptor } from "@lumo/i18n/vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 
 type SearchMatch = { start: number; end: number; line: number; column: number; before: string; text: string; after: string };
@@ -143,8 +143,8 @@ function findMatches(text: string, needle: string, matchCase: boolean, limit: nu
 
 function isCanvasText(path: string, text: string) {
   if (!/\.json$/i.test(path)) return false;
-  try { return JSON.parse(text)?.toonflowCanvas === true; }
-  catch { return /^\s*\{/.test(text) && /"toonflowCanvas"\s*:\s*true\b/.test(text); }
+  try { return JSON.parse(text)?.lumoCanvas === true; }
+  catch { return /^\s*\{/.test(text) && /"lumoCanvas"\s*:\s*true\b/.test(text); }
 }
 
 function failureMessage(error: unknown) {

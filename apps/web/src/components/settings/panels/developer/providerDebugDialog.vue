@@ -24,11 +24,11 @@ import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from "vue
 import axios from "axios";
 import { ElMessage } from "element-plus";
 import { IconFolderOpen, IconRefresh, IconDownload } from "@tabler/icons-vue";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
+import { invalidateNodeModels } from "@lumo/nodes-scaffold/nodeAi";
 import { actualPlatform } from "@/lib/platform";
 import { withTerminalConfirm } from "@/lib/pluginInstallConfirmation";
 import providerTestPanel from "../mediaModel/providerTestPanel.vue";
-import type { MediaProvider } from "@toonflow/provider-web/types";
+import type { MediaProvider } from "@lumo/provider-web/types";
 
 type DebugProvider = Pick<MediaProvider, "id" | "label" | "rules" | "models">;
 type FileHandle = { getFile(): Promise<File>; requestPermission?(options: { mode: "read" }): Promise<PermissionState> };
@@ -45,7 +45,7 @@ const action = ref<"" | "select" | "refresh" | "install">("");
 const testing = ref(false);
 const busy = computed(() => !!action.value || testing.value);
 const errorMessage = ref("");
-const desktopHeaders = { "x-toonflow-desktop": "1" };
+const desktopHeaders = { "x-lumo-desktop": "1" };
 let controller: AbortController | undefined;
 
 function showError(error: unknown) {
@@ -69,7 +69,7 @@ async function refreshProvider(signal: AbortSignal) {
   errorMessage.value = "";
   const file = await readSource(signal);
   signal.throwIfAborted();
-  const { data } = await axios.post<{ data: DebugProvider }>("/api/providers/debug/inspect", { source: file.source }, { headers: { "x-toonflow-workspace": "1" }, signal });
+  const { data } = await axios.post<{ data: DebugProvider }>("/api/providers/debug/inspect", { source: file.source }, { headers: { "x-lumo-workspace": "1" }, signal });
   signal.throwIfAborted();
   provider.value = data.data;
   fileName.value = file.name;

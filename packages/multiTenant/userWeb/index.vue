@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { ElAlert, ElButton, ElForm, ElFormItem, ElInput, type InputInstance } from "element-plus";
 import type { UserIdentity, UserRequest } from "./types";

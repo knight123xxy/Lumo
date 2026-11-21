@@ -16,7 +16,7 @@ export function compressNode(): Plugin {
       const chunk = bundle["trumanMap.umd.js"];
       if (!chunk || chunk.type !== "chunk") throw new Error("未生成 TrumanMap 节点脚本");
       const headerEnd = chunk.code.indexOf("\n") + 1;
-      if (!chunk.code.startsWith("/*! toonflowNode:") || !headerEnd) throw new Error("节点安装元数据缺失");
+      if (!chunk.code.startsWith("/*! lumoNode:") || !headerEnd) throw new Error("节点安装元数据缺失");
       const header = chunk.code.slice(0, headerEnd);
       const source = chunk.code.slice(headerEnd);
       const raw = Buffer.from(source, "utf8");
@@ -44,8 +44,8 @@ export function compressNode(): Plugin {
       }
       // ACT: 安装头保持明文；仅打包本次构建的可信 UMD，不执行网络或用户输入。
       // 同步解包以兼容旧宿主的 script.onload 注册协议；需要宿主允许动态脚本执行。
-      // 宿主按脚本文本是否含 toonflowTiptapHost 决定先加载 marked/DOMPurify；压缩会藏住这个标记，解包器需显式引用它。
-      const tiptapHost = source.includes("toonflowTiptapHost");
+      // 宿主按脚本文本是否含 lumoTiptapHost 决定先加载 marked/DOMPurify；压缩会藏住这个标记，解包器需显式引用它。
+      const tiptapHost = source.includes("lumoTiptapHost");
       const entry = resolve(root, "trumanMapCompressedEntry.js");
       const result = await build({
         root,
@@ -76,9 +76,9 @@ export function compressNode(): Plugin {
               value = -1;
             }
             if (value >= 0) bytes[output] = (buffer | value << bits) & 255;
-            if (!globalThis.toonflowNodeHost) throw new Error("请在 算力汇 画布中加载 TrumanMap");
-            ${tiptapHost ? `if (!globalThis.toonflowTiptapHost) throw new Error("宿主未提前加载 toonflowTiptapHost（marked/DOMPurify），无法加载 TrumanMap");` : ""}
-            const component = new Function(new TextDecoder("utf-8", { fatal: true }).decode(decompress(bytes)) + "\\nreturn globalThis.toonflowNodes.trumanMap;\\n//# sourceURL=trumanMap.unpacked.js")();
+            if (!globalThis.lumoNodeHost) throw new Error("请在 算力汇 画布中加载 TrumanMap");
+            ${tiptapHost ? `if (!globalThis.lumoTiptapHost) throw new Error("宿主未提前加载 lumoTiptapHost（marked/DOMPurify），无法加载 TrumanMap");` : ""}
+            const component = new Function(new TextDecoder("utf-8", { fatal: true }).decode(decompress(bytes)) + "\\nreturn globalThis.lumoNodes.trumanMap;\\n//# sourceURL=trumanMap.unpacked.js")();
             if (!component || !["object", "function"].includes(typeof component)) throw new Error("TrumanMap 解包后未注册节点组件");
           ` : undefined,
         }],
@@ -92,12 +92,12 @@ export function compressNode(): Plugin {
       const outputs = (Array.isArray(result) ? result : [result]).flatMap(item => "output" in item ? item.output : []);
       if (outputs.length !== 1 || outputs[0]?.type !== "chunk") throw new Error("节点解包器构建失败");
       const loader = outputs[0].code;
-      if (tiptapHost && !loader.includes("toonflowTiptapHost")) throw new Error("节点解包器缺少 toonflowTiptapHost 预加载标记");
+      if (tiptapHost && !loader.includes("lumoTiptapHost")) throw new Error("节点解包器缺少 lumoTiptapHost 预加载标记");
       // 在隔离上下文里跑一遍真实解包器，确认还原出的脚本与压缩前逐字节一致，避免把坏包发布出去。
       let unpacked: string | undefined;
-      const sandbox = createContext({ toonflowNodeHost: {}, toonflowTiptapHost: {}, TextDecoder, Function: function (code: string) { unpacked = code; return () => ({}); } });
+      const sandbox = createContext({ lumoNodeHost: {}, lumoTiptapHost: {}, TextDecoder, Function: function (code: string) { unpacked = code; return () => ({}); } });
       runInContext(loader, sandbox, { filename: "trumanMapLoaderCheck.js" });
-      if (unpacked !== `${source}\nreturn globalThis.toonflowNodes.trumanMap;\n//# sourceURL=trumanMap.unpacked.js`) throw new Error("节点解包器还原的脚本与构建结果不一致");
+      if (unpacked !== `${source}\nreturn globalThis.lumoNodes.trumanMap;\n//# sourceURL=trumanMap.unpacked.js`) throw new Error("节点解包器还原的脚本与构建结果不一致");
       chunk.code = header + loader;
       const size = Buffer.byteLength(chunk.code, "utf8");
       this.info(`原始 ${raw.length} 字节，zstd ${compressed.length} 字节，安装头 ${Buffer.byteLength(header, "utf8")} 字节，单文件 ${size} 字节`);

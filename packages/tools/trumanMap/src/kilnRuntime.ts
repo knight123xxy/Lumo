@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { mkdir, readFile, writeAtomic } from "@toonflow/file";
+import { mkdir, readFile, writeAtomic } from "@lumo/file";
 import { validateSourcePolicy } from "./sourcePolicy";
 
 export type KilnRenderResult = { glb: Buffer; tris: number; meta: Record<string, unknown>; warnings: string[]; artifactGlbSha256: string; buildCache?: { key: string; hit: boolean }; [key: string]: unknown };
@@ -44,7 +44,7 @@ lines.on("line", line => {
     try {
       const result=await renderGLBViaSubprocess(input.code,input.options,{...input.controls,signal:controller.signal,maxHeapMb:512});
       if(result.tris>50000) throw new Error("模型超过 50000 个三角形，请降低几何细分或拆分资产");
-      process.stdout.write(JSON.stringify(encodeRenderResultV2("toonflowKiln",result)));
+      process.stdout.write(JSON.stringify(encodeRenderResultV2("lumoKiln",result)));
     } catch(error) {
       process.exitCode=1;
       process.stderr.write(error instanceof Error?error.message:"Kiln 编译失败");
@@ -165,7 +165,7 @@ export async function evaluateKiln(code: string, options: Record<string, unknown
       if (failure) return reject(failure);
       if (exitCode !== 0) return reject(new Error(stderr.slice(-2000) || "Kiln 执行进程未正常完成"));
       try {
-        const result = loaded.evaluator.decodeEvaluatorResultV2(Buffer.concat(chunks).toString("utf8"), maxGlbBytes, "toonflowKiln");
+        const result = loaded.evaluator.decodeEvaluatorResultV2(Buffer.concat(chunks).toString("utf8"), maxGlbBytes, "lumoKiln");
         if (!result.ok) throw new Error(result.error.message);
         if (result.render.tris > 50000) throw new Error("模型超过 50000 个三角形，请降低几何细分或拆分资产");
         resolve(result.render);

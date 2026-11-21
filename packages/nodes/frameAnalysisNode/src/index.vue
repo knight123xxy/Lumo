@@ -96,16 +96,16 @@ import { ElMessage, ElSelect, ElOption, ElOptionGroup, ElButton, ElCard, ElCheck
 import {
   findNodeModel, getNodeModelKey, getTargetValues, isNodeOutput, nodeSkeleton, useNode, useNodeInputs, useNodeModelSelection, uploadNodeFile,
   type NodeHandle, type NodeMediaValue, type WorkspaceFiles, type NodeAiModel, type BrowserFfmpegFactory,
-} from "@toonflow/nodes-scaffold/runtime";
+} from "@lumo/nodes-scaffold/runtime";
 import { analyzeVideo, type AnalysisResult } from "./videoAnalysis";
 import { useResultNodes } from "./resultNodes";
 import { analyzeSceneDescriptions } from "./aiAnalysis";
 import analysisReport from "./analysisReport.vue";
-import videoPlayer from "@toonflow/node-video/videoPlayer";
-import promptInput from "@toonflow/node-shared/promptInput";
-import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
-import modelLabel from "@toonflow/node-shared/modelLabel";
-import modelSelect from "@toonflow/node-shared/modelSelect";
+import videoPlayer from "@lumo/node-video/videoPlayer";
+import promptInput from "@lumo/node-shared/promptInput";
+import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
+import modelLabel from "@lumo/node-shared/modelLabel";
+import modelSelect from "@lumo/node-shared/modelSelect";
 
 defineOptions({
   inheritAttrs: false,

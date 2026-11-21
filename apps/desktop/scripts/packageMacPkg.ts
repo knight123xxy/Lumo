@@ -1,5 +1,5 @@
-import { chmodSync, copyFileSync, lstatSync, mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, writeAtomicSync } from "@toonflow/file";
-import { file, write } from "@toonflow/file/bun";
+import { chmodSync, copyFileSync, lstatSync, mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, writeAtomicSync } from "@lumo/file";
+import { file, write } from "@lumo/file/bun";
 import { join, resolve } from "node:path";
 import desktopConfig from "../../../electrobun.config";
 
@@ -63,7 +63,7 @@ try {
   const appVersion = await file(join(resources, "version.json")).json();
   if (appVersion.version !== version || appVersion.hash !== manifest.hash) throw new Error("macOS 应用与更新清单不一致。");
 
-  const externalRuntime = process.env.TOONFLOW_EXTERNAL_RUNTIME === "1";
+  const externalRuntime = process.env.LUMO_EXTERNAL_RUNTIME === "1";
   if (externalRuntime) {
     const runtimeDir = join(projectDir, "build/desktop/runtime");
     copyFileSync(join(runtimeDir, "runtimeLauncher"), bunPath);
@@ -99,7 +99,7 @@ case "$consoleUser" in ''|root|loginwindow) echo '请登录 Mac 桌面后重新�
 consoleUid=$(/usr/bin/id -u "$consoleUser")
 /bin/launchctl print "gui/$consoleUid" >/dev/null
 scriptDirectory=$(CDPATH= cd -- "$(/usr/bin/dirname "$0")" && pwd -P)
-temporaryDirectory=$(/usr/bin/mktemp -d /private/tmp/toonflowRuntime.XXXXXXXX)
+temporaryDirectory=$(/usr/bin/mktemp -d /private/tmp/lumoRuntime.XXXXXXXX)
 trap '/bin/rm -rf "$temporaryDirectory"' EXIT
 trap 'exit 2' HUP INT TERM
 /bin/cp "$scriptDirectory/runtimeInstaller" "$temporaryDirectory/runtimeInstaller"
@@ -119,7 +119,7 @@ trap 'exit 2' HUP INT TERM
     application.BundleInstallScriptTimeout = 3600;
     writeAtomicSync(componentsPath, JSON.stringify(components));
     await run(["/usr/bin/plutil", "-convert", "xml1", componentsPath]);
-    component = join(stagingDir, "toonflow.pkg");
+    component = join(stagingDir, "lumo.pkg");
     await run(["/usr/bin/pkgbuild", "--root", applicationDir, "--component-plist", componentsPath, "--scripts", scriptsDir,
       "--identifier", desktopConfig.app.identifier, "--version", version, "--install-location", "/Applications",
       "--compression", "latest", "--min-os-version", "14.0", component]);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolDefinition, ToolPlugin } from "@toonflow/tools-scaffold/runtime";
+import type { ToolDefinition, ToolPlugin } from "@lumo/tools-scaffold/runtime";
 import { createSearchTools } from "./search";
 
 const configSchema = z.object({ readOnly: z.boolean().default(false) }).strict();

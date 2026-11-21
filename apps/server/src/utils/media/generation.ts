@@ -1,9 +1,9 @@
 import { t, translateMessage } from "@/lib/i18n";
-import { mkdir, readFile, realpath, stat, unlink } from "@toonflow/file";
+import { mkdir, readFile, realpath, stat, unlink } from "@lumo/file";
 import { join, relative } from "node:path";
 import { createHash } from "node:crypto";
-import type { Provider, ProviderTaskData } from "@toonflow/providers";
-import type { GeneratedMedia, MediaGenerationRequest, MediaModel, MediaReference } from "@toonflow/tools-scaffold/runtime";
+import type { Provider, ProviderTaskData } from "@lumo/providers";
+import type { GeneratedMedia, MediaGenerationRequest, MediaModel, MediaReference } from "@lumo/tools-scaffold/runtime";
 import conf from "@/utils/conf";
 import { getAccountProvider } from "@/utils/ai/provider";
 import { getMediaProvider, listMediaProviders, loadMediaProviderSource } from "@/utils/media/provider";
@@ -77,9 +77,9 @@ function imageOptions(value: unknown, pattern: RegExp) {
 export async function listMediaModels(): Promise<MediaModel[]> {
   if (modelGateway.enabled()) return modelGateway.catalog(["image", "video", "audio"]);
   const installedProviders = await listMediaProviders();
-  installedProviders.sort((left, right) => Number(right.id === "toonflow") - Number(left.id === "toonflow"));
+  installedProviders.sort((left, right) => Number(right.id === "lumo") - Number(left.id === "lumo"));
   // ACT: 模型能力以已安装源码为准，读取目录不请求在线预设；旧源码需更新后才能获得新增能力。
-  return installedProviders.filter(provider => provider.id !== "toonflow" || !!getAccountProvider()).flatMap(provider => provider.models.flatMap(model => {
+  return installedProviders.filter(provider => provider.id !== "lumo" || !!getAccountProvider()).flatMap(provider => provider.models.flatMap(model => {
     if (model.type !== "image" && model.type !== "video" && model.type !== "audio") return [];
     return [{
       providerId: provider.id, providerLabel: provider.label, modelId: model.id, label: model.label, type: model.type,
@@ -175,7 +175,7 @@ function resumableAssets(assets: MediaAsset[], mediaType: "image" | "video" | "a
 async function prepareRequest<T>(directory: string | undefined, mediaType: "image" | "video" | "audio", request: MediaGenerationRequest,
   read: (cwd: string, reference: MediaReference, type: string, signal?: AbortSignal) => Promise<T>, signal?: AbortSignal) {
   // ACT: 仅向已适配引用映射的内置供应商传递，其他第三方适配器仍接收原有公共参数。
-  const referenceOrder = mediaType === "video" && ["toonflow", "apiMart", "metaso", "compshare"].includes(request.providerId) ? request.referenceOrder : undefined;
+  const referenceOrder = mediaType === "video" && ["lumo", "apiMart", "metaso", "compshare"].includes(request.providerId) ? request.referenceOrder : undefined;
   if (referenceOrder) {
     const media = { image: request.images, video: request.videos, audio: request.audios };
     for (const [index, reference] of referenceOrder.entries()) {
@@ -337,7 +337,7 @@ async function executeMedia(
       const generate = mediaType === "image" ? provider.generateImage : mediaType === "video" ? provider.generateVideo : provider.generateAudio;
       if (typeof generate !== "function") invalid(t`此供应商不支持${translateMessage({ image: "图片", video: "视频", audio: "音频" }[mediaType])}生成`);
       const rules = Array.isArray(provider.rules) ? provider.rules : [];
-      if (provider.id !== "toonflow" && rules.some(rule => rule.field === "apiKey")
+      if (provider.id !== "lumo" && rules.some(rule => rule.field === "apiKey")
         && (typeof provider.config.apiKey !== "string" || !provider.config.apiKey.trim())) invalid("请先在媒体模型设置中配置供应商 API Key");
       const { type, ...parameters } = await prepareRequest(directory, mediaType, upstreamRequest, readReference, signal);
       signal?.throwIfAborted();

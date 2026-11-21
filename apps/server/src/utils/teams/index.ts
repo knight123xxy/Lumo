@@ -1,7 +1,7 @@
-import { lstat, mkdir, readdir, rm, unlink, writeFile } from "@toonflow/file";
+import { lstat, mkdir, readdir, rm, unlink, writeFile } from "@lumo/file";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
-import type { AgentCard } from "@toonflow/teams-scaffold/a2a";
+import type { AgentCard } from "@lumo/teams-scaffold/a2a";
 import conf from "@/utils/conf";
 import { decodeText, skillPath } from "@/utils/plugins/install";
 import { resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";

@@ -10,7 +10,7 @@ export default router.get("/", async (req, res) => {
   const user = u.multiTenant.requestIdentity(req);
   if (user?.role === "user") {
     const saved = await u.multiTenant.readUserSettings(user.id);
-    res.set("X-Toonflow-Settings-Revision", String(saved.revision));
+    res.set("X-Lumo-Settings-Revision", String(saved.revision));
     return res.json(success({ ...u.multiTenant.userSettings(saved.settings), multiTenantEnabled: true, helloCompleted: true }));
   }
   const settings = u.conf.get("settings", {});

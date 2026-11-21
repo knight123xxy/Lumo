@@ -1,9 +1,9 @@
 import { computed, h, inject, nextTick, onScopeDispose, ref, render } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
 import { IconMusic } from "@tabler/icons-vue";
-import { isTypeCompatible, validateConnection, type NodeData } from "@toonflow/nodes-scaffold/connection";
-import { useNodeEvent } from "@toonflow/nodes-scaffold/nodeEvent";
-import { isNodeOutput, type NodeInputValue, type NodeMediaValue } from "@toonflow/nodes-scaffold/values";
+import { isTypeCompatible, validateConnection, type NodeData } from "@lumo/nodes-scaffold/connection";
+import { useNodeEvent } from "@lumo/nodes-scaffold/nodeEvent";
+import { isNodeOutput, type NodeInputValue, type NodeMediaValue } from "@lumo/nodes-scaffold/values";
 import type { MentionItem } from "x-sender";
 
 export type ReferenceMention = MentionItem & { value: string; label?: string; dataType?: string; previewable?: boolean };

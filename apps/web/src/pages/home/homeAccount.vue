@@ -32,18 +32,18 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { IconBrandGithub, IconDeviceDesktop, IconDownload, IconLogin, IconLogout, IconQrcode, IconSettings } from "@tabler/icons-vue";
-import { locale, translate } from "@toonflow/i18n/vue";
-import type { Login, PreviewData } from "@toonflow/server/channel";
+import { locale, translate } from "@lumo/i18n/vue";
+import type { Login, PreviewData } from "@lumo/server/channel";
 import http from "@/lib/http";
-import { multiTenantEnabled, saveSettings, settings, toonflowAccountToken } from "@/stores/settings";
+import { multiTenantEnabled, saveSettings, settings, lumoAccountToken } from "@/stores/settings";
 import { currentUser, publicWeb } from "@/stores/multiTenant";
 import { hasDesktopUpdate } from "@/stores/desktopUpdate";
 import { deviceHubEnabled, mobileConnection, mobileConnectionLabel } from "@/lib/mobile";
 
 defineProps<{ collapsed: boolean }>();
 const emit = defineEmits<{ openSettings: []; openAccount: []; openUpdate: []; openDeviceLink: [] }>();
-const loggedIn = computed(() => publicWeb.value ? !!currentUser.value : !!toonflowAccountToken.value);
-const accountName = computed(() => (publicWeb.value ? currentUser.value?.userName : (settings.value.toonflowAccount as Partial<Login> | null)?.info?.userName) || translate("未登录"));
+const loggedIn = computed(() => publicWeb.value ? !!currentUser.value : !!lumoAccountToken.value);
+const accountName = computed(() => (publicWeb.value ? currentUser.value?.userName : (settings.value.lumoAccount as Partial<Login> | null)?.info?.userName) || translate("未登录"));
 const showBalance = computed(() => loggedIn.value && (publicWeb.value ? currentUser.value?.role === "user" : !multiTenantEnabled.value));
 const balanceText = ref("");
 const balanceError = ref("");
@@ -62,9 +62,9 @@ async function refreshBalance() {
       const result = await http<{ wallets: { currency: "CNY" | "USD"; balance: string }[] }>({ method: "GET", url: "/api/multiTenant/user/balance", signal: request.signal });
       if (!request.signal.aborted) balanceText.value = result.wallets.map(wallet => `${wallet.balance} ${wallet.currency}`).join(" / ");
     } else {
-      const token = toonflowAccountToken.value;
+      const token = lumoAccountToken.value;
       const result = await http<PreviewData>({ method: "GET", url: "/api/channel/account/getPreviewData", signal: request.signal, headers: { Authorization: `Bearer ${token}` } });
-      if (!request.signal.aborted && toonflowAccountToken.value === token) balanceText.value = moneyFormat.value.format(result.totalPoints);
+      if (!request.signal.aborted && lumoAccountToken.value === token) balanceText.value = moneyFormat.value.format(result.totalPoints);
     }
   } catch (error) {
     if (!request.signal.aborted) balanceError.value = error instanceof Error ? error.message : translate("加载余额失败，请刷新重试");
@@ -83,8 +83,8 @@ async function handleCommand(command: string) {
       await http({ method: "POST", url: "/api/multiTenant/user/logout" });
       window.location.reload();
     } else {
-      const token = toonflowAccountToken.value;
-      const saved = await saveSettings(() => toonflowAccountToken.value === token ? { toonflowAccount: null } : undefined);
+      const token = lumoAccountToken.value;
+      const saved = await saveSettings(() => lumoAccountToken.value === token ? { lumoAccount: null } : undefined);
       if (saved) ElMessage.success("已退出登录");
     }
   } catch (error) {
@@ -94,7 +94,7 @@ async function handleCommand(command: string) {
   }
 }
 
-watch([publicWeb, currentUser, toonflowAccountToken, multiTenantEnabled, locale], () => {
+watch([publicWeb, currentUser, lumoAccountToken, multiTenantEnabled, locale], () => {
   controller?.abort();
   balanceText.value = "";
   balanceError.value = "";

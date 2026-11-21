@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { lstat, mkdir, realpath, stat } from "@toonflow/file";
+import { lstat, mkdir, realpath, stat } from "@lumo/file";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import conf from "@/utils/conf";
 import { getMobileLinkConfig, isMobileLinkRequest } from "@/utils/mobileLink";
@@ -8,7 +8,7 @@ import { getRuntimePlatform } from "@/lib/platform";
 export function isLocalHostRequest(req: Request) {
   if (isMobileLinkRequest(req) || req.res?.locals.multiTenantWeb || req.res?.locals.multiTenantUser?.role === "user") return false;
   if (conf.get("settings", {}).multiTenantEnabled === true && req.res?.locals.multiTenantUser?.role !== "admin") return false;
-  const localAddress = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "") && req.get("x-toonflow-local-client") !== "0";
+  const localAddress = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "") && req.get("x-lumo-local-client") !== "0";
   const localHost = ["localhost", "127.0.0.1", "[::1]"].includes(req.hostname);
   return localAddress && localHost;
 }
@@ -41,7 +41,7 @@ export function isLocalWorkspaceRequest(req: Request) {
   const origin = req.get("origin");
   const localOrigin = `${req.protocol}://${req.get("host")}`;
   const sameOrigin = origin === undefined ? req.get("referer")?.startsWith(`${localOrigin}/`) : origin === localOrigin;
-  return isLocalHostRequest(req) && sameOrigin && req.get("x-toonflow-workspace") === "1";
+  return isLocalHostRequest(req) && sameOrigin && req.get("x-lumo-workspace") === "1";
 }
 
 export async function resolveWorkspace(req: Request, path: string) {

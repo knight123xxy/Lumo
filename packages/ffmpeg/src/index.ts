@@ -1,8 +1,8 @@
-import { msg } from "@toonflow/i18n";
-import { messageError } from "@toonflow/i18n/errors";
+import { msg } from "@lumo/i18n";
+import { messageError } from "@lumo/i18n/errors";
 import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream, chmod, lstat, mkdir, mkdtemp, realpath, rename, rm } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import { createReadStream, createWriteStream, chmod, lstat, mkdir, mkdtemp, realpath, rename, rm } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { basename, dirname, join, resolve } from "node:path";
 import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -27,7 +27,7 @@ export type DownloadState = {
 };
 
 // OHOS Bun 目前报告 linux，宿主显式标识平台，避免下载不能运行的 Linux FFmpeg。
-const platform = process.platform === "linux" && process.env.TOONFLOW_PLATFORM === "ohos" ? "ohos" : process.platform;
+const platform = process.platform === "linux" && process.env.LUMO_PLATFORM === "ohos" ? "ohos" : process.platform;
 export const target = `${platform}-${process.arch}`;
 // ACT: 上游尚无 Windows ARM64 包，复用 Windows 11 的 x64 仿真；有已校验原生包后再切换。
 const downloadTarget = platform === "win32" && process.arch === "arm64" ? "win32-x64" : target;

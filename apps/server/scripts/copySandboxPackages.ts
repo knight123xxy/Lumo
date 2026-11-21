@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, realpath, rm } from "@toonflow/file";
+import { cp, mkdir, readdir, realpath, rm } from "@lumo/file";
 import { dirname, resolve } from "node:path";
 
 export default async function copySandboxPackages(nodeModulesDirectory: string) {

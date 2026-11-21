@@ -1,5 +1,5 @@
 import { loadSkillsFromDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
-import { lstat, readFile } from "@toonflow/file";
+import { lstat, readFile } from "@lumo/file";
 import { dirname, relative, resolve, sep } from "node:path";
 import { Router } from "express";
 import { success } from "@/lib/responseFormat";

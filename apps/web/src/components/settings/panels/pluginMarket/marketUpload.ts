@@ -1,9 +1,9 @@
 import { provide, shallowRef, watch, type InjectionKey } from "vue";
-import { translate } from "@toonflow/i18n/vue";
-import type { PluginExistence, PluginIdentity } from "@toonflow/server/channel";
-import type { PluginUploadDraft } from "@toonflow/server/pluginDevelopment";
+import { translate } from "@lumo/i18n/vue";
+import type { PluginExistence, PluginIdentity } from "@lumo/server/channel";
+import type { PluginUploadDraft } from "@lumo/server/pluginDevelopment";
 import http from "@/lib/http";
-import { toonflowAccountToken } from "@/stores/settings";
+import { lumoAccountToken } from "@/stores/settings";
 import type { Plugin } from "./types";
 
 export function getPluginExistence(plugins: PluginIdentity[], token: string, signal: AbortSignal) {
@@ -18,11 +18,11 @@ export const openPluginUploadKey: InjectionKey<OpenPluginUpload> = Symbol("openP
 
 export function providePluginUpload() {
   const pending = shallowRef<{ plugin: Plugin; file: File }>();
-  watch(toonflowAccountToken, () => { pending.value = undefined; }, { flush: "sync" });
+  watch(lumoAccountToken, () => { pending.value = undefined; }, { flush: "sync" });
   let preparing = false;
   provide(openPluginUploadKey, async (load, signal) => {
     if (pending.value || preparing) return { status: "dialogBusy" };
-    const token = toonflowAccountToken.value;
+    const token = lumoAccountToken.value;
     if (!token) throw new Error(translate("请先在账号与余额中登录 算力汇 账号"));
     preparing = true;
     try {
@@ -31,7 +31,7 @@ export function providePluginUpload() {
       const identity = { type: plugin.type, identifier: plugin.name };
       const [record] = await getPluginExistence([identity], token, signal);
       signal.throwIfAborted();
-      if (toonflowAccountToken.value !== token) throw new Error(translate("账号已变更，请确认登录账号后重新提交"));
+      if (lumoAccountToken.value !== token) throw new Error(translate("账号已变更，请确认登录账号后重新提交"));
       const { type, name, version } = plugin;
       if (!record) throw new Error(translate("检查插件市场状态失败，请重试"));
       if (record.exists) return { type, name, version, status: "alreadyExists" };

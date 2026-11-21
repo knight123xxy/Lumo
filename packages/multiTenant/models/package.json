@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/multi-tenant-models",
+  "name": "@lumo/multi-tenant-models",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
   },
   "scripts": { "typecheck": "tsc" },
   "dependencies": {
-    "@toonflow/file": "workspace:*",
-    "@toonflow/multi-tenant-db": "workspace:*",
+    "@lumo/file": "workspace:*",
+    "@lumo/multi-tenant-db": "workspace:*",
     "zod": "^4.6.2"
   }
 }

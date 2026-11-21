@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/updateServer",
+  "name": "@lumo/updateServer",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@toonflow/file": "workspace:*",
+    "@lumo/file": "workspace:*",
     "express": "^5.2.1"
   },
   "devDependencies": {

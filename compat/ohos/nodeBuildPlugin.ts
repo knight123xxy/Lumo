@@ -1,4 +1,4 @@
-import { readFile } from "@toonflow/file";
+import { readFile } from "@lumo/file";
 import { createRequire } from "node:module";
 import { dirname, relative, resolve } from "node:path";
 import type { BunPlugin } from "bun";
@@ -36,9 +36,9 @@ function replaceOnce(source: string, before: string, after: string, file: string
 }
 
 const nodeBuildPlugin: BunPlugin = {
-  name: "toonflowOhosNode",
+  name: "lumoOhosNode",
   setup(build) {
-    build.onResolve({ filter: /^toonflow:ohos-runtime$/ }, () => ({ path: runtimePath }));
+    build.onResolve({ filter: /^lumo:ohos-runtime$/ }, () => ({ path: runtimePath }));
     build.onResolve({ filter: /^(?:@babel\/(?:parser|traverse|types)|semver|mime-types|which|typescript)$/ }, args => {
       const importer = resolve(args.importer).replaceAll("\\", "/");
       // ACT: Bun 1.3 Windows 在 require.resolve 缓存的反斜杠路径上崩溃；保持各调用方原来的依赖版本。
@@ -62,7 +62,7 @@ const nodeBuildPlugin: BunPlugin = {
         change("import.meta.path", "import.meta.filename");
         change("bun: Bun.version", 'runtime: "node", node: process.versions.node');
         change("console.log(", "ready(");
-        change("TOONFLOW_MOBILE_URL=", "");
+        change("LUMO_MOBILE_URL=", "");
         change('process.on("SIGTERM", () => { connection.stop(); server.close(() => process.exit(0)); });', "");
         imports.add("ready");
       }
@@ -70,7 +70,7 @@ const nodeBuildPlugin: BunPlugin = {
         change('process.platform === "android" ||', '(process.platform as string) === "openharmony" || process.platform === "android" ||');
       }
       if (file === "apps/server/src/utils/plugins/tools.ts") {
-        change('Bun.plugin({\n  name: "toolHost",\n  setup(build) {\n    build.module("toonflow:tool-zod", () => ({ exports: zod, loader: "object" }));\n  },\n});', "registerToolZod(zod);");
+        change('Bun.plugin({\n  name: "toolHost",\n  setup(build) {\n    build.module("lumo:tool-zod", () => ({ exports: zod, loader: "object" }));\n  },\n});', "registerToolZod(zod);");
         change("const { path, metadata } = await readTool(name, directory);", "const { path, metadata, revision } = await readTool(name, directory);");
         change("import(pathToFileURL(path).href)", 'import(pathToFileURL(path).href + "?revision=" + revision)');
         change("安装成功后由安装器清除模块缓存。", "Node 按源码 revision 区分模块缓存，更新后重新加载。");
@@ -82,22 +82,22 @@ const nodeBuildPlugin: BunPlugin = {
         change('  let files: Map<string, File>;\n  try { files = await new Bun.Archive(tar).files(); }\n  catch { return invalid("技能压缩包无法读取"); }\n', "");
       }
       if (file === "apps/server/src/utils/desktop/index.ts") {
-        change('import { file } from "@toonflow/file/bun";', 'import { stat, readFile } from "@toonflow/file";');
+        change('import { file } from "@lumo/file/bun";', 'import { stat, readFile } from "@lumo/file";');
         change("const providerFile = file(selected.path);", 'const providerFile = await stat(selected.path).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error; });');
         change("if (!(await providerFile.exists()))", "if (!providerFile)");
         change("source: await providerFile.text(), lastModified: providerFile.lastModified", 'source: await readFile(selected.path, "utf8"), lastModified: providerFile.mtimeMs');
       }
       if (file === "packages/ffmpeg/src/index.ts") {
-        change('import { file } from "@toonflow/file/bun";', 'import { existsSync } from "@toonflow/file";');
+        change('import { file } from "@lumo/file/bun";', 'import { existsSync } from "@lumo/file";');
         change("await file(downloaded).exists()", "existsSync(downloaded)");
       }
       if (file === "apps/server/src/utils/mcp/resources.ts") {
-        change('import { file } from "@toonflow/file/bun";', "");
+        change('import { file } from "@lumo/file/bun";', "");
         change('file(main ? skill.filePath : resolve(skill.baseDir, path)).type || "application/octet-stream"', "fileMime(main ? skill.filePath : resolve(skill.baseDir, path))");
         change('file(target).type || "application/octet-stream"', "fileMime(target)");
         imports.add("fileMime");
       }
-      if (imports.size) source = 'import { ' + [...imports].join(", ") + ' } from "toonflow:ohos-runtime";\n' + source;
+      if (imports.size) source = 'import { ' + [...imports].join(", ") + ' } from "lumo:ohos-runtime";\n' + source;
       return { contents: source, loader: "ts" };
     });
   },

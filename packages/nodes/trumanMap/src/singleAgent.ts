@@ -1,4 +1,4 @@
-import type { NodeAiTool } from "@toonflow/nodes-scaffold/runtime";
+import type { NodeAiTool } from "@lumo/nodes-scaffold/runtime";
 
 export type AgentContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
 export type AgentToolResult = { content: AgentContent[]; details: unknown };
@@ -115,7 +115,7 @@ function requestError(path: string, status: number, value: unknown) {
 
 async function post<T>(path: string, body: unknown, signal: AbortSignal): Promise<T> {
   const response = await fetch(path.startsWith("/api/") ? path : `/api/singleAgent/${path}`, {
-    method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+    method: "POST", headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
     body: JSON.stringify(body), signal,
   });
   const result = await response.json().catch(() => null);
@@ -124,7 +124,7 @@ async function post<T>(path: string, body: unknown, signal: AbortSignal): Promis
 }
 
 async function readInstalledTools(signal: AbortSignal) {
-  const response = await fetch("/api/tools/get", { headers: { "x-toonflow-workspace": "1" }, cache: "no-store", signal });
+  const response = await fetch("/api/tools/get", { headers: { "x-lumo-workspace": "1" }, cache: "no-store", signal });
   const result = await response.json().catch(() => null);
   if (!response.ok || result?.code !== 200) throw requestError("/api/tools/get", response.status, result);
   if (!result.data || !Array.isArray(result.data.tools)) throw new Error("宿主返回的工具列表无效");
@@ -297,7 +297,7 @@ export async function runHolodeckAgent(input: {
     let runId = "";
     let runNumber = 0;
     const startRun = (prompt: string, thinkingLevel: ThinkingLevel | undefined, withImages: boolean) => fetch("/api/singleAgent/run", {
-      method: "POST", headers: { "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      method: "POST", headers: { "Content-Type": "application/json", "x-lumo-workspace": "1" },
       body: JSON.stringify({ sessionId, runId: runId = crypto.randomUUID(), providerId: input.providerId, modelId: input.modelId, thinkingLevel, prompt, ...(withImages && attachImages && images.length ? { images } : {}), ...(compact ? { includeToolResults: false } : {}), ...(inRunCompaction ? { compaction: true } : {}) }), signal,
     });
     response = await startRun(input.prompt, input.thinkingLevel, true);

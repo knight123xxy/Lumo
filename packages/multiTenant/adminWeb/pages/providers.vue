@@ -36,11 +36,11 @@
 
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { ElAlert, ElButton, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElTabPane, ElTabs, ElTable, ElTableColumn, ElTag, vLoading } from "element-plus";
-import providerEditor from "@toonflow/provider-web/providerEditor";
-import type { ProviderConfiguration, ProviderDescription, ProviderInspection, ProviderKind, ProviderPreset } from "@toonflow/provider-web/providerTypes";
-import type { ManagedModelProvider, ProviderConfigurationSnapshot } from "@toonflow/multi-tenant-models/config";
+import providerEditor from "@lumo/provider-web/providerEditor";
+import type { ProviderConfiguration, ProviderDescription, ProviderInspection, ProviderKind, ProviderPreset } from "@lumo/provider-web/providerTypes";
+import type { ManagedModelProvider, ProviderConfigurationSnapshot } from "@lumo/multi-tenant-models/config";
 import type { AdminRequest } from "../types";
 import "element-plus/es/components/alert/style/css";
 import "element-plus/es/components/button/style/css";

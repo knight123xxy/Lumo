@@ -1,7 +1,7 @@
 import { useNode, useVueFlow } from "@vue-flow/core";
-import { uploadNodeFile, useNodeAi, useNodeFiles, type NodeImageRequest, type NodeImageResult } from "@toonflow/nodes-scaffold/runtime";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
-import { createMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import { uploadNodeFile, useNodeAi, useNodeFiles, type NodeImageRequest, type NodeImageResult } from "@lumo/nodes-scaffold/runtime";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
+import { createMediaPreview } from "@lumo/node-shared/mediaPreview";
 
 export type ImageInpaint = { source: string; original: string; guide: string; mask: string; images: NonNullable<NodeImageRequest["images"]> };
 export type InpaintDraftInput = { prompt: string; images?: NodeImageRequest["images"] };

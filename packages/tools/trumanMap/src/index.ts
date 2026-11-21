@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import type { ToolContext, ToolDefinition, ToolPlugin } from "@toonflow/tools-scaffold/runtime";
+import type { ToolContext, ToolDefinition, ToolPlugin } from "@lumo/tools-scaffold/runtime";
 import { evaluateKiln, getKilnRuntime, prepareKiln, type KilnHost, type KilnRenderResult } from "./kilnRuntime";
 import { validateSourcePolicy } from "./sourcePolicy";
 
@@ -27,7 +27,7 @@ function sourcePath(reference: string) {
 
 function createProgramStore(context: ToolContext) {
   return {
-    retention: "immutable source revisions saved in this Toonflow workspace; never automatically deleted",
+    retention: "immutable source revisions saved in this Lumo workspace; never automatically deleted",
     async put(code: string) {
       const runtime = await getKilnRuntime();
       validateSourcePolicy(code, runtime.helperNames);
@@ -90,7 +90,7 @@ const plugin: ToolPlugin = {
           const previous = artifacts.get(reference);
           // 官方wrapper会拒绝Math.random等环境输入、核对构建选项/限制并检查取消；命中仅复用同一GLB。
           const evaluator = runtime.cache.createCachedEvaluatorPort({ render: evaluateKiln }, {
-            identity: () => "toonflowKiln1.6.0:strict:instanceOff",
+            identity: () => "lumoKiln1.6.0:strict:instanceOff",
             cache: {
               async get(key) {
                 const artifact = artifacts.get(reference);

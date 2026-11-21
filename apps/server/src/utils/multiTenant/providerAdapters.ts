@@ -1,5 +1,5 @@
-import { modelProviderSchema, modelProvidersSchema } from "@toonflow/multi-tenant-models/config";
-import type { ManagedModelProvider, ModelProvider } from "@toonflow/multi-tenant-models/config";
+import { modelProviderSchema, modelProvidersSchema } from "@lumo/multi-tenant-models/config";
+import type { ManagedModelProvider, ModelProvider } from "@lumo/multi-tenant-models/config";
 import conf from "@/utils/conf";
 import { getConfiguredProviders, providerSchema } from "@/utils/ai/provider";
 import { getMediaProvider, listMediaProviders, mediaModelsSchema, replaceMediaProviderModels, validateMediaProviderSource, validateTextProviderSource } from "@/utils/media/provider";
@@ -12,7 +12,7 @@ function jsonConfig(value: unknown): ModelProvider["config"] {
 
 function normalizeProvider(input: ModelProvider): ModelProvider {
   const provider = modelProviderSchema.parse(input);
-  if (provider.id.toLowerCase() === "toonflow") invalid("平台模型不能使用个人云端凭据");
+  if (provider.id.toLowerCase() === "lumo") invalid("平台模型不能使用个人云端凭据");
   if (provider.kind === "media") {
     if (!provider.source) invalid("供应商源码不能为空");
     const metadata = validateMediaProviderSource(provider.source);
@@ -56,12 +56,12 @@ function describe(providers: ModelProvider[]): ManagedModelProvider[] {
 async function legacy(): Promise<ModelProvider[]> {
   const providers: ModelProvider[] = [];
   for (const value of getConfiguredProviders()) {
-    if (typeof value?.id !== "string" || value.id.toLowerCase() === "toonflow" || !providerSchema.safeParse(value).success) continue;
+    if (typeof value?.id !== "string" || value.id.toLowerCase() === "lumo" || !providerSchema.safeParse(value).success) continue;
     providers.push({ kind: "text", id: value.id, label: typeof value.label === "string" ? value.label : value.id, config: jsonConfig(value) });
   }
   const configurations = conf.get("settings", {}).mediaProviderConfigs as Record<string, unknown> | undefined;
   for (const metadata of await listMediaProviders()) {
-    if (metadata.id.toLowerCase() === "toonflow" || metadata.loadError) continue;
+    if (metadata.id.toLowerCase() === "lumo" || metadata.loadError) continue;
     const provider = await getMediaProvider(metadata.id);
     const config = configurations?.[provider.id] ?? {};
     providers.push({ kind: "media", id: provider.id, label: provider.label, source: provider.source,

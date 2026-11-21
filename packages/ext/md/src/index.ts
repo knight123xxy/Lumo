@@ -1,4 +1,4 @@
-import { defineExt, type ExtContext } from "@toonflow/ext-scaffold/runtime";
+import { defineExt, type ExtContext } from "@lumo/ext-scaffold/runtime";
 import metadata from "./metadata";
 
 export interface MarkdownEditorContext extends Pick<ExtContext, "text" | "loading" | "active" | "updateText" | "writeClipboardText" | "openFile" | "location"> {

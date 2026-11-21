@@ -197,7 +197,7 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, reactive, ref, shallowRef, watch } from "vue";
 import axios from "axios";
-import { t } from "@toonflow/i18n/vue";
+import { t } from "@lumo/i18n/vue";
 import { ElCheckbox, type FormInstance, type FormRules, type Column } from "element-plus";
 import {
   IconPlus,
@@ -209,8 +209,8 @@ import {
 } from "@tabler/icons-vue";
 import { saveSettings, type CustomProvider, type CustomProviderModel } from "@/stores/settings";
 import { useBuiltinProviders, type BuiltinLanguageProvider } from "@/lib/builtinProviders";
-import { modelIcon } from "@toonflow/model-icons";
-import { thinkingLevels, type ThinkingLevel, type ReasoningEfforts } from "@toonflow/server/modelReasoning";
+import { modelIcon } from "@lumo/model-icons";
+import { thinkingLevels, type ThinkingLevel, type ReasoningEfforts } from "@lumo/server/modelReasoning";
 import addProviderDialog from "./addProviderDialog.vue";
 
 const props = defineProps<{ provider?: CustomProvider }>();
@@ -432,8 +432,8 @@ async function addProvider() {
   formError.value = "";
   if (saving.value || !(await providerForm.value?.validate().catch(() => false))) return;
   if (!visible.value || addMode.value !== "custom") return;
-  if (form.id.toLowerCase() === "toonflow") {
-    formError.value = "toonflow 为账号供应商保留 ID，请使用其他 ID";
+  if (form.id.toLowerCase() === "lumo") {
+    formError.value = "lumo 为账号供应商保留 ID，请使用其他 ID";
     return;
   }
   const providerId = props.provider?.id;

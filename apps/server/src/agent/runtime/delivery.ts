@@ -51,7 +51,7 @@ export function configureAgentDelivery(session: AgentSession, initial?: UserMess
     if (!original) return;
     if (original.delivery?.mode !== "steer") taskMessageId = messageId;
     if (original.delivery?.mode === "followUp") original.delivery.taskMessageId = messageId;
-    history.appendCustomEntry("toonflowUserMessage", { messageId, ...original });
+    history.appendCustomEntry("lumoUserMessage", { messageId, ...original });
     originals.delete(message);
     queuedModes.delete(message);
   }

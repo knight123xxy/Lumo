@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/plugin-server",
+  "name": "@lumo/plugin-server",
   "version": "0.0.0",
   "private": true,
   "type": "module",

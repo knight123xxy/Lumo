@@ -1,5 +1,5 @@
-import { msg } from "@toonflow/i18n";
-import { messageError } from "@toonflow/i18n/errors";
+import { msg } from "@lumo/i18n";
+import { messageError } from "@lumo/i18n/errors";
 import { chainMethods, queryMethods, runMethods } from "./browserTypes";
 import type { BrowserFfmpegRequest, FfmpegCall, FfmpegRemoteEvent } from "./browserTypes";
 import type { FfmpegCommand, FfmpegFactory } from "./types";

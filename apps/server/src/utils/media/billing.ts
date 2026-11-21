@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import type { Response } from "express";
 import { z } from "zod";
-import type { ProviderBalance, ProviderPrice, ProviderPriceRequest } from "@toonflow/providers";
+import type { ProviderBalance, ProviderPrice, ProviderPriceRequest } from "@lumo/providers";
 import conf from "@/utils/conf";
 import { getMediaProvider, loadMediaProviderSource } from "@/utils/media/provider";
 
@@ -33,7 +33,7 @@ const accountSecret = randomBytes(32);
 
 function accountId(provider: RuntimeProvider) {
   const data = JSON.stringify({ id: provider.id, config: provider.config,
-    sourceRevision: provider.id === "toonflow" ? provider.sourceRevision : undefined }, (_key, value) => value && typeof value === "object" && !Array.isArray(value)
+    sourceRevision: provider.id === "lumo" ? provider.sourceRevision : undefined }, (_key, value) => value && typeof value === "object" && !Array.isArray(value)
     ? Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right))) : value);
   return createHmac("sha256", accountSecret).update(data).digest("hex");
 }

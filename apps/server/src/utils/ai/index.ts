@@ -6,7 +6,7 @@ import { z } from "zod";
 import { readReference } from "@/utils/media/generation";
 import { createFileTransport, getUnsupportedFileText, type FileProvider } from "@/utils/ai/files";
 import { getRequestFiles } from "@/utils/ai/requestFiles";
-import { readFile, stat } from "@toonflow/file";
+import { readFile, stat } from "@lumo/file";
 import { resolveWorkspacePath } from "@/utils/workspace/files";
 import { getReadableFileMimeType } from "@/lib/documentFormats";
 import { readDocument } from "@/utils/documents";
@@ -22,7 +22,7 @@ export async function getConfiguredModel(providerId: string, modelId: string) {
   const resolved = execution?.upstream;
   const parsed = providerSchema.safeParse(resolved?.provider ?? getConfiguredProviders().find(item => item?.id === providerId));
   if (!parsed.success) {
-    const official = providerId.toLowerCase() === "toonflow";
+    const official = providerId.toLowerCase() === "lumo";
     throw Object.assign(new Error(official ? "请先登录 算力汇 账号并刷新供应商" : "请先在设置中配置模型供应商"), { status: official ? 401 : 400 });
   }
   const provider = parsed.data;
@@ -192,7 +192,7 @@ export function streamAi(
 ) {
   const { provider, model: configuredModel, baseUrl } = configured;
   const model: Model<typeof provider.protocol> = {
-    id: configuredModel.id, name: configuredModel.label, provider: "toonflow", api: provider.protocol, baseUrl,
+    id: configuredModel.id, name: configuredModel.label, provider: "lumo", api: provider.protocol, baseUrl,
     reasoning: false, input: ["text", "image"],
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
     contextWindow: configuredModel.contextWindow,

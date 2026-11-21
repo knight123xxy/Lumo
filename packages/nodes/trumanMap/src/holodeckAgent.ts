@@ -1,4 +1,4 @@
-import { z, type NodeAiTool } from "@toonflow/nodes-scaffold/runtime";
+import { z, type NodeAiTool } from "@lumo/nodes-scaffold/runtime";
 import { parseToolArgs } from "./toolArgs";
 import { createAiSceneDraft, defaultHumanInstruction, heightFromPosition, localEditInstruction, sceneToolNames, setDressingInstruction, setRecipesInstruction, snapshotSceneAnchor, streetLayoutInstruction } from "./aiScene";
 import { treeBrushAssets } from "./sceneBrushAssets";
@@ -53,7 +53,7 @@ import { lineOverrun } from "./shotList";
  * Derived from Holodeck's author-world, integrate-asset and verify-world skills,
  * world-read and selection-context protocol. Copyright 2026 Matthew Kissinger, MIT.
  * https://github.com/instruktlabs/holodeck/tree/96eb3121e62f15aa7e761d75cbbfa3efcdbafda2
- * Toonflow owns the Agent loop, the private proposal and the actual viewport evidence.
+ * Lumo owns the Agent loop, the private proposal and the actual viewport evidence.
  */
 
 export type HolodeckContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
@@ -656,7 +656,7 @@ export function createHolodeckDraft(options: DraftOptions) {
 
   function capabilities() {
     return {
-      protocol: "holodeckToonflowWorldV1", upstreamCommit: "96eb3121e62f15aa7e761d75cbbfa3efcdbafda2",
+      protocol: "holodeckLumoWorldV1", upstreamCommit: "96eb3121e62f15aa7e761d75cbbfa3efcdbafda2",
       coordinates: { unit: "metre", up: "+Y", objectRotation: "XYZ Euler degrees" },
       limits: { snapshotBytes: maxSnapshotBytes, readPageBytes: pageBytes, glbBytes: 50 * 1024 * 1024 },
       supported: ["independent GLB placements", "local authored asset catalog", ...(options.loadAssets ? ["additional asset catalog loader"] : []), "Kiln-authored source revisions", "basic JSON model helper", "editable terrain heightfields", "river surface animation", "forest instances", "world-space model-bottom height", "optional vertical gravity and support collisions", "independent calendar, latitude, world north and time flow", "date-based or manual moon phase with moonlight and stars", "weather intensity and wind", "weather-linked sun direction, light colors, fill and exposure", "13 mixed weather and sky layers with independent weights", "shared wind direction for clouds, precipitation, dust, water and trees", "independent editable performance tracks and key events with Navcat navigation and Yuka execution"],

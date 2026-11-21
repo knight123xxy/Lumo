@@ -109,22 +109,22 @@
 import { computed, nextTick, onMounted, onScopeDispose, ref, shallowRef, watch } from "vue";
 import { ElButton, ElCard, ElOption, ElOptionGroup, ElLoading, ElDropdown, ElDropdownMenu, ElDropdownItem, ElMessageBox } from "element-plus";
 import { IconCameraAi, IconSparkles, IconArrowUp, IconPlayerStop, IconTransfer, IconMusic, IconLayersSubtract, IconScissors, IconMovie, IconPhotoScan, IconPlayerSkipBack, IconPlayerSkipForward } from "@tabler/icons-vue";
-import { findNodeModel, getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelMemory, useNodeModelSelection, z, type NodeMediaModel, type NodeVideoRequest, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
-import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
-import modelLabel from "@toonflow/node-shared/modelLabel";
-import modelSelect from "@toonflow/node-shared/modelSelect";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
-import { useNodeGeneration } from "@toonflow/node-shared/useNodeGeneration";
-import { getModelFormValues, useModelForm } from "@toonflow/node-shared/useModelForm";
-import { useNodeReferences } from "@toonflow/node-shared/useNodeReferences";
-import { getPromptText } from "@toonflow/node-shared/promptText";
-import promptInput from "@toonflow/node-shared/promptInput";
-import videoPlayer from "@toonflow/node-video/videoPlayer";
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
-import videoActions from "@toonflow/node-video/videoActions";
-import referenceItem from "@toonflow/node-shared/referenceItem";
-import mediaHistory from "@toonflow/node-shared/mediaHistory";
-import mediaPrice from "@toonflow/node-shared/mediaPrice";
+import { findNodeModel, getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelMemory, useNodeModelSelection, z, type NodeMediaModel, type NodeVideoRequest, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
+import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
+import modelLabel from "@lumo/node-shared/modelLabel";
+import modelSelect from "@lumo/node-shared/modelSelect";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
+import { useNodeGeneration } from "@lumo/node-shared/useNodeGeneration";
+import { getModelFormValues, useModelForm } from "@lumo/node-shared/useModelForm";
+import { useNodeReferences } from "@lumo/node-shared/useNodeReferences";
+import { getPromptText } from "@lumo/node-shared/promptText";
+import promptInput from "@lumo/node-shared/promptInput";
+import videoPlayer from "@lumo/node-video/videoPlayer";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
+import videoActions from "@lumo/node-video/videoActions";
+import referenceItem from "@lumo/node-shared/referenceItem";
+import mediaHistory from "@lumo/node-shared/mediaHistory";
+import mediaPrice from "@lumo/node-shared/mediaPrice";
 import generationSettings from "./components/generationSettings.vue";
 
 defineOptions({
@@ -284,19 +284,19 @@ const previewUrl = files.useFileUrl(
 );
 
 onMounted(() => {
-  window.addEventListener("toonflow:plugin-installed", refreshProviderModels);
-  window.addEventListener("toonflow:provider-config-changed", refreshProviderModels);
+  window.addEventListener("lumo:plugin-installed", refreshProviderModels);
+  window.addEventListener("lumo:provider-config-changed", refreshProviderModels);
   void loadModels().catch(error => { if (!disposed) showNodeError(error, "模型读取失败"); });
 });
 onScopeDispose(() => {
   disposed = true;
-  window.removeEventListener("toonflow:plugin-installed", refreshProviderModels);
-  window.removeEventListener("toonflow:provider-config-changed", refreshProviderModels);
+  window.removeEventListener("lumo:plugin-installed", refreshProviderModels);
+  window.removeEventListener("lumo:provider-config-changed", refreshProviderModels);
   generationController?.abort();
 });
 
 async function refreshProviderModels(event?: Event) {
-  if (event?.type === "toonflow:plugin-installed" && (event as CustomEvent<{ type?: string }>).detail?.type !== "provider") return;
+  if (event?.type === "lumo:plugin-installed" && (event as CustomEvent<{ type?: string }>).detail?.type !== "provider") return;
   try {
     await generation;
     if (!disposed && !deleting.value) await loadModels();

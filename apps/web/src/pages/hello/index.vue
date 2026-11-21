@@ -56,10 +56,10 @@ import { defineAsyncComponent, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { IconArrowLeft, IconDevices } from "@tabler/icons-vue";
-import { customProviders, multiTenantEnabled, toonflowAccountToken } from "@/stores/settings";
+import { customProviders, multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
 import { useHelloStore } from "@/stores/hello";
 import anonymousData from "@/lib/anonymousData";
-import logoSvg from "@toonflow/assets/logo.svg?raw";
+import logoSvg from "@lumo/assets/logo.svg?raw";
 import bg from "./bg.vue";
 import languageSelect from "@/components/languageSelect.vue";
 import { mobileConnectionLabel } from "@/lib/mobile";
@@ -69,7 +69,7 @@ const languageModel = defineAsyncComponent(() => import("@/components/settings/p
 const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const mobileConnectVisible = ref(false);
 const view = ref<"welcome" | "custom">("welcome");
-const loggedIn = ref(!!toonflowAccountToken.value);
+const loggedIn = ref(!!lumoAccountToken.value);
 const saving = ref(false);
 const router = useRouter();
 const hello = useHelloStore();
@@ -84,7 +84,7 @@ async function completeSetup() {
   saving.value = true;
   try {
     await hello.complete();
-    anonymousData.track(view.value === "custom" || toonflowAccountToken.value ? "onboarding.complete" : "onboarding.skip");
+    anonymousData.track(view.value === "custom" || lumoAccountToken.value ? "onboarding.complete" : "onboarding.skip");
     await router.replace("/home");
   } catch {
     ElMessage.error("保存引导状态失败，请重试");

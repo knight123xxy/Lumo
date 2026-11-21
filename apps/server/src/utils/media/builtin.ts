@@ -10,7 +10,7 @@ export async function getSource(id: string, kind: VendorKind, signal?: AbortSign
   const { source } = await getChannel().getVendorSource(id, kind, { signal });
   // ACT: 在线源码只做 AST 校验，用户安装后才沿已有供应商运行入口加载。
   const parsed = kind === "language" ? validateTextProviderSource(source) : validateMediaProviderSource(source);
-  if (parsed.id !== id || id.toLowerCase() === "toonflow") {
+  if (parsed.id !== id || id.toLowerCase() === "lumo") {
     throw Object.assign(new Error("供应商源码 ID 与所选供应商不一致或使用了账号保留 ID"), { status: 502 });
   }
   if ("configuration" in parsed) {

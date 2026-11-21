@@ -113,7 +113,7 @@ interface ProviderTools {
    * @throws {FfmpegRequiredError} 未安装或当前设置未找到可用的 FFmpeg。
    * @example const ffmpeg = await this.tool.ffmpeg(); const command = ffmpeg("assets/input.mp4").videoCodec("libx264");
    */
-  ffmpeg(): Promise<import("@toonflow/ffmpeg/types").FfmpegFactory>;
+  ffmpeg(): Promise<import("@lumo/ffmpeg/types").FfmpegFactory>;
   /**
    * 在用户电脑上直接运行命令行程序（不经过 shell），command[0] 为程序名或路径，其余为逐项参数。
    * 仅桌面端可用，多租户模式与 算力汇 账号供应商不可用。源码直接写出 this.tool.terminal 的供应商在安装或保存时会强提醒用户；

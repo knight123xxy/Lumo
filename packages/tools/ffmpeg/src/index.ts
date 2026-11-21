@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { chainMethods, queryMethods, runMethods } from "@toonflow/ffmpeg/remote";
-import type { ToolPlugin } from "@toonflow/tools-scaffold/runtime";
+import { chainMethods, queryMethods, runMethods } from "@lumo/ffmpeg/remote";
+import type { ToolPlugin } from "@lumo/tools-scaffold/runtime";
 
 const configSchema = z.strictObject({});
 const probeSchema = z.strictObject({

@@ -1,5 +1,5 @@
-import type { BrowserFfmpegCommand, BrowserFfmpegFactory, FfprobeData } from "@toonflow/ffmpeg/browser";
-import { getPcmOptions, type PcmOptions } from "@toonflow/node-shared/pcmPreview";
+import type { BrowserFfmpegCommand, BrowserFfmpegFactory, FfprobeData } from "@lumo/ffmpeg/browser";
+import { getPcmOptions, type PcmOptions } from "@lumo/node-shared/pcmPreview";
 
 export type AudioSegment = { start: number; end: number };
 export type AudioProcessingOptions = { outputPath: string; pcm?: PcmOptions } & (

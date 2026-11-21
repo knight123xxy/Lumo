@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/multi-tenant-source-mapping",
+  "name": "@lumo/multi-tenant-source-mapping",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "scripts": { "typecheck": "tsc" },
   "dependencies": {
-    "@toonflow/multi-tenant-db": "workspace:*",
+    "@lumo/multi-tenant-db": "workspace:*",
     "zod": "^4.6.2"
   }
 }

@@ -29,7 +29,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { CarouselInstance } from "element-plus";
 import { IconPlayerPause, IconPlayerPlay } from "@tabler/icons-vue";
-import type { HomeAdvertisement } from "@toonflow/server/channel";
+import type { HomeAdvertisement } from "@lumo/server/channel";
 import homeAdvertisement from "./homeAdvertisement.vue";
 
 const props = withDefaults(defineProps<{

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { ModelAdapter, ModelExecution } from "@toonflow/multi-tenant-gateway/types";
-import { modelRouteSchema } from "@toonflow/multi-tenant-models/config";
-import type { ModelPrice, ModelRoute } from "@toonflow/multi-tenant-models/config";
+import type { ModelAdapter, ModelExecution } from "@lumo/multi-tenant-gateway/types";
+import { modelRouteSchema } from "@lumo/multi-tenant-models/config";
+import type { ModelPrice, ModelRoute } from "@lumo/multi-tenant-models/config";
 import { translateMessage } from "@/lib/i18n";
 import { getModelLimits, getModelReasoning, providerSchema } from "@/utils/ai/provider";
 import { getChannel } from "@/utils/channel";
@@ -90,7 +90,7 @@ const textAdapter: ModelAdapter<TextUpstream, TextCapabilities, Cloud> = {
       async available(type, { providers }) {
         if (type !== "text") return [];
         return providers.flatMap(value => {
-          if (value.kind !== "text" || value.id.toLowerCase() === "toonflow") return [];
+          if (value.kind !== "text" || value.id.toLowerCase() === "lumo") return [];
           const parsed = providerSchema.safeParse(value.config);
           if (!parsed.success) return [];
           return parsed.data.models.map(model => ({ target: "backend" as const, providerId: value.id,
@@ -98,19 +98,19 @@ const textAdapter: ModelAdapter<TextUpstream, TextCapabilities, Cloud> = {
         });
       },
       async resolve(route, resources) {
-        if (route.providerId.toLowerCase() === "toonflow") fail("平台模型不能使用个人云端凭据", 503);
+        if (route.providerId.toLowerCase() === "lumo") fail("平台模型不能使用个人云端凭据", 503);
         const providers = await resources.providers();
         return textUpstream(providers.find(item => item.kind === "text" && item.id === route.providerId)?.config, route);
       },
     },
-    toonflowCloud: {
+    lumoCloud: {
       async available(type, { cloud }) {
         if (type !== "text") return [];
-        return cloud?.language.models.map(model => ({ target: "toonflowCloud" as const,
-          providerId: "toonflow", providerLabel: "Toonflow", modelId: model.id, label: model.label, type })) ?? [];
+        return cloud?.language.models.map(model => ({ target: "lumoCloud" as const,
+          providerId: "lumo", providerLabel: "Lumo", modelId: model.id, label: model.label, type })) ?? [];
       },
       async resolve(route, resources) {
-        if (route.providerId.toLowerCase() !== "toonflow") fail("平台模型上游配置无效", 503);
+        if (route.providerId.toLowerCase() !== "lumo") fail("平台模型上游配置无效", 503);
         return textUpstream((await resources.cloud()).language, route);
       },
     },
@@ -176,11 +176,11 @@ function publicRules(value: unknown, secrets: string[]) {
 function restoreMedia(value: unknown, route: ModelRoute): MediaUpstream {
   const parsed = mediaUpstreamSchema.safeParse(value);
   if (!parsed.success || parsed.data.upstreamModelId !== route.upstreamModelId
-    || parsed.data.cloud !== (route.target === "toonflowCloud")) fail("媒体任务路由快照无效", 409);
+    || parsed.data.cloud !== (route.target === "lumoCloud")) fail("媒体任务路由快照无效", 409);
   let metadata: ReturnType<typeof validateMediaProviderSource>;
   try { metadata = validateMediaProviderSource(parsed.data.source); }
   catch { fail("媒体任务路由快照无效", 409); }
-  if (metadata.id !== (parsed.data.cloud ? "toonflow" : route.providerId)) fail("媒体任务路由快照无效", 409);
+  if (metadata.id !== (parsed.data.cloud ? "lumo" : route.providerId)) fail("媒体任务路由快照无效", 409);
   const model = metadata.models.find(item => item.id === route.upstreamModelId && item.type === route.type);
   if (!model) fail("媒体任务路由快照无效", 409);
   return { ...parsed.data, model,
@@ -248,14 +248,14 @@ const mediaAdapter: ModelAdapter<MediaUpstream, MediaCapabilities, Cloud> = {
       async available(type, { providers }) {
         if (type === "text") return [];
         return providers.flatMap(provider => {
-          if (provider.kind !== "media" || provider.id.toLowerCase() === "toonflow" || !provider.source) return [];
+          if (provider.kind !== "media" || provider.id.toLowerCase() === "lumo" || !provider.source) return [];
           const metadata = validateMediaProviderSource(provider.source);
           return metadata.models.filter(model => model.type === type).map(model => ({ target: "backend" as const,
             providerId: provider.id, providerLabel: provider.label, modelId: model.id, label: model.label, type }));
         });
       },
       async resolve(route, resources) {
-        if (route.providerId.toLowerCase() === "toonflow") fail("平台模型不能使用个人云端凭据", 503);
+        if (route.providerId.toLowerCase() === "lumo") fail("平台模型不能使用个人云端凭据", 503);
         const providers = await resources.providers();
         const provider = providers.find(item => item.kind === "media" && item.id === route.providerId);
         if (!provider?.source) fail("平台模型上游配置无效", 503);
@@ -267,21 +267,21 @@ const mediaAdapter: ModelAdapter<MediaUpstream, MediaCapabilities, Cloud> = {
           secretValues: secretsFrom(provider.config, metadata.rules) };
       },
     },
-    toonflowCloud: {
+    lumoCloud: {
       async available(type, { cloud }) {
         if (type === "text") return [];
-        return cloud?.mediaModels.filter(model => model.type === type).map(model => ({ target: "toonflowCloud" as const,
-          providerId: "toonflow", providerLabel: "Toonflow", modelId: model.id, label: model.label, type })) ?? [];
+        return cloud?.mediaModels.filter(model => model.type === type).map(model => ({ target: "lumoCloud" as const,
+          providerId: "lumo", providerLabel: "Lumo", modelId: model.id, label: model.label, type })) ?? [];
       },
       async resolve(route, resources) {
-        if (route.providerId.toLowerCase() !== "toonflow") fail("平台模型上游配置无效", 503);
+        if (route.providerId.toLowerCase() !== "lumo") fail("平台模型上游配置无效", 503);
         const cloud = await resources.cloud();
         const model = cloud.mediaModels.find(item => item.id === route.upstreamModelId && item.type === route.type);
         if (!model) fail("平台模型上游不存在", 503);
         let metadata: ReturnType<typeof validateMediaProviderSource>;
         try { metadata = validateMediaProviderSource(cloud.mediaSource); }
         catch { fail("平台模型上游配置无效", 503); }
-        if (metadata.id !== "toonflow") fail("平台模型上游配置无效", 503);
+        if (metadata.id !== "lumo") fail("平台模型上游配置无效", 503);
         return { source: cloud.mediaSource, config: {}, model, upstreamModelId: route.upstreamModelId, cloud: true,
           secretValues: [cloud.accountToken, cloud.language.apiKey, ...(cloud.mediaToken ? [cloud.mediaToken] : []), ...secretsFrom({}, metadata.rules)] };
       },

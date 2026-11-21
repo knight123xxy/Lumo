@@ -1,5 +1,5 @@
 <template>
-  <el-card class="balanceCard toonflowBalance" shadow="never" :bodyStyle="{ padding: '0' }">
+  <el-card class="balanceCard lumoBalance" shadow="never" :bodyStyle="{ padding: '0' }">
     <el-popover v-model:visible="balanceVisible" trigger="click" placement="bottom-end" :width="360" :popperStyle="{ maxWidth: 'calc(100vw - 32px)' }" :showArrow="false" @show="refreshPreview">
       <template #reference>
         <el-button class="balanceTrigger" text :aria-busy="loading" :aria-expanded="balanceVisible" :title="error || '账户余额'" aria-label="账号与余额">
@@ -32,8 +32,8 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onBeforeUnmount, ref, watch } from "vue";
 import { IconCreditCard, IconRefresh } from "@tabler/icons-vue";
-import { locale, translate } from "@toonflow/i18n/vue";
-import type { PreviewData } from "@toonflow/server/channel";
+import { locale, translate } from "@lumo/i18n/vue";
+import type { PreviewData } from "@lumo/server/channel";
 import http from "@/lib/http";
 import { providerBalances, refreshProviderBalance } from "@/lib/providerBilling";
 import { settings } from "@/stores/settings";
@@ -49,8 +49,8 @@ const numberFormat = computed(() => new Intl.NumberFormat(locale.value, { maximu
 const moneyFormat = computed(() => new Intl.NumberFormat(locale.value, { style: "currency", currency: "CNY", minimumFractionDigits: 0, maximumFractionDigits: 6 }));
 const sharedBalance = computed(() => {
   const configs = settings.value.mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
-  const configKey = JSON.stringify([configs?.toonflow ?? {}, props.token]);
-  return providerBalances.value.find(item => item.id === "toonflow" && item.configKey === configKey && !item.error);
+  const configKey = JSON.stringify([configs?.lumo ?? {}, props.token]);
+  return providerBalances.value.find(item => item.id === "lumo" && item.configKey === configKey && !item.error);
 });
 const balanceText = computed(() => {
   const balance = sharedBalance.value?.balance;
@@ -87,7 +87,7 @@ async function refreshPreview() {
 
 function refreshBalance() {
   void refreshPreview();
-  void refreshProviderBalance("toonflow");
+  void refreshProviderBalance("lumo");
 }
 
 function openRecharge() {
@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-.toonflowBalance {
+.lumoBalance {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 

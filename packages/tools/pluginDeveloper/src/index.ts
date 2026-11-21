@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolPlugin } from "@toonflow/tools-scaffold/runtime";
+import type { ToolPlugin } from "@lumo/tools-scaffold/runtime";
 import { pluginDevelopmentSchema } from "./runtime";
 
 export { develop as developPlugin } from "./development";

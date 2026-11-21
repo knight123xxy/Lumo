@@ -1,10 +1,10 @@
 import { dirname, join } from "node:path";
-import { mkdir, rm } from "@toonflow/file";
+import { mkdir, rm } from "@lumo/file";
 import { t } from "@/lib/i18n";
 import { createAgentSession, DefaultResourceLoader, SessionManager, SettingsManager } from "@earendil-works/pi-coding-agent";
 import type { AgentSession, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import type { ImageContent } from "@earendil-works/pi-ai";
-import type { QuestionContext } from "@toonflow/tools-scaffold/runtime";
+import type { QuestionContext } from "@lumo/tools-scaffold/runtime";
 import { createAgentToolContext } from "@/agent/tools";
 import { createAgentModel } from "@/agent/runtime/model";
 import { configureAgentRequests } from "@/agent/runtime/requests";

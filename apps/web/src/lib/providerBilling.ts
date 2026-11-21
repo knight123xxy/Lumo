@@ -1,8 +1,8 @@
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { onScopeDispose, ref, watch } from "vue";
-import type { ProviderBalance } from "@toonflow/providers";
-import { multiTenantEnabled, settings, toonflowAccountToken } from "@/stores/settings";
+import type { ProviderBalance } from "@lumo/providers";
+import { multiTenantEnabled, settings, lumoAccountToken } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
 
 type BalanceSnapshot = { accountId: string; balance: ProviderBalance | null; revision: number };
@@ -11,7 +11,7 @@ async function getProviderBalance(providerId: string, signal?: AbortSignal) {
   const entry = providerBalances.value.find(item => item.id === providerId);
   const { data } = await axios.post<{ code: number; data: BalanceSnapshot; message?: string }>("/api/ai/media/balance", {
     providerId,
-  }, { signal, timeout: 25000, headers: { "x-toonflow-workspace": "1" } });
+  }, { signal, timeout: 25000, headers: { "x-lumo-workspace": "1" } });
   if (data.code !== 200) throw new Error(data.message || "余额查询失败，请重试");
   if (entry && !signal?.aborted && providerBalances.value.includes(entry)) {
     if (entry.accountId !== data.data.accountId) entry.revision = -1;
@@ -78,11 +78,11 @@ export function useProviderBalances() {
   function syncProviders() {
     if (multiTenantEnabled.value) { providerBalances.value = []; return; }
     const configs = settings.value.mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
-    const accountProvider = settings.value.toonflowProvider as { id?: string } | null | undefined;
+    const accountProvider = settings.value.lumoProvider as { id?: string } | null | undefined;
     const previousEntries = new Map(providerBalances.value.map(entry => [entry.id, entry]));
     providerBalances.value = providers.filter(item => item.supportsBalance
-      && (item.id !== "toonflow" || (toonflowAccountToken.value && (accountProvider?.id === "Toonflow" || accountProvider?.id === "toonflow")))).map(provider => {
-      const configKey = JSON.stringify([configs?.[provider.id] ?? {}, provider.id === "toonflow" ? toonflowAccountToken.value : ""]);
+      && (item.id !== "lumo" || (lumoAccountToken.value && (accountProvider?.id === "Lumo" || accountProvider?.id === "lumo")))).map(provider => {
+      const configKey = JSON.stringify([configs?.[provider.id] ?? {}, provider.id === "lumo" ? lumoAccountToken.value : ""]);
       const previous = previousEntries.get(provider.id);
       if (previous?.configKey === configKey) {
         previous.label = provider.label;
@@ -191,13 +191,13 @@ export function useProviderBalances() {
   watch(multiTenantEnabled, invalidate, { flush: "sync" });
   watch(() => JSON.stringify(settings.value.mediaProviderConfigs), invalidate, { immediate: true, flush: "sync" });
   watch(() => workspaceStore.project?.lastOpenedAt, scheduleRefresh);
-  const refreshProvider = (event: WindowEventMap["toonflow:plugin-installed"]) => {
+  const refreshProvider = (event: WindowEventMap["lumo:plugin-installed"]) => {
     if (event.detail.type === "provider") invalidate();
   };
   window.addEventListener("pageshow", scheduleRefresh);
   window.addEventListener("focus", scheduleRefresh);
-  window.addEventListener("toonflow:plugin-installed", refreshProvider);
-  window.addEventListener("toonflow:provider-config-changed", invalidate);
+  window.addEventListener("lumo:plugin-installed", refreshProvider);
+  window.addEventListener("lumo:provider-config-changed", invalidate);
   document.addEventListener("visibilitychange", scheduleRefresh);
   onScopeDispose(() => {
     disposed = true;
@@ -209,8 +209,8 @@ export function useProviderBalances() {
     connections.clear();
     window.removeEventListener("pageshow", scheduleRefresh);
     window.removeEventListener("focus", scheduleRefresh);
-    window.removeEventListener("toonflow:plugin-installed", refreshProvider);
-    window.removeEventListener("toonflow:provider-config-changed", invalidate);
+    window.removeEventListener("lumo:plugin-installed", refreshProvider);
+    window.removeEventListener("lumo:provider-config-changed", invalidate);
     document.removeEventListener("visibilitychange", scheduleRefresh);
   });
 }

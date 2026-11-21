@@ -1,4 +1,4 @@
-import { cp, lstat, mkdir, readFile, readdir, realpath, rm, writeAtomic } from "@toonflow/file";
+import { cp, lstat, mkdir, readFile, readdir, realpath, rm, writeAtomic } from "@lumo/file";
 import { createHash } from "node:crypto";
 import { fullSdkVersion } from "../package.json";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -14,8 +14,8 @@ type PackageInfo = {
 const projectDirectory = resolve(import.meta.dir, "..");
 // ACT: 构建入口单独内联；这里只保留公开源码实际使用的依赖，不复制宿主已共享的 peer 运行时。
 const sourceDependencies: Record<string, string[]> = {
-  "@toonflow/nodes-scaffold": ["@toonflow/asr", "@toonflow/ffmpeg", "@toonflow/plugin-server", "@tabler/icons-vue", "eventsource-parser", "zod"],
-  "@toonflow/tools-scaffold": ["@toonflow/asr", "@toonflow/file", "zod"],
+  "@lumo/nodes-scaffold": ["@lumo/asr", "@lumo/ffmpeg", "@lumo/plugin-server", "@tabler/icons-vue", "eventsource-parser", "zod"],
+  "@lumo/tools-scaffold": ["@lumo/asr", "@lumo/file", "zod"],
   "element-plus": [],
 };
 const compilerExternals = ["vite", "vue", "sass", "typescript"];
@@ -92,12 +92,12 @@ async function copyPluginSdk(outputDirectory: string) {
   await rm(outputDirectory, { recursive: true, force: true });
   await mkdir(nodeModulesDirectory, { recursive: true });
   await writeAtomic(join(outputDirectory, "package.json"), JSON.stringify({ private: true, type: "module" }, null, 2) + "\n", { mode: 0o644 });
-  const scaffolds = await Promise.all(["@toonflow/nodes-scaffold", "@toonflow/tools-scaffold"].map(async name => ({
+  const scaffolds = await Promise.all(["@lumo/nodes-scaffold", "@lumo/tools-scaffold"].map(async name => ({
     name,
     entry: await realpath(Bun.resolveSync(name, projectDirectory)),
     directory: (await resolvePackage(name, projectDirectory)).directory,
   })));
-  for (const name of ["@toonflow/nodes-scaffold", "@toonflow/tools-scaffold", "@toonflow/node-shared", ...compilerExternals]) {
+  for (const name of ["@lumo/nodes-scaffold", "@lumo/tools-scaffold", "@lumo/node-shared", ...compilerExternals]) {
     await copyPackage(name, projectDirectory);
   }
   await copyPackage("element-plus", scaffolds[0]!.directory);
@@ -122,7 +122,7 @@ async function copyPluginSdk(outputDirectory: string) {
     naming: "pluginBuild.js",
     target: "bun",
     packages: "bundle",
-    external: [...compilerExternals, "@toonflow/nodes-scaffold", "@toonflow/tools-scaffold"],
+    external: [...compilerExternals, "@lumo/nodes-scaffold", "@lumo/tools-scaffold"],
   });
   if (!result.success) throw new AggregateError(result.logs, "插件构建进程打包失败");
   await mkdir(join(outputDirectory, "docs"), { recursive: true });

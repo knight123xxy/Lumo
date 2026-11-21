@@ -2,7 +2,7 @@ import logger from "morgan";
 import express from "express";
 import cors from "cors";
 import { dirname, resolve } from "node:path";
-import { lstat, mkdir, readdir, unlink, writeAtomicSync } from "@toonflow/file";
+import { lstat, mkdir, readdir, unlink, writeAtomicSync } from "@lumo/file";
 import type { Request, Response, NextFunction } from "express";
 import buildRoute from "@/core";
 import { errorFromCause } from "@/lib/responseFormat";
@@ -10,7 +10,7 @@ import desktopRequest from "@/lib/desktop";
 import { getRuntimePlatform } from "@/lib/platform";
 import initializePlugins from "@/utils/plugins/initialize";
 import { languageRequest, setLocaleFallback, translateError, translateMessage } from "@/lib/i18n";
-import { detectLocale, normalizeLocale } from "@toonflow/i18n";
+import { detectLocale, normalizeLocale } from "@lumo/i18n";
 import { ideamineProviderSource, ideamineTextAiProvider, ideamineTextProviderSource, siliconflowAudioProviderSource } from "@/utils/media/builtin/builtinProviderSources";
 
 export async function createApp({
@@ -35,7 +35,7 @@ export async function createApp({
   pluginRevision?: string;
 }) {
   // conf 由下方的路由动态加载，必须先确定整个进程共用的数据目录。
-  if (dataDirectory) process.env.TOONFLOW_DATA_DIR = resolve(dataDirectory);
+  if (dataDirectory) process.env.LUMO_DATA_DIR = resolve(dataDirectory);
   const { default: conf } = await import("@/utils/conf");
   const providerDirectory = resolve(dirname(conf.path), "providers");
   const providerDirectoryInfo = await lstat(providerDirectory).catch((error: NodeJS.ErrnoException) => {
@@ -129,7 +129,7 @@ export async function createApp({
   const router = await import("@/router");
   router.default(app);
   const [{ createMcpRouter }, { getMcpTools, runInMcpRequest }, { authorizeMcp }, { skillResources }] = await Promise.all([
-    import("@toonflow/mcp"),
+    import("@lumo/mcp"),
     import("@/utils/mcp/tools"),
     import("@/utils/mcp/control"),
     import("@/utils/mcp/resources"),

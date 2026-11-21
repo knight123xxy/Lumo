@@ -16,8 +16,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw,
 import { ElDialog } from "element-plus";
 import { useVueFlow } from "@vue-flow/core";
 import { IconCube3dSphere } from "@tabler/icons-vue";
-import { nodeSkeleton, useNode, uploadNodeFile, type NodeHandle, type WorkspaceFiles, type NodeAiModel, z } from "@toonflow/nodes-scaffold/runtime";
-import { useNodePersistence, useNodeProject, type NodePersistenceContext } from "@toonflow/nodes-scaffold/nodeDocument";
+import { nodeSkeleton, useNode, uploadNodeFile, type NodeHandle, type WorkspaceFiles, type NodeAiModel, z } from "@lumo/nodes-scaffold/runtime";
+import { useNodePersistence, useNodeProject, type NodePersistenceContext } from "@lumo/nodes-scaffold/nodeDocument";
 import sceneStudio from "./sceneStudio.vue";
 import { builtinAssets, downloadAsset, validateModel } from "./assetLibrary";
 import { resolveAssetModel } from "./assetModelResolver";

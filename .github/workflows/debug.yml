@@ -227,11 +227,11 @@ jobs:
           : "${notarizationIssuerId:?请配置 MACOS_NOTARIZATION_ISSUER_ID Secret}"
           : "${notarizationKeyBase64:?请配置 MACOS_NOTARIZATION_KEY_BASE64 Secret}"
           umask 077
-          certificatePath="$RUNNER_TEMP/toonflowSigning.p12"
-          installerCertificatePath="$RUNNER_TEMP/toonflowInstallerSigning.p12"
+          certificatePath="$RUNNER_TEMP/lumoSigning.p12"
+          installerCertificatePath="$RUNNER_TEMP/lumoInstallerSigning.p12"
           installerIssuerPath="$RUNNER_TEMP/developerIdG2.cer"
-          keychainPath="$RUNNER_TEMP/toonflowSigning.keychain-db"
-          notarizationKeyPath="$RUNNER_TEMP/toonflowNotarization.p8"
+          keychainPath="$RUNNER_TEMP/lumoSigning.keychain-db"
+          notarizationKeyPath="$RUNNER_TEMP/lumoNotarization.p8"
           trap 'rm -f "$certificatePath" "$installerCertificatePath" "$installerIssuerPath"' EXIT
           printf '%s' "$notarizationKeyBase64" | base64 --decode > "$notarizationKeyPath"
           openssl pkey -in "$notarizationKeyPath" -passin pass: -check -noout > /dev/null
@@ -283,9 +283,9 @@ jobs:
         if: matrix.platform == 'darwin'
         run: |
           bun -e '
-          import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "@toonflow/file";
+          import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "@lumo/file";
           import { join } from "node:path";
-          const directory = join(process.env.RUNNER_TEMP, "toonflowMacTools");
+          const directory = join(process.env.RUNNER_TEMP, "lumoMacTools");
           mkdirSync(directory, { recursive: true });
           const target = join(directory, "xcrun");
           // ACT: 无扩展名入口保持 JavaScript 语法，并统一 LF，保证 macOS shebang 可执行。
@@ -296,7 +296,7 @@ jobs:
       - name: 构建 macOS 安装包及更新文件（自动签名与公证）
         if: runner.os == 'macOS'
         env:
-          TOONFLOW_EXTERNAL_RUNTIME: "1"
+          LUMO_EXTERNAL_RUNTIME: "1"
           ELECTROBUN_DEVELOPER_ID: ${{ steps.signing.outputs.identity }}
           ELECTROBUN_INSTALLER_ID: ${{ steps.signing.outputs.installerIdentity }}
           ELECTROBUN_INSTALLER_KEYCHAIN: ${{ steps.signing.outputs.keychainPath }}
@@ -307,8 +307,8 @@ jobs:
       - name: 清理 macOS 签名与公证凭据
         if: always() && matrix.platform == 'darwin'
         run: |
-          rm -f "$RUNNER_TEMP/toonflowSigning.p12" "$RUNNER_TEMP/toonflowInstallerSigning.p12" "$RUNNER_TEMP/developerIdG2.cer" "$RUNNER_TEMP/toonflowNotarization.p8"
-          keychainPath="$RUNNER_TEMP/toonflowSigning.keychain-db"
+          rm -f "$RUNNER_TEMP/lumoSigning.p12" "$RUNNER_TEMP/lumoInstallerSigning.p12" "$RUNNER_TEMP/developerIdG2.cer" "$RUNNER_TEMP/lumoNotarization.p8"
+          keychainPath="$RUNNER_TEMP/lumoSigning.keychain-db"
           if [[ -f "$keychainPath" ]]; then
             security delete-keychain "$keychainPath"
           fi
@@ -325,12 +325,12 @@ jobs:
                 --test-requirement "=anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf = H\"$signingIdentity\"" "$1"
             fi
           }
-          inspectionDirectory="$RUNNER_TEMP/toonflowPackageCheck"
+          inspectionDirectory="$RUNNER_TEMP/lumoPackageCheck"
           mkdir -p "$inspectionDirectory"
           export inspectionDirectory
           bun -e '
-          import { readdirSync } from "@toonflow/file";
-          import { file, write } from "@toonflow/file/bun";
+          import { readdirSync } from "@lumo/file";
+          import { file, write } from "@lumo/file/bun";
           import { join } from "node:path";
           const directory = process.env.releaseDirectory;
           const archives = readdirSync(directory).filter(name => name.endsWith(".tar.zst"));
@@ -338,7 +338,7 @@ jobs:
           await write(join(process.env.inspectionDirectory, "app.tar"), Bun.zstdDecompressSync(await file(join(directory, archives[0])).arrayBuffer()));
           '
           tar -xf "$inspectionDirectory/app.tar" -C "$inspectionDirectory"
-          app="$inspectionDirectory/toonflow.app"
+          app="$inspectionDirectory/lumo.app"
           test -s "$app/Contents/Resources/AppIcon.icns"
           test -s "$app/Contents/Resources/app/bun/index.js"
           test -x "$app/Contents/MacOS/bun"
@@ -346,7 +346,7 @@ jobs:
           if [[ "$macCodesign" == '1' ]]; then
             xcrun stapler validate "$app"
           fi
-          pkgPath="$releaseDirectory/toonflow-$appVersion-macos-$packageArchitecture.pkg"
+          pkgPath="$releaseDirectory/lumo-$appVersion-macos-$packageArchitecture.pkg"
           test -s "$pkgPath"
           if [[ "$macCodesign" == '1' ]]; then
             pkgutil --check-signature "$pkgPath"
@@ -359,8 +359,8 @@ jobs:
           while IFS= read -r -d '' appPath; do
             packagedApps+=("$appPath")
           done < <(find "$expandedDirectory" -type d -name '*.app' -prune -print0)
-          if [[ ${#packagedApps[@]} -ne 1 || "${packagedApps[0]}" != */Payload/toonflow.app ]]; then
-            echo '::error::PKG 必须包含且仅包含一个 toonflow.app 应用负载。'
+          if [[ ${#packagedApps[@]} -ne 1 || "${packagedApps[0]}" != */Payload/lumo.app ]]; then
+            echo '::error::PKG 必须包含且仅包含一个 lumo.app 应用负载。'
             exit 1
           fi
           app="${packagedApps[0]}"
@@ -369,7 +369,7 @@ jobs:
           test -x "$app/Contents/MacOS/bun"
           test -x "$app/Contents/MacOS/launcher"
           verifyMacArtifact "$app"
-          cmp "$inspectionDirectory/toonflow.app/Contents/Resources/version.json" "$app/Contents/Resources/version.json"
+          cmp "$inspectionDirectory/lumo.app/Contents/Resources/version.json" "$app/Contents/Resources/version.json"
       - name: 构建 Linux 安装包及更新文件
         if: matrix.platform == 'linux'
         run: bun run release:desktop "$appVersion" "$releaseMode"
@@ -381,18 +381,18 @@ jobs:
           debugSuffix: ${{ !inputs.androidRelease && '-debug' || '' }}
         run: |
           bun -e '
-          import { copyFile, mkdir } from "@toonflow/file";
+          import { copyFile, mkdir } from "@lumo/file";
           import { join } from "node:path";
           const directory = process.env.releaseFolder;
-          const apkName = `toonflow-${process.env.appVersion}-android-arm64${process.env.debugSuffix}.apk`;
+          const apkName = `lumo-${process.env.appVersion}-android-arm64${process.env.debugSuffix}.apk`;
           await mkdir(directory, { recursive: true });
-          await copyFile("build/mobile/toonflowMobile.apk", join(directory, apkName));
+          await copyFile("build/mobile/lumoMobile.apk", join(directory, apkName));
           '
       - name: 上传构建产物
         id: artifact
         uses: actions/upload-artifact@v7
         with:
-          name: toonflow-${{ needs.prepare.outputs.version }}-${{ matrix.target }}
+          name: lumo-${{ needs.prepare.outputs.version }}-${{ matrix.target }}
           path: ${{ matrix.releaseFolder }}/${{ needs.prepare.outputs.version }}/
           if-no-files-found: error
           compression-level: 0
@@ -402,4 +402,4 @@ jobs:
           artifactUrl: ${{ steps.artifact.outputs.artifact-url }}
           artifactTarget: ${{ matrix.target }}
         run: |
-          printf '[下载 Toonflow %s · %s](%s)\n' "$appVersion" "$artifactTarget" "$artifactUrl" >> "$GITHUB_STEP_SUMMARY"
+          printf '[下载 Lumo %s · %s](%s)\n' "$appVersion" "$artifactTarget" "$artifactUrl" >> "$GITHUB_STEP_SUMMARY"

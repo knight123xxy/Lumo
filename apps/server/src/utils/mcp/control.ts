@@ -58,7 +58,7 @@ export function authorizeMcp(req: Request) {
 
 export function assertAppRequest(req: Request) {
   getAppOrigin(req);
-  if (req.get("x-toonflow-workspace") !== "1") throw Object.assign(new Error("只允许 Lumo 页面访问控制连接"), { status: 403 });
+  if (req.get("x-lumo-workspace") !== "1") throw Object.assign(new Error("只允许 Lumo 页面访问控制连接"), { status: 403 });
 }
 
 export function assertControlRequest(req: Request) {

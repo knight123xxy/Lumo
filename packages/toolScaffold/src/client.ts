@@ -4,15 +4,15 @@ import axios from "axios";
 import formCreate from "@form-create/element-ui";
 import type { Component } from "vue";
 
-export { createBrowserAsr, isBrowserAsrSupported, isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@toonflow/asr";
-export type { BrowserAsrState, BrowserAsrResult, BrowserAsrError, BrowserAsrOptions, BrowserAudioAsrOptions } from "@toonflow/asr";
+export { createBrowserAsr, isBrowserAsrSupported, isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@lumo/asr";
+export type { BrowserAsrState, BrowserAsrResult, BrowserAsrError, BrowserAsrOptions, BrowserAudioAsrOptions } from "@lumo/asr";
 
 type ToolRenderer = { name: string; tools: string[]; url: string };
 const toolWindow = window as typeof window & {
-  toonflowToolHost?: { vue: typeof vueRuntime; elementPlus: typeof elementPlusRuntime; axios: typeof axios; formCreate: typeof formCreate };
-  toonflowToolViews?: Record<string, Record<string, Component>>;
+  lumoToolHost?: { vue: typeof vueRuntime; elementPlus: typeof elementPlusRuntime; axios: typeof axios; formCreate: typeof formCreate };
+  lumoToolViews?: Record<string, Record<string, Component>>;
 };
-toolWindow.toonflowToolHost = { vue: vueRuntime, elementPlus: elementPlusRuntime, axios, formCreate };
+toolWindow.lumoToolHost = { vue: vueRuntime, elementPlus: elementPlusRuntime, axios, formCreate };
 const componentLoads = new Map<string, { pending: Promise<Record<string, Component>>; components: Map<string, Component> }>();
 let rendererRequest: Promise<ToolRenderer[]> | undefined;
 
@@ -53,7 +53,7 @@ export async function loadToolComponent(toolName: string): Promise<Component | u
       script.src = renderer.url;
       script.onload = () => {
         script.remove();
-        const components = toolWindow.toonflowToolViews?.[renderer.name];
+        const components = toolWindow.lumoToolViews?.[renderer.name];
         if (!components || typeof components !== "object") reject(new Error(`工具包未导出界面：${renderer.name}`));
         else resolve(components);
       };

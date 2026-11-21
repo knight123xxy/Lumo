@@ -1,7 +1,7 @@
 import { h } from "vue";
 import axios from "axios";
 import { ElMessageBox } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 
 export const pluginTypeLabels = { node: "节点", ext: "文件扩展", tool: "工具", skill: "技能", provider: "供应商", agent: "Agent" };
 

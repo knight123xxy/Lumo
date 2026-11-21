@@ -70,7 +70,7 @@ import axios from "axios";
 import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { IconChevronRight, IconFile, IconFilePlus, IconFolder, IconFolderOpen } from "@tabler/icons-vue";
-import markdownExtension, { type MarkdownEditorContext } from "@toonflow/ext-md";
+import markdownExtension, { type MarkdownEditorContext } from "@lumo/ext-md";
 import { writeClipboardText } from "@/lib/clipboard";
 import type { Plugin } from "./types";
 
@@ -100,7 +100,7 @@ const moving = ref(false);
 const confirming = ref(false);
 const drafts = new Map<string, string>();
 const dirtyPaths = ref(new Set<string>());
-const headers = { "x-toonflow-workspace": "1" };
+const headers = { "x-lumo-workspace": "1" };
 let controller = new AbortController();
 
 const markdownEditor = defineAsyncComponent(markdownExtension.load);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { readFile } from "@toonflow/file";
+import { readFile } from "@lumo/file";
 import { parseSessionEntries, SessionManager } from "@earendil-works/pi-coding-agent";
 import type { FileEntry } from "@earendil-works/pi-coding-agent";
 import { getActiveAgentSession, getSubAgentInfo } from "@/agent/runtime/sessions";
@@ -66,7 +66,7 @@ export async function getAgentTeam(cwd: string, file: string): Promise<{ selfFil
     }
     const children = new Map<string, z.infer<typeof memberSchema>>();
     for (const entry of history.getEntries()) {
-      if (entry.type !== "custom" || entry.customType !== "toonflowSubAgent") continue;
+      if (entry.type !== "custom" || entry.customType !== "lumoSubAgent") continue;
       const child = memberSchema.parse(entry.data);
       if (child.parentFile !== currentFile) throw new Error("子 Agent 的父会话记录不一致");
       children.set(child.file, child);
@@ -107,7 +107,7 @@ export async function getAgentTeam(cwd: string, file: string): Promise<{ selfFil
     if (!session) continue;
     if (session.parentFile !== item.parentFile) throw new Error("子 Agent 不属于当前会话树");
     const context = session.history.buildSessionContext();
-    const reasoning = session.history.getBranch().findLast(entry => entry.type === "custom" && entry.customType === "toonflowReasoning");
+    const reasoning = session.history.getBranch().findLast(entry => entry.type === "custom" && entry.customType === "lumoReasoning");
     const selection = z.object({ thinkingLevel: z.enum(thinkingLevels).nullable() }).safeParse(reasoning?.type === "custom" ? reasoning.data : undefined);
     const record = item.record ?? session.info;
     const status = getActiveAgentSession(session.path) ? "running" : record?.status === "running" ? "cancelled" : record?.status ?? "idle";

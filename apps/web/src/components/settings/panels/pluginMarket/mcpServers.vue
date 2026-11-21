@@ -177,7 +177,7 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { IconPlus, IconFileCode, IconPackage, IconCircleCheck, IconAlertCircle, IconLoader2 } from "@tabler/icons-vue";
@@ -199,7 +199,7 @@ type McpServerConfig = {
 type TestResult = { tools: { name: string; description?: string }[]; serverName?: string };
 const { visible = true } = defineProps<{ visible?: boolean }>();
 const transportLabels = { stdio: "本地（stdio）", http: "远程（Streamable HTTP）", sse: "远程（SSE）" };
-const requestHeaders = { "x-toonflow-workspace": "1" };
+const requestHeaders = { "x-lumo-workspace": "1" };
 const servers = ref<(McpServerConfig & { id: string })[]>([]);
 const canManage = ref(false);
 const localSupported = ref(false);

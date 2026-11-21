@@ -1,1 +1,1 @@
-export { createServerClient } from "@toonflow/plugin-server/client";
+export { createServerClient } from "@lumo/plugin-server/client";

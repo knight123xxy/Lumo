@@ -1,5 +1,5 @@
 import { t, translateMessage } from "@/lib/i18n";
-import { mkdir, mkdtemp, lstat, readFile, readdir, rename, rm, unlink, writeFile } from "@toonflow/file";
+import { mkdir, mkdtemp, lstat, readFile, readdir, rename, rm, unlink, writeFile } from "@lumo/file";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { crc32, inflateRawSync } from "node:zlib";
@@ -52,7 +52,7 @@ export function requireNewerVersion(current: unknown, incoming: unknown, label: 
 }
 
 function nodeVersion(source: string) {
-  try { return JSON.parse(source.match(/^\/\*! toonflowNode:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1] ?? "").version; }
+  try { return JSON.parse(source.match(/^\/\*! lumoNode:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1] ?? "").version; }
   catch { return undefined; }
 }
 
@@ -138,8 +138,8 @@ export async function installNode(fileName: string, source: string, force = fals
     invalid("节点文件实际是 HTML 网页，不是节点脚本，请重新上传构建生成的 .umd.js 文件");
   }
   // ACT: 仅静态检查脚手架约定和语法，确认安装后由画布加载执行。
-  if (!source.includes("toonflowNodeHost")) invalid("文件不是兼容的 Lumo 节点，请使用节点脚手架构建生成的 .umd.js 文件");
-  if (!source.includes(`toonflowNodes.${name}`)) invalid(t`文件名与节点导出名不一致：${fileName} 需要导出 toonflowNodes.${name}，请按实际节点名修改文件名`);
+  if (!source.includes("lumoNodeHost")) invalid("文件不是兼容的 Lumo 节点，请使用节点脚手架构建生成的 .umd.js 文件");
+  if (!source.includes(`lumoNodes.${name}`)) invalid(t`文件名与节点导出名不一致：${fileName} 需要导出 lumoNodes.${name}，请按实际节点名修改文件名`);
   try { new Bun.Transpiler({ loader: "js" }).scan(source); }
   catch { invalid("节点脚本语法无效，请重新构建并上传完整的 .umd.js 文件"); }
   parseNodeServerTool(source, name);

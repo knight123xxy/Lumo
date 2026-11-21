@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { resolve } from "node:path";
-import { lstat, readFile, writeAtomic } from "@toonflow/file";
-import { dataSourceSchema } from "@toonflow/multi-tenant-db";
+import { lstat, readFile, writeAtomic } from "@lumo/file";
+import { dataSourceSchema } from "@lumo/multi-tenant-db";
 import { z } from "zod";
 
 const jsonRecordSchema = z.record(z.string(), z.json());
@@ -23,7 +23,7 @@ function decodeKey(value: string) {
 export function createModelSecret(dataDirectory: string) {
   let key: Promise<Buffer> | undefined;
   async function readKey(create: boolean) {
-    const configured = process.env.TOONFLOW_MULTI_TENANT_SECRET;
+    const configured = process.env.LUMO_MULTI_TENANT_SECRET;
     if (configured !== undefined) return decodeKey(configured.trim());
     const directory = resolve(dataDirectory, "multiTenant");
     const directoryInfo = await lstat(directory).catch((cause: NodeJS.ErrnoException) => {
@@ -37,7 +37,7 @@ export function createModelSecret(dataDirectory: string) {
     let provider: "sqlite" | "mysql";
     try { provider = dataSourceSchema.parse(JSON.parse(await readFile(configPath, "utf8"))).provider; }
     catch { invalid("多租户数据源配置文件无效"); }
-    if (provider !== "sqlite") invalid("MySQL 部署必须配置 TOONFLOW_MULTI_TENANT_SECRET");
+    if (provider !== "sqlite") invalid("MySQL 部署必须配置 LUMO_MULTI_TENANT_SECRET");
     const path = resolve(directory, "modelSecret.key");
     let info = await lstat(path).catch((cause: NodeJS.ErrnoException) => {
       if (cause.code === "ENOENT") return null;
@@ -69,7 +69,7 @@ export function createModelSecret(dataDirectory: string) {
       if (Buffer.byteLength(data, "utf8") > maxPayloadBytes) throw Object.assign(new Error("模型执行配置不能超过 8 MB"), { status: 400 });
       const iv = randomBytes(12);
       const cipher = createCipheriv("aes-256-gcm", await getKey(true), iv);
-      cipher.setAAD(Buffer.from(`toonflow:multiTenant:models:${purpose}:v1`));
+      cipher.setAAD(Buffer.from(`lumo:multiTenant:models:${purpose}:v1`));
       const encrypted = Buffer.concat([cipher.update(data, "utf8"), cipher.final()]);
       return ["v1", iv.toString("base64"), cipher.getAuthTag().toString("base64"), encrypted.toString("base64")].join(".");
     },
@@ -85,7 +85,7 @@ export function createModelSecret(dataDirectory: string) {
       const secret = await getKey(false);
       try {
         const decipher = createDecipheriv("aes-256-gcm", secret, iv);
-        decipher.setAAD(Buffer.from(`toonflow:multiTenant:models:${purpose}:v1`));
+        decipher.setAAD(Buffer.from(`lumo:multiTenant:models:${purpose}:v1`));
         decipher.setAuthTag(tag);
         const data = Buffer.concat([decipher.update(encrypted), decipher.final()]);
         return jsonRecordSchema.parse(JSON.parse(data.toString("utf8")));

@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 
 const coordinate = z.number().finite().min(-10000).max(10000);
 const vector = z.strictObject({ x: coordinate, y: coordinate, z: coordinate });

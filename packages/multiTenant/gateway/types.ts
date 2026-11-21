@@ -1,5 +1,5 @@
-import type { BillingCredit, BillingReleaseMetadata, BillingSettlement, BillingSnapshot, BillingUsage } from "@toonflow/multi-tenant-billing/config";
-import type { ManagedModelProvider, ModelPrice, ModelProvider, ModelRoute } from "@toonflow/multi-tenant-models/config";
+import type { BillingCredit, BillingReleaseMetadata, BillingSettlement, BillingSnapshot, BillingUsage } from "@lumo/multi-tenant-billing/config";
+import type { ManagedModelProvider, ModelPrice, ModelProvider, ModelRoute } from "@lumo/multi-tenant-models/config";
 
 export type ModelType = ModelRoute["type"];
 export type ModelExecution<T = unknown> = { route: ModelRoute; revision: number; upstream: T; legacyFormat?: true };

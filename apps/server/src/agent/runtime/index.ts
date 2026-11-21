@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { basename } from "node:path";
-import { readFile, stat, unlink } from "@toonflow/file";
+import { readFile, stat, unlink } from "@lumo/file";
 import {
   createAgentSession,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext, QuestionContext } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasContext, QuestionContext } from "@lumo/tools-scaffold/runtime";
 import type { AgentEvent, AgentMention, AgentPeerMessage, AgentToolCall } from "@/agent/runtime/types";
 import { agentMentionsSchema, mentionPrompt, snapshotMentions, validateMentionTokens } from "@/agent/runtime/mentions";
 import { readAiReferences, referenceContent } from "@/utils/ai";
@@ -219,7 +219,7 @@ export async function run(
     if (previous.model && (previous.model.provider !== providerId || previous.model.modelId !== modelId))
       history.appendModelChange(providerId, modelId);
     if (previous.messages.length && previous.thinkingLevel !== effectiveThinkingLevel) history.appendThinkingLevelChange(effectiveThinkingLevel);
-    history.appendCustomEntry("toonflowReasoning", { thinkingLevel: thinkingLevel ?? null });
+    history.appendCustomEntry("lumoReasoning", { thinkingLevel: thinkingLevel ?? null });
     const { session } = await createAgentSession({
       cwd,
       ...resources,
@@ -266,17 +266,17 @@ export async function run(
       const body = (await onPayload?.(payload, requestModel) ?? payload) as Record<string, unknown>;
       sendUserMessage();
       const imageReferences = new Map(history.getBranch().flatMap(entry => {
-        const reference = entry.type === "custom" && entry.customType === "toonflowImageAttachment"
-          ? getAgentImageReference({ type: "text", text: "", toonflowImage: entry.data }) : undefined;
+        const reference = entry.type === "custom" && entry.customType === "lumoImageAttachment"
+          ? getAgentImageReference({ type: "text", text: "", lumoImage: entry.data }) : undefined;
         return reference ? [[reference.id, reference] as const] : [];
       }));
       const offloadedImages = new Set(history.getBranch().flatMap(entry => {
-        const images = entry.type === "custom" && entry.customType === "toonflowImageOffload" ? (entry.data as { images?: unknown })?.images : undefined;
+        const images = entry.type === "custom" && entry.customType === "lumoImageOffload" ? (entry.data as { images?: unknown })?.images : undefined;
         return Array.isArray(images) ? images.filter((id): id is string => typeof id === "string") : [];
       }));
       const mediaMessages = new Map<string, { id: string; references: Parameters<typeof readAiReferences>[1] }>();
       for (const entry of history.getBranch()) {
-        if (entry.type !== "custom" || !["toonflowAttachments", "toonflowUserMessage"].includes(entry.customType)) continue;
+        if (entry.type !== "custom" || !["lumoAttachments", "lumoUserMessage"].includes(entry.customType)) continue;
         const parsed = z.object({ messageId: z.string(), attachments: agentAttachmentsSchema, mentions: agentMentionsSchema.optional() }).safeParse(entry.data);
         if (!parsed.success) continue;
         const references: Parameters<typeof readAiReferences>[1] = [
@@ -317,7 +317,7 @@ export async function run(
               ? readAgentImage(cwd, saved, signal).then(image => [{ dataType: "IMAGE", value: `data:${image.mimeType};base64,${image.data}` }])
               : readAiReferences(cwd, [media], signal, provider));
             content.push(...referenceContent(provider.protocol, "", await mediaContents.get(key)!, index).slice(1).map(content =>
-              ["image", "image_url", "input_image"].includes((content as { type: string }).type) ? { ...content, toonflowImageId: id } : content));
+              ["image", "image_url", "input_image"].includes((content as { type: string }).type) ? { ...content, lumoImageId: id } : content));
           }
           return content;
         }));
@@ -403,7 +403,7 @@ export async function run(
         const interrupted = event.type === "tool_execution_end" && event.isError
           && signal.reason instanceof DOMException && signal.reason.name === "AbortError"
           && getToolResultText(event.result.content) === signal.reason.message;
-        if (interrupted) event.result.details = { ...event.result.details, toonflowInterrupted: true };
+        if (interrupted) event.result.details = { ...event.result.details, lumoInterrupted: true };
         send({
           type: "tool",
           blockId: toolBlocks.get(event.toolCallId) ?? event.toolCallId,
@@ -467,7 +467,7 @@ export async function run(
         else history.resetLeaf();
         history.appendModelChange(providerId, modelId);
         history.appendThinkingLevelChange(effectiveThinkingLevel);
-        history.appendCustomEntry("toonflowReasoning", { thinkingLevel: thinkingLevel ?? null });
+        history.appendCustomEntry("lumoReasoning", { thinkingLevel: thinkingLevel ?? null });
         session.agent.state.messages = history.buildSessionContext().messages;
         userMessageId = history.getBranch().findLast((entry) => entry.type === "message" && entry.message.role === "user")?.id;
       }
@@ -507,7 +507,7 @@ export async function run(
           session.agent.state.messages = history.buildSessionContext().messages;
         }
         // ACT: 只记录有首个内容增量的生成耗时，旧历史和未计时输出不参与速度统计。
-        if (timing.decodeMs > 0) history.appendCustomEntry("toonflowTiming", timing);
+        if (timing.decodeMs > 0) history.appendCustomEntry("lumoTiming", timing);
         send({ type: "stats", stats: getAgentStats(history), contextUsage: getAgentContext(history, session.model?.contextWindow) });
         if (parentFile && child) {
           const entry = history.getBranch().findLast(entry => entry.type === "message" && entry.message.role === "assistant");

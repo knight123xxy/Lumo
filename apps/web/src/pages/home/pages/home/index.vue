@@ -57,17 +57,17 @@
 </template>
 
 <script setup lang="ts">
-import { locale, translate } from "@toonflow/i18n/vue";
+import { locale, translate } from "@lumo/i18n/vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
 import { ElMessage, type InputInstance } from "element-plus";
-import { getReadableFileMimeType, readableFileAccept } from "@toonflow/server/documentFormats";
-import type { ExplorePage, ExploreProject } from "@toonflow/server/channel";
+import { getReadableFileMimeType, readableFileAccept } from "@lumo/server/documentFormats";
+import type { ExplorePage, ExploreProject } from "@lumo/server/channel";
 import { IconArrowUp, IconFolder, IconPaperclip } from "@tabler/icons-vue";
 import modelPopover from "@/components/modelPopover.vue";
 import attachmentList from "@/components/agent/attachmentList.vue";
 import { createPastedTextFile, readTextAttachment } from "@/components/agent/textAttachments";
 import type { AgentAttachment } from "@/components/agent/types";
-import logoUrl from "@toonflow/assets/logo.svg";
+import logoUrl from "@lumo/assets/logo.svg";
 import { useWorkspaceStore, type Project } from "@/stores/workspace";
 import http from "@/lib/http";
 import workspacePicker from "@/pages/home/workspacePicker.vue";

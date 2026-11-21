@@ -209,7 +209,7 @@ private final class RuntimePreparation {
       _ = try Self.source(source.url)
     }
     let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-    directory = support.appendingPathComponent("local.toonflow.desktop/runtime/bun/\(info.version)/mac\(arch == "x64" ? "X64" : "Arm64")", isDirectory: true)
+    directory = support.appendingPathComponent("local.lumo.desktop/runtime/bun/\(info.version)/mac\(arch == "x64" ? "X64" : "Arm64")", isDirectory: true)
     binary = directory.appendingPathComponent("bun")
   }
 
@@ -320,7 +320,7 @@ private final class RuntimePreparation {
     let session = URLSession(configuration: configuration, delegate: receiver, delegateQueue: queue)
     var request = URLRequest(url: route.url, cachePolicy: .reloadIgnoringLocalCacheData)
     request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-    request.setValue("Toonflow-Runtime", forHTTPHeaderField: "User-Agent")
+    request.setValue("Lumo-Runtime", forHTTPHeaderField: "User-Agent")
     if probe { request.setValue("bytes=0-32767", forHTTPHeaderField: "Range") }
     else if offset > 0 { request.setValue("bytes=\(offset)-", forHTTPHeaderField: "Range") }
     let task = session.dataTask(with: request)
@@ -635,7 +635,7 @@ private final class RuntimeApplication: NSObject, NSApplicationDelegate, NSWindo
   }
 
   func application(_ application: NSApplication, open urls: [URL]) {
-    for url in urls where url.scheme == "toonflow" && url.absoluteString.count <= 8192 {
+    for url in urls where url.scheme == "lumo" && url.absoluteString.count <= 8192 {
       if pendingUrls.count < 20 && !pendingUrls.contains(url.absoluteString) { pendingUrls.append(url.absoluteString) }
     }
   }
@@ -777,8 +777,8 @@ private final class RuntimeApplication: NSObject, NSApplicationDelegate, NSWindo
     guard setenv("DYLD_LIBRARY_PATH", bin.path, 1) == 0 else { throw RuntimeFailure.local("无法设置 Lumo 原生库目录。") }
     if !pendingUrls.isEmpty {
       let data = try JSONSerialization.data(withJSONObject: pendingUrls)
-      setenv("TOONFLOW_PENDING_URLS", String(decoding: data, as: UTF8.self), 1)
-    } else { unsetenv("TOONFLOW_PENDING_URLS") }
+      setenv("LUMO_PENDING_URLS", String(decoding: data, as: UTF8.self), 1)
+    } else { unsetenv("LUMO_PENDING_URLS") }
     // ACT: 保留 SDK 传入的 argv[0] 与所有参数；exec 后 PID 不变，原 launcher 继续管理进程生命周期。
     let arguments = [bin.appendingPathComponent("bun").path] + Array(CommandLine.arguments.dropFirst())
     var pointers = arguments.map { strdup($0) }

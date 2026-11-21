@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { Box3, Group, MathUtils, Vector3 } from "three";
 import { resolveAssetModel } from "./assetModelResolver";
 import { usesNativeScale } from "./assetLibrary";

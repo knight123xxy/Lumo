@@ -87,10 +87,10 @@
 import { computed, nextTick, onUpdated, ref, watch, type ComponentPublicInstance } from "vue";
 import { defaultRangeExtractor, observeElementRect, useVirtualizer } from "@tanstack/vue-virtual";
 import { IconArrowDown, IconArrowFork, IconArrowUpRight, IconAtom, IconChevronDown, IconChevronRight, IconCopy, IconCornerDownRight, IconMovie, IconPencil, IconPhoto, IconTrash, IconUsersGroup, IconVector, IconX } from "@tabler/icons-vue";
-import logoUrl from "@toonflow/assets/logo.svg";
-import browserPanel from "@toonflow/tool-browser/panel";
-import { isBrowserTool } from "@toonflow/tool-browser/client";
-import type { AgentToolCall } from "@toonflow/server/agent/types";
+import logoUrl from "@lumo/assets/logo.svg";
+import browserPanel from "@lumo/tool-browser/panel";
+import { isBrowserTool } from "@lumo/tool-browser/client";
+import type { AgentToolCall } from "@lumo/server/agent/types";
 import chatItem from "@tdesign-vue-next/chat/es/chat-item";
 import chatReasoning from "@tdesign-vue-next/chat/es/chat-reasoning";
 import messageMarkdown from "@/components/messageMarkdown.vue";

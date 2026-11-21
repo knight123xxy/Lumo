@@ -91,9 +91,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, useId, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { IconCopy, IconEye, IconEyeOff, IconPlus, IconSearch } from "@tabler/icons-vue";
-import type { CreateSubAccountParams, SubAccount, SubAccountsPage } from "@toonflow/server/channel";
+import type { CreateSubAccountParams, SubAccount, SubAccountsPage } from "@lumo/server/channel";
 import { writeClipboardText } from "@/lib/clipboard";
 import http from "@/lib/http";
 

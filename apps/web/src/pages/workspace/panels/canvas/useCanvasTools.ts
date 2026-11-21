@@ -1,10 +1,10 @@
 import { inject, nextTick, watch, type Ref } from "vue";
 import { useVueFlow, type XYPosition } from "@vue-flow/core";
-import { useNodeEvent, useNodeToolsContext, validateConnection } from "@toonflow/nodes-scaffold/runtime";
-import { canvasSchemas, isNodeToolAllowed, type CanvasContext, type CanvasToolCall } from "@toonflow/tool-canvas/runtime";
-import { asrRequestSchema } from "@toonflow/tools-scaffold/runtime";
-import { pluginDevelopmentSchema, type PluginInstallPreview, type PluginUploadDraft } from "@toonflow/server/pluginDevelopment";
-import { isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@toonflow/asr";
+import { useNodeEvent, useNodeToolsContext, validateConnection } from "@lumo/nodes-scaffold/runtime";
+import { canvasSchemas, isNodeToolAllowed, type CanvasContext, type CanvasToolCall } from "@lumo/tool-canvas/runtime";
+import { asrRequestSchema } from "@lumo/tools-scaffold/runtime";
+import { pluginDevelopmentSchema, type PluginInstallPreview, type PluginUploadDraft } from "@lumo/server/pluginDevelopment";
+import { isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@lumo/asr";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import http from "@/lib/http";
 import { confirmPluginInstall } from "@/lib/pluginInstallConfirmation";

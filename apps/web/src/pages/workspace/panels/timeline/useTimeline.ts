@@ -1,7 +1,7 @@
 import { computed, ref, shallowRef } from "vue";
-import { createBrowserFfmpeg, type BrowserFfmpegFactory } from "@toonflow/ffmpeg/browser";
-import { isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@toonflow/asr";
-import { translate } from "@toonflow/i18n/vue";
+import { createBrowserFfmpeg, type BrowserFfmpegFactory } from "@lumo/ffmpeg/browser";
+import { isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@lumo/asr";
+import { translate } from "@lumo/i18n/vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import {
   applySpeed,

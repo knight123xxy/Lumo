@@ -70,22 +70,22 @@
 import { computed, onMounted, onScopeDispose, ref, shallowRef, watch } from "vue";
 import { ElButton, ElCard, ElLoading, ElOption, ElOptionGroup } from "element-plus";
 import { IconArrowUp, IconGauge, IconMusicBolt, IconPlayerStop, IconScissors, IconTransfer, IconTextRecognition } from "@tabler/icons-vue";
-import { findNodeModel, getNodeModelIdentity, getNodeModelKey, getTargetValues, isTypeCompatible, nodeSkeleton, nodeTools, useNode, useNodeModelMemory, useNodeModelSelection, z, type NodeAudioRequest, type NodeHandle, type NodeInputValue, type NodeMediaModel } from "@toonflow/nodes-scaffold/runtime";
-import { groupNodeModels } from "@toonflow/node-shared/groupNodeModels";
-import modelLabel from "@toonflow/node-shared/modelLabel";
-import modelSelect from "@toonflow/node-shared/modelSelect";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
-import { useNodeGeneration } from "@toonflow/node-shared/useNodeGeneration";
-import { useAudioTranscription } from "@toonflow/node-shared/useAudioTranscription";
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
-import type { PcmOptions } from "@toonflow/node-shared/pcmPreview";
-import { useNodeReferences } from "@toonflow/node-shared/useNodeReferences";
-import { getModelFormValues, useModelForm } from "@toonflow/node-shared/useModelForm";
-import audioPlayer from "@toonflow/node-audio/audioPlayer";
-import audioActions from "@toonflow/node-audio/audioActions";
-import promptInput from "@toonflow/node-shared/promptInput";
-import referenceItem from "@toonflow/node-shared/referenceItem";
-import mediaPrice from "@toonflow/node-shared/mediaPrice";
+import { findNodeModel, getNodeModelIdentity, getNodeModelKey, getTargetValues, isTypeCompatible, nodeSkeleton, nodeTools, useNode, useNodeModelMemory, useNodeModelSelection, z, type NodeAudioRequest, type NodeHandle, type NodeInputValue, type NodeMediaModel } from "@lumo/nodes-scaffold/runtime";
+import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
+import modelLabel from "@lumo/node-shared/modelLabel";
+import modelSelect from "@lumo/node-shared/modelSelect";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
+import { useNodeGeneration } from "@lumo/node-shared/useNodeGeneration";
+import { useAudioTranscription } from "@lumo/node-shared/useAudioTranscription";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
+import type { PcmOptions } from "@lumo/node-shared/pcmPreview";
+import { useNodeReferences } from "@lumo/node-shared/useNodeReferences";
+import { getModelFormValues, useModelForm } from "@lumo/node-shared/useModelForm";
+import audioPlayer from "@lumo/node-audio/audioPlayer";
+import audioActions from "@lumo/node-audio/audioActions";
+import promptInput from "@lumo/node-shared/promptInput";
+import referenceItem from "@lumo/node-shared/referenceItem";
+import mediaPrice from "@lumo/node-shared/mediaPrice";
 import generationSettings from "./components/generationSettings.vue";
 import { formatOptions, languageOptions, sampleRateOptions } from "./audioSettings";
 
@@ -165,19 +165,19 @@ nodeEvent.on("canConnect", (connection, context) => {
 });
 
 onMounted(() => {
-  window.addEventListener("toonflow:plugin-installed", refreshProviderModels);
-  window.addEventListener("toonflow:provider-config-changed", refreshProviderModels);
+  window.addEventListener("lumo:plugin-installed", refreshProviderModels);
+  window.addEventListener("lumo:provider-config-changed", refreshProviderModels);
   void refreshProviderModels();
 });
 onScopeDispose(() => {
   disposed = true;
-  window.removeEventListener("toonflow:plugin-installed", refreshProviderModels);
-  window.removeEventListener("toonflow:provider-config-changed", refreshProviderModels);
+  window.removeEventListener("lumo:plugin-installed", refreshProviderModels);
+  window.removeEventListener("lumo:provider-config-changed", refreshProviderModels);
   generationController?.abort();
 });
 
 async function refreshProviderModels(event?: Event) {
-  if (event?.type === "toonflow:plugin-installed" && (event as CustomEvent<{ type?: string }>).detail?.type !== "provider") return;
+  if (event?.type === "lumo:plugin-installed" && (event as CustomEvent<{ type?: string }>).detail?.type !== "provider") return;
   modelsRefreshPending = true;
   if (disposed || busy.value) return;
   try {

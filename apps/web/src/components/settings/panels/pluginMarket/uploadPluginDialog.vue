@@ -63,10 +63,10 @@
 import axios from "axios";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, useId, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 import videoPlayer from "@/components/videoPlayer.vue";
-import type { PluginUploadSignature } from "@toonflow/server/channel";
+import type { PluginUploadSignature } from "@lumo/server/channel";
 import type { Plugin, PluginType } from "./types";
 
 const props = defineProps<{ plugin?: Plugin; pluginFile?: File; marketPlugin?: Plugin; token: string }>();
@@ -137,7 +137,7 @@ async function loadFile() {
   try {
     const { data } = await axios.get<Blob>("/api/plugins/export", {
       params: { type: plugin.type, name: plugin.name }, responseType: "blob", signal: request.signal,
-      headers: { "x-toonflow-workspace": "1", "Cache-Control": "no-cache" },
+      headers: { "x-lumo-workspace": "1", "Cache-Control": "no-cache" },
     });
     if (request.signal.aborted) return;
     const message = validateFile(data, fileName.value);

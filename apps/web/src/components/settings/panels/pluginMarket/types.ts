@@ -1,5 +1,5 @@
 import type { Rule } from "@form-create/element-ui";
-import type { Plugin as MarketPlugin } from "@toonflow/server/channel";
+import type { Plugin as MarketPlugin } from "@lumo/server/channel";
 import type { Raw } from "vue";
 
 export type PluginType = "node" | "skill" | "tool" | "agent" | "ext";

@@ -77,7 +77,7 @@ import {
   IconCopyPlus, IconBoxMultiple, IconDeselect,
   IconLayoutGrid, IconLayoutColumns, IconLayoutRows,
 } from "@tabler/icons-vue";
-import { useNodeEvent } from "@toonflow/nodes-scaffold/nodeEvent";
+import { useNodeEvent } from "@lumo/nodes-scaffold/nodeEvent";
 import { finishGroupDrag, getSelectionRoots, getSelectionTree } from "../selectionNodes";
 import { arrangeSelection, type ArrangeSelectionMode } from "../arrangeSelection";
 import { remapNodeReferences } from "../canvasFiles";

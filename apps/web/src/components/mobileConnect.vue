@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import jsQR from "jsqr";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -151,7 +151,7 @@ function recognize(qrCode: string) {
   try {
     if (qrCode.length > 4096) throw new Error("请扫描 Lumo 的设备互联二维码");
     const value = JSON.parse(qrCode);
-    if (!value || value.type !== "toonflowMobile" || value.version !== 1 || typeof value.name !== "string" || !value.name.trim()
+    if (!value || value.type !== "lumoMobile" || value.version !== 1 || typeof value.name !== "string" || !value.name.trim()
       || typeof value.url !== "string" || typeof value.code !== "string" || !/^[\w-]{32,256}$/.test(value.code)) {
       throw new Error("请扫描 Lumo 的设备互联二维码");
     }

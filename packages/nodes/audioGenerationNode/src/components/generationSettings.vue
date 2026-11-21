@@ -36,8 +36,8 @@
 import { computed, ref } from "vue";
 import { ElButton, ElPopover, ElSegmented } from "element-plus";
 import { IconAdjustmentsHorizontal, IconChevronDown, IconChevronUp } from "@tabler/icons-vue";
-import type { NodeMediaModel } from "@toonflow/nodes-scaffold/runtime";
-import modelForm from "@toonflow/node-shared/modelForm";
+import type { NodeMediaModel } from "@lumo/nodes-scaffold/runtime";
+import modelForm from "@lumo/node-shared/modelForm";
 import { languageOptions, sampleRateOptions, formatOptions } from "../audioSettings";
 
 defineProps<{ model?: NodeMediaModel; disabled?: boolean }>();

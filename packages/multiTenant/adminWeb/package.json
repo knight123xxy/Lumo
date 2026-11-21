@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/multi-tenant-admin-web",
+  "name": "@lumo/multi-tenant-admin-web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,11 +11,11 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@toonflow/i18n": "workspace:*",
-    "@toonflow/multi-tenant-billing": "workspace:*",
-    "@toonflow/multi-tenant-models": "workspace:*",
-    "@toonflow/multi-tenant-source-mapping": "workspace:*",
-    "@toonflow/provider-web": "workspace:*"
+    "@lumo/i18n": "workspace:*",
+    "@lumo/multi-tenant-billing": "workspace:*",
+    "@lumo/multi-tenant-models": "workspace:*",
+    "@lumo/multi-tenant-source-mapping": "workspace:*",
+    "@lumo/provider-web": "workspace:*"
   },
   "peerDependencies": {
     "@tabler/icons-vue": "^3.46.0",

@@ -6,12 +6,12 @@ XPStyle on
 ManifestDPIAware true
 SetFont "Microsoft YaHei UI" 9
 
-!define appName "Toonflow"
+!define appName "Lumo"
 VIProductVersion "${appVersion}.0"
 VIFileVersion "${appVersion}.0"
 VIAddVersionKey /LANG=2052 "ProductName" "${appName}"
 VIAddVersionKey /LANG=2052 "CompanyName" "HBAI-Ltd"
-VIAddVersionKey /LANG=2052 "FileDescription" "Toonflow 安装程序"
+VIAddVersionKey /LANG=2052 "FileDescription" "Lumo 安装程序"
 VIAddVersionKey /LANG=2052 "FileVersion" "${appVersion}.0"
 VIAddVersionKey /LANG=2052 "ProductVersion" "${appVersion}"
 VIAddVersionKey /LANG=2052 "LegalCopyright" "Copyright (c) HBAI-Ltd"
@@ -31,7 +31,7 @@ BrandingText " "
 OutFile "${outputFile}"
 InstallDir "$LOCALAPPDATA\${appIdentifier}\stable"
 ; ACT: SDK 会把 InstallLocation 改成 app 子目录，NSIS 独立保存用户选择的安装根目录。
-InstallDirRegKey HKCU "${uninstallKey}" "toonflowInstallDirectory"
+InstallDirRegKey HKCU "${uninstallKey}" "lumoInstallDirectory"
 
 Icon "${appIcon}"
 UninstallIcon "${appIcon}"
@@ -40,11 +40,11 @@ ShowInstDetails show
 !include MUI2.nsh
 !define MUI_ICON "${appIcon}"
 !define MUI_UNICON "${appIcon}"
-!define MUI_DIRECTORYPAGE_TEXT_TOP "请选择 Toonflow 的安装目录。"
+!define MUI_DIRECTORYPAGE_TEXT_TOP "请选择 Lumo 的安装目录。"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_RUN "$INSTDIR\app\Resources\app\startupLauncher.exe"
-!define MUI_FINISHPAGE_RUN_TEXT "立即打开 Toonflow"
+!define MUI_FINISHPAGE_RUN_TEXT "立即打开 Lumo"
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW showFinishPage
 !insertmacro MUI_PAGE_FINISH
 UninstPage custom un.showUninstallOptions un.leaveUninstallOptions
@@ -67,7 +67,7 @@ Function .onInit
   ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" "Release"
   SetRegView 32
   ${If} $0 < 533320
-    MessageBox MB_OK|MB_ICONSTOP "请先安装 .NET Framework 4.8.1 或更新 Windows，再安装 Toonflow ARM64。下载地址：https://dotnet.microsoft.com/download/dotnet-framework/net481" /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "请先安装 .NET Framework 4.8.1 或更新 Windows，再安装 Lumo ARM64。下载地址：https://dotnet.microsoft.com/download/dotnet-framework/net481" /SD IDOK
     SetErrorLevel 2
     Abort
   ${EndIf}
@@ -95,9 +95,9 @@ checkRunning:
   Pop $1
   ${If} $0 != 0
     ${If} $0 == 1
-      StrCpy $2 "Toonflow 仍在运行，请先关闭此安装目录的应用，再点击“重试”。$\r$\n$INSTDIR$\r$\n$1"
+      StrCpy $2 "Lumo 仍在运行，请先关闭此安装目录的应用，再点击“重试”。$\r$\n$INSTDIR$\r$\n$1"
     ${Else}
-      StrCpy $2 "无法确认 Toonflow 是否已关闭，已停止${operation}。请关闭应用后重试。$\r$\n检测返回码：$0$\r$\n$1"
+      StrCpy $2 "无法确认 Lumo 是否已关闭，已停止${operation}。请关闭应用后重试。$\r$\n检测返回码：$0$\r$\n$1"
     ${EndIf}
     DetailPrint "$2"
     MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$2" /SD IDCANCEL IDRETRY checkRunning
@@ -127,9 +127,9 @@ FunctionEnd
 Function logInstallFailure
   ; ACT: 只保留最近一次失败，静默安装也能据此排查；日志写入失败不改变安装结果。
   ClearErrors
-  FileOpen $3 "$TEMP\toonflowInstall.log" w
+  FileOpen $3 "$TEMP\lumoInstall.log" w
   ${IfNot} ${Errors}
-    FileWriteUTF16LE /BOM $3 "Toonflow ${appVersion} ${appArch}$\r$\n失败步骤：$installStep$\r$\n安装目录：$INSTDIR$\r$\n$installDetail$\r$\n"
+    FileWriteUTF16LE /BOM $3 "Lumo ${appVersion} ${appArch}$\r$\n失败步骤：$installStep$\r$\n安装目录：$INSTDIR$\r$\n$installDetail$\r$\n"
     FileClose $3
   ${EndIf}
   ClearErrors
@@ -146,7 +146,7 @@ Function un.showUninstallOptions
     SetErrorLevel 2
     Quit
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 24u "即将卸载 Toonflow，点击“卸载”继续。"
+  ${NSD_CreateLabel} 0 0 100% 24u "即将卸载 Lumo，点击“卸载”继续。"
   Pop $0
   ${NSD_CreateCheckbox} 0 36u 100% 14u "同时删除用户数据"
   Pop $removeUserDataCheckbox
@@ -174,9 +174,9 @@ Section "Install"
   IfErrors installFailed
   StrCpy $INSTDIR $0
   IfFileExists "$INSTDIR\app\*.*" 0 installApp
-  ReadINIStr $0 "$INSTDIR\toonflow.ini" "application" "identifier"
+  ReadINIStr $0 "$INSTDIR\lumo.ini" "application" "identifier"
   ${If} $0 != "${appIdentifier}"
-    MessageBox MB_OK|MB_ICONSTOP "所选目录中已有不属于 Toonflow 的 app 文件夹，请选择其他安装目录。" /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "所选目录中已有不属于 Lumo 的 app 文件夹，请选择其他安装目录。" /SD IDOK
     SetErrorLevel 2
     Abort
   ${EndIf}
@@ -217,10 +217,10 @@ installApp:
   SetOutPath "$INSTDIR\app"
   IfErrors installFailed
   StrCpy $installStep "写入安装标识"
-  WriteINIStr "$INSTDIR\toonflow.ini" "application" "identifier" "${appIdentifier}"
+  WriteINIStr "$INSTDIR\lumo.ini" "application" "identifier" "${appIdentifier}"
   IfErrors installFailed
   StrCpy $installStep "保存安装目录"
-  WriteINIStr "$INSTDIR\toonflow.ini" "application" "installDirectory" "$INSTDIR"
+  WriteINIStr "$INSTDIR\lumo.ini" "application" "installDirectory" "$INSTDIR"
   IfErrors installFailed
   StrCpy $installStep "创建更新文件目录"
   SetOutPath "$INSTDIR\self-extraction"
@@ -281,28 +281,28 @@ installApp:
   WriteRegStr HKCU "${uninstallKey}" "DisplayName" "${appName}"
   WriteRegStr HKCU "${uninstallKey}" "DisplayVersion" "${appVersion}"
   WriteRegStr HKCU "${uninstallKey}" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "${uninstallKey}" "toonflowInstallDirectory" "$INSTDIR"
+  WriteRegStr HKCU "${uninstallKey}" "lumoInstallDirectory" "$INSTDIR"
   WriteRegStr HKCU "${uninstallKey}" "DisplayIcon" "$INSTDIR\app\Resources\app.ico"
   WriteRegStr HKCU "${uninstallKey}" "UninstallString" '$\"$INSTDIR\UninstallNSIS.exe$\"'
   WriteRegStr HKCU "${uninstallKey}" "QuietUninstallString" '$\"$INSTDIR\UninstallNSIS.exe$\" /S'
   IfErrors installFailed
-  StrCpy $installStep "注册 toonflow:// 协议"
-  WriteRegStr HKCU "Software\Classes\toonflow" "" "URL:Toonflow Protocol"
-  WriteRegStr HKCU "Software\Classes\toonflow" "URL Protocol" ""
-  WriteRegStr HKCU "Software\Classes\toonflow\DefaultIcon" "" '$\"$INSTDIR\app\Resources\app.ico$\",0'
-  WriteRegStr HKCU "Software\Classes\toonflow\shell\open\command" "" '$\"$INSTDIR\app\Resources\app\protocolLauncher.exe$\" $\"%1$\"'
+  StrCpy $installStep "注册 lumo:// 协议"
+  WriteRegStr HKCU "Software\Classes\lumo" "" "URL:Lumo Protocol"
+  WriteRegStr HKCU "Software\Classes\lumo" "URL Protocol" ""
+  WriteRegStr HKCU "Software\Classes\lumo\DefaultIcon" "" '$\"$INSTDIR\app\Resources\app.ico$\",0'
+  WriteRegStr HKCU "Software\Classes\lumo\shell\open\command" "" '$\"$INSTDIR\app\Resources\app\protocolLauncher.exe$\" $\"%1$\"'
   IfErrors installFailed
   CreateShortCut "$DESKTOP\${appName}.lnk" "$INSTDIR\app\Resources\app\startupLauncher.exe" "" "$INSTDIR\app\Resources\app.ico"
   IfErrors 0 installDone
   ; ACT: 快捷方式不影响程序使用，失败时保留成功安装结果并告知手动启动路径。
-  MessageBox MB_OK|MB_ICONEXCLAMATION "Toonflow 已安装，但无法创建桌面快捷方式。可以从以下位置启动：$\r$\n$INSTDIR\app\Resources\app\startupLauncher.exe" /SD IDOK
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Lumo 已安装，但无法创建桌面快捷方式。可以从以下位置启动：$\r$\n$INSTDIR\app\Resources\app\startupLauncher.exe" /SD IDOK
   Goto installDone
 
 installFailed:
   DetailPrint "安装未完成，失败步骤：$installStep"
   DetailPrint "$installDetail"
   Call logInstallFailure
-  MessageBox MB_OK|MB_ICONSTOP "安装未完成。$\r$\n失败步骤：$installStep$\r$\n安装目录：$INSTDIR$\r$\n$installDetail$\r$\n$\r$\n请确认目录可写并关闭 Toonflow 后重试。$\r$\n诊断日志：$TEMP\toonflowInstall.log" /SD IDOK
+  MessageBox MB_OK|MB_ICONSTOP "安装未完成。$\r$\n失败步骤：$installStep$\r$\n安装目录：$INSTDIR$\r$\n$installDetail$\r$\n$\r$\n请确认目录可写并关闭 Lumo 后重试。$\r$\n诊断日志：$TEMP\lumoInstall.log" /SD IDOK
   SetErrorLevel 2
   Abort
 installDone:
@@ -311,15 +311,15 @@ SectionEnd
 Section "Uninstall"
   SetShellVarContext current
   GetFullPathName $0 "$INSTDIR"
-  ReadINIStr $1 "$INSTDIR\toonflow.ini" "application" "installDirectory"
+  ReadINIStr $1 "$INSTDIR\lumo.ini" "application" "installDirectory"
   ${If} $0 != $1
-    MessageBox MB_OK|MB_ICONSTOP "卸载目录与 Toonflow 的安装目录不一致，已停止卸载。" /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "卸载目录与 Lumo 的安装目录不一致，已停止卸载。" /SD IDOK
     SetErrorLevel 2
     Abort
   ${EndIf}
-  ReadINIStr $0 "$INSTDIR\toonflow.ini" "application" "identifier"
+  ReadINIStr $0 "$INSTDIR\lumo.ini" "application" "identifier"
   ${If} $0 != "${appIdentifier}"
-    MessageBox MB_OK|MB_ICONSTOP "无法确认此目录属于 Toonflow，已停止卸载。" /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "无法确认此目录属于 Lumo，已停止卸载。" /SD IDOK
     SetErrorLevel 2
     Abort
   ${EndIf}
@@ -346,7 +346,7 @@ Section "Uninstall"
     RMDir /r "$INSTDIR\WebView2"
     IfErrors uninstallFailed
   ${EndIf}
-  ReadRegStr $0 HKCU "${uninstallKey}" "toonflowInstallDirectory"
+  ReadRegStr $0 HKCU "${uninstallKey}" "lumoInstallDirectory"
   ${If} $0 == $INSTDIR
     Delete "$DESKTOP\${appName}.lnk"
     Delete "$SMPROGRAMS\${appName}.lnk"
@@ -356,17 +356,17 @@ Section "Uninstall"
   ; ACT: 清理成功后才移除卸载入口；文件被占用时保留入口供用户重试。
   Delete "$INSTDIR\UninstallNSIS.exe"
   IfErrors uninstallFailed
-  Delete "$INSTDIR\toonflow.ini"
+  Delete "$INSTDIR\lumo.ini"
   IfErrors uninstallMetadataFailed
-  ReadRegStr $0 HKCU "${uninstallKey}" "toonflowInstallDirectory"
+  ReadRegStr $0 HKCU "${uninstallKey}" "lumoInstallDirectory"
   ${If} $0 == $INSTDIR
     DeleteRegKey HKCU "${uninstallKey}"
     IfErrors uninstallMetadataFailed
   ${EndIf}
   ClearErrors
-  ReadRegStr $0 HKCU "Software\Classes\toonflow\shell\open\command" ""
+  ReadRegStr $0 HKCU "Software\Classes\lumo\shell\open\command" ""
   ${If} $0 == '$\"$INSTDIR\app\Resources\app\protocolLauncher.exe$\" $\"%1$\"'
-    DeleteRegKey HKCU "Software\Classes\toonflow"
+    DeleteRegKey HKCU "Software\Classes\lumo"
     IfErrors uninstallMetadataFailed
   ${EndIf}
   ClearErrors
@@ -382,7 +382,7 @@ uninstallMetadataFailed:
   SetErrorLevel 2
   Goto uninstallDone
 uninstallFailed:
-  MessageBox MB_OK|MB_ICONSTOP "未能删除全部文件，请关闭 Toonflow 及相关窗口后重新卸载。用户数据仅按刚才的选择处理。" /SD IDOK
+  MessageBox MB_OK|MB_ICONSTOP "未能删除全部文件，请关闭 Lumo 及相关窗口后重新卸载。用户数据仅按刚才的选择处理。" /SD IDOK
   SetErrorLevel 2
   Abort
 uninstallDone:

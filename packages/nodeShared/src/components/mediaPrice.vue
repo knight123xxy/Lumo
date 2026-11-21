@@ -11,7 +11,7 @@
 import { computed, inject, onScopeDispose, ref, watch } from "vue";
 import { ElTooltip } from "element-plus";
 import { IconInfoCircle } from "@tabler/icons-vue";
-import { subscribeNodeModels, useNodeAi, type NodeMediaPrice, type NodeMediaPriceRequest } from "@toonflow/nodes-scaffold/nodeAi";
+import { subscribeNodeModels, useNodeAi, type NodeMediaPrice, type NodeMediaPriceRequest } from "@lumo/nodes-scaffold/nodeAi";
 
 const props = defineProps<{ input: Omit<NodeMediaPriceRequest, "directory">; supported: boolean }>();
 const ai = useNodeAi();

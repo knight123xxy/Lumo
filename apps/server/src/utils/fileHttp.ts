@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { resolve } from "node:path";
-import { withFileAccess } from "@toonflow/file";
+import { withFileAccess } from "@lumo/file";
 
 export async function sendFile(res: Response, path: string, options: Parameters<Response["sendFile"]>[1] = {}, callback?: (error?: Error) => void) {
   const controller = new AbortController();

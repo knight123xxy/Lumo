@@ -49,7 +49,7 @@ import { computed, ref, watch } from "vue";
 import type { ImageInstance } from "element-plus";
 import { IconFileText, IconPhoto, IconVideo, IconX } from "@tabler/icons-vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 import type { AgentAttachment } from "./types";
 import { readTextAttachment } from "./textAttachments";
 

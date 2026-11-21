@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { basename, dirname, resolve } from "node:path";
-import { readFile, readdir } from "@toonflow/file";
+import { readFile, readdir } from "@lumo/file";
 import { calculateContextTokens, estimateTokens, getLastAssistantUsage, parseSessionEntries, SessionManager } from "@earendil-works/pi-coding-agent";
 import type { AgentSession, FileEntry, SessionEntry } from "@earendil-works/pi-coding-agent";
 import type { UserMessage } from "@earendil-works/pi-ai";
@@ -33,7 +33,7 @@ export const agentUserMessageSchema = z.object({
 
 export function getAgentUserMessage(history: SessionManager, messageId: string) {
   const entry = history.getBranch().findLast(entry => entry.type === "custom"
-    && ["toonflowAttachments", "toonflowUserMessage"].includes(entry.customType)
+    && ["lumoAttachments", "lumoUserMessage"].includes(entry.customType)
     && (entry.data as { messageId?: string } | null)?.messageId === messageId);
   const parsed = agentUserMessageSchema.safeParse(entry?.type === "custom" ? entry.data : undefined);
   return parsed.success ? parsed.data : undefined;
@@ -41,7 +41,7 @@ export function getAgentUserMessage(history: SessionManager, messageId: string) 
 
 export function getAgentTaskId(entry?: SessionEntry) {
   if (!entry) return undefined;
-  if ((entry.type === "message" && entry.message.role === "user") || (entry.type === "custom" && entry.customType === "toonflowDeletedUser")) return entry.id;
+  if ((entry.type === "message" && entry.message.role === "user") || (entry.type === "custom" && entry.customType === "lumoDeletedUser")) return entry.id;
   if (entry.type === "custom_message" && entry.customType === "agentMessage") {
     const details = entry.details as AgentPeerMessage | undefined;
     if (details?.startsTurn) return details.id;
@@ -165,7 +165,7 @@ export function hasPendingAgentQuestion(active: ActiveAgentSession, visited = ne
   if (peer && hasPendingAgentQuestion(peer, visited)) return true;
   if (!tools.some(tool => tool.name === "subAgent" && tool.status === "running")) return false;
   return active.history.getEntries().some(entry => {
-    if (entry.type !== "custom" || entry.customType !== "toonflowSubAgent") return false;
+    if (entry.type !== "custom" || entry.customType !== "lumoSubAgent") return false;
     const file = (entry.data as AgentSubAgent | undefined)?.file;
     if (!file || !/^[\w-]+\.jsonl$/.test(file)) return false;
     const child = getActiveAgentSession(resolve(dirname(path), file));
@@ -187,7 +187,7 @@ export function registerAgentSession(path: string, active: ActiveAgentSession) {
 }
 
 export function getSubAgentInfo(history: SessionManager) {
-  return history.getEntries().find(entry => entry.type === "custom" && entry.customType === "toonflowSubAgentInfo") as
+  return history.getEntries().find(entry => entry.type === "custom" && entry.customType === "lumoSubAgentInfo") as
     (SessionEntry & { data: AgentSubAgent }) | undefined;
 }
 
@@ -211,7 +211,7 @@ async function updateAgentSession(cwd: string, file: string, update: (history: S
 export async function updateSubAgent(cwd: string, parentFile: string, agent: AgentSubAgent) {
   await updateAgentSession(cwd, parentFile, (history, active) => {
     const { runId, ...saved } = agent;
-    history.appendCustomEntry("toonflowSubAgent", saved);
+    history.appendCustomEntry("lumoSubAgent", saved);
     active?.send({ type: "subAgent", agent });
   });
 }
@@ -261,7 +261,7 @@ export async function deleteAgentMessage(cwd: string, path: string, options: { e
     const history = SessionManager.inMemory(cwd, undefined, entries);
     const branch = history.getBranch();
     const isUserEntry = (entry: SessionEntry) =>
-      (entry.type === "message" && entry.message.role === "user") || (entry.type === "custom" && entry.customType === "toonflowDeletedUser");
+      (entry.type === "message" && entry.message.role === "user") || (entry.type === "custom" && entry.customType === "lumoDeletedUser");
     let targets = branch.filter((entry) => options.entryIds?.includes(entry.id));
     if (options.replyTo) {
       const index = branch.findIndex(entry => getAgentTaskId(entry) === options.replyTo);
@@ -299,9 +299,9 @@ export async function deleteAgentMessage(cwd: string, path: string, options: { e
       if (
         (entry.type === "message" && entry.message.role === "toolResult" && toolCallIds.has(entry.message.toolCallId)) ||
         (entry.type === "custom" &&
-          ["toonflowAttachments", "toonflowUserMessage"].includes(entry.customType) &&
+          ["lumoAttachments", "lumoUserMessage"].includes(entry.customType) &&
           removedIds.has((entry.data as { messageId?: string } | undefined)?.messageId ?? "")) ||
-        (entry.type === "custom" && entry.customType === "toonflowTiming" && timingChanged) ||
+        (entry.type === "custom" && entry.customType === "lumoTiming" && timingChanged) ||
         ((entry.type === "compaction" || entry.type === "branch_summary") && affectedIds.has(entry.id)) ||
         (entry.type === "label" && removedIds.has(entry.targetId))
       ) {
@@ -319,7 +319,7 @@ export async function deleteAgentMessage(cwd: string, path: string, options: { e
           id: entry.id,
           parentId: entry.parentId,
           timestamp: new Date().toISOString(),
-          customType: isUserEntry(entry) ? "toonflowDeletedUser" : "toonflowDeletedEntry",
+          customType: isUserEntry(entry) ? "lumoDeletedUser" : "lumoDeletedEntry",
           ...(delivery ? { data: { delivery } } : {}),
         };
       }),
@@ -370,14 +370,14 @@ export async function branchAgentConversation(cwd: string, path: string, options
     const userIds = new Set(retained.filter(entry => entry.type === "message" && entry.message.role === "user").map(entry => entry.id));
     // 用户原文、附件和引用在消息之后落盘；只补齐已保留消息的元数据，不带入后续回复或摘要。
     retained.push(...branch.slice(end).filter(entry => entry.type === "custom"
-      && ["toonflowAttachments", "toonflowUserMessage"].includes(entry.customType)
+      && ["lumoAttachments", "lumoUserMessage"].includes(entry.customType)
       && userIds.has((entry.data as { messageId?: string } | undefined)?.messageId ?? "")));
     const copied: SessionEntry[] = [];
     const replacements = new Map<string, string>();
     const skippedIds: string[] = [];
     for (const entry of retained) {
       // 分支是独立会话；历史消息保留，但不能继承原会话的子任务所有权。
-      if (entry.type === "custom" && ["toonflowSubAgentInfo", "toonflowSubAgent"].includes(entry.customType)) {
+      if (entry.type === "custom" && ["lumoSubAgentInfo", "lumoSubAgent"].includes(entry.customType)) {
         skippedIds.push(entry.id);
         continue;
       }
@@ -402,10 +402,10 @@ export async function createAgentConversation(cwd: string, child?: Omit<AgentSub
   const { path: directory } = await resolveWorkspacePath(cwd, ".agent/sessions", true);
   const history = SessionManager.create(cwd, directory, child ? { parentSession: child.parentFile } : undefined);
   const path = history.getSessionFile()!;
-  history.appendCustomEntry("toonflowReasoning", { thinkingLevel: child?.thinkingLevel ?? null });
+  history.appendCustomEntry("lumoReasoning", { thinkingLevel: child?.thinkingLevel ?? null });
   if (child) {
     history.appendSessionInfo(child.name);
-    history.appendCustomEntry("toonflowSubAgentInfo", { ...child, file: basename(path), status: "running" });
+    history.appendCustomEntry("lumoSubAgentInfo", { ...child, file: basename(path), status: "running" });
     if (child.providerId && child.modelId) history.appendModelChange(child.providerId, child.modelId);
     if (child.thinkingLevel) history.appendThinkingLevelChange(child.thinkingLevel);
   }
@@ -458,15 +458,15 @@ export async function getAgentSession(cwd: string, path: string) {
   const history = SessionManager.inMemory(cwd, undefined, entries);
   const branch = history.getBranch();
   const retriedMessages = new Set(branch.flatMap(entry => {
-    if (entry.type !== "custom" || entry.customType !== "toonflowRetriedMessage") return [];
+    if (entry.type !== "custom" || entry.customType !== "lumoRetriedMessage") return [];
     const data = entry.data as { messageId?: unknown } | null;
     return typeof data?.messageId === "string" ? [data.messageId] : [];
   }));
-  const reasoning = branch.findLast(entry => entry.type === "custom" && entry.customType === "toonflowReasoning");
+  const reasoning = branch.findLast(entry => entry.type === "custom" && entry.customType === "lumoReasoning");
   const reasoningSelection = z.object({ thinkingLevel: z.enum(thinkingLevels).nullable() }).safeParse(reasoning?.type === "custom" ? reasoning.data : undefined);
   const attachmentMessages = new Map(
     branch.flatMap((entry) => {
-      if (entry.type !== "custom" || !["toonflowAttachments", "toonflowUserMessage"].includes(entry.customType)) return [];
+      if (entry.type !== "custom" || !["lumoAttachments", "lumoUserMessage"].includes(entry.customType)) return [];
       const parsed = agentUserMessageSchema.safeParse(entry.data);
       return parsed.success ? [[parsed.data.messageId, parsed.data] as const] : [];
     })
@@ -479,7 +479,7 @@ export async function getAgentSession(cwd: string, path: string) {
   let replyTo: string | undefined;
   let delivery: AgentMessageDelivery | undefined;
   const entriesMessages = branch.flatMap<SessionMessage>((entry) => {
-    if (entry.type === "custom" && entry.customType === "toonflowDeletedUser") {
+    if (entry.type === "custom" && entry.customType === "lumoDeletedUser") {
       replyTo = entry.id;
       const parsed = agentUserMessageSchema.shape.delivery.safeParse((entry.data as { delivery?: unknown } | null)?.delivery);
       delivery = parsed.success ? parsed.data : undefined;
@@ -527,7 +527,7 @@ export async function getAgentSession(cwd: string, path: string) {
                     id: part.id,
                     name: part.name,
                     args: part.arguments,
-                    status: !result || result.details?.toonflowInterrupted === true ? "interrupted" as const : result.isError ? "error" as const : "success" as const,
+                    status: !result || result.details?.lumoInterrupted === true ? "interrupted" as const : result.isError ? "error" as const : "success" as const,
                     result: result ? getToolResultText(result.content) : undefined,
                   },
                 };
@@ -596,7 +596,7 @@ export async function getAgentSession(cwd: string, path: string) {
   const configuredModel = provider.success ? provider.data.models.find((item) => item.id === model?.modelId) : undefined;
   const subAgents = new Map<string, AgentSubAgent>();
   for (const entry of history.getEntries()) {
-    if (entry.type !== "custom" || entry.customType !== "toonflowSubAgent") continue;
+    if (entry.type !== "custom" || entry.customType !== "lumoSubAgent") continue;
     const agent = entry.data as AgentSubAgent;
     const child = getActiveAgentSession(resolve(dirname(path), agent.file));
     const interrupted = agent.status === "running" && !active && !child;
@@ -640,7 +640,7 @@ export function getAgentStats(history: SessionManager, timing?: { outputTokens: 
       tokens.cacheRead += usage.cacheRead;
       tokens.cacheWrite += usage.cacheWrite;
     }
-    if (entry.type === "custom" && entry.customType === "toonflowTiming") {
+    if (entry.type === "custom" && entry.customType === "lumoTiming") {
       const timing = entry.data as { outputTokens?: number; decodeMs?: number } | undefined;
       if (
         typeof timing?.outputTokens === "number" &&
@@ -670,7 +670,7 @@ export function getAgentContext(history: SessionManager, contextWindow = 0) {
   const deletedAfterReply = branch.some(
     (entry) =>
       entry.type === "custom" &&
-      (entry.customType === "toonflowDeletedUser" || entry.customType === "toonflowDeletedEntry") &&
+      (entry.customType === "lumoDeletedUser" || entry.customType === "lumoDeletedEntry") &&
       Date.parse(entry.timestamp) >= (messages[usageIndex]?.timestamp ?? 0)
   );
   // ACT: 压缩后先按摘要与保留消息估算，首条新回复后再使用模型 usage。

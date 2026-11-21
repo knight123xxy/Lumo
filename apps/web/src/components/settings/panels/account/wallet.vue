@@ -197,11 +197,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { IconGift, IconReceipt } from "@tabler/icons-vue";
 import { Marked } from "marked";
 import DOMPurify from "dompurify";
-import type { WalletActivity, WalletBonus, WalletOrder, WalletOrdersPage, WalletPayment, WalletPaymentParams, WalletPaymentStatus, WalletPlan, WalletPresentation } from "@toonflow/server/channel";
+import type { WalletActivity, WalletBonus, WalletOrder, WalletOrdersPage, WalletPayment, WalletPaymentParams, WalletPaymentStatus, WalletPlan, WalletPresentation } from "@lumo/server/channel";
 import http from "@/lib/http";
 import walletBonus from "./walletBonus.vue";
 

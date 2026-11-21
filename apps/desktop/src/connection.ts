@@ -4,11 +4,11 @@ import { hostname } from "node:os";
 import { posix } from "node:path";
 import type { AddressInfo, Socket } from "node:net";
 import type { Server } from "node:http";
-import { createRemoteConnection } from "@toonflow/server/remoteConnection";
-import { getMobileLinkConfig, getMobileLinkStatus, startMobileLinkRuntime, stopMobileLinkRuntime, suspendMobileLinkRuntime } from "@toonflow/server/mobileLink";
-import { initializeMcpRuntime, stopMcpRuntime } from "@toonflow/server/mcp";
-import { languageRequest, translateError, translateMessage } from "@toonflow/server/i18n";
-import { isEnabled, startMultiTenantRuntime, stopMultiTenantRuntime } from "@toonflow/server/multiTenant";
+import { createRemoteConnection } from "@lumo/server/remoteConnection";
+import { getMobileLinkConfig, getMobileLinkStatus, startMobileLinkRuntime, stopMobileLinkRuntime, suspendMobileLinkRuntime } from "@lumo/server/mobileLink";
+import { initializeMcpRuntime, stopMcpRuntime } from "@lumo/server/mcp";
+import { languageRequest, translateError, translateMessage } from "@lumo/server/i18n";
+import { isEnabled, startMultiTenantRuntime, stopMultiTenantRuntime } from "@lumo/server/multiTenant";
 
 export default async function createDesktopConnection(app: express.Express, directory: string, mcpEntry: string,
   onNavigate: (port: number, remote: boolean, hostMode: boolean) => void, onError: (error: unknown) => void) {

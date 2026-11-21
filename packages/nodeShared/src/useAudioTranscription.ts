@@ -1,7 +1,7 @@
 import { computed, inject, onScopeDispose, ref, toValue, watch, type MaybeRefOrGetter } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
 import { ElMessage } from "element-plus";
-import { useNodeAsr, type NodeMediaValue } from "@toonflow/nodes-scaffold/runtime";
+import { useNodeAsr, type NodeMediaValue } from "@lumo/nodes-scaffold/runtime";
 
 export function useAudioTranscription(source: MaybeRefOrGetter<NodeMediaValue | undefined>) {
   const { node } = useNode();

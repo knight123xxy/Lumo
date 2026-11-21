@@ -1,5 +1,5 @@
-import { copyFileSync, existsSync, readdirSync } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import { copyFileSync, existsSync, readdirSync } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import prepareRuntime from "./prepareRuntime";

@@ -48,9 +48,9 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useVueFlow } from "@vue-flow/core";
 import { ElButton, ElImage } from "element-plus";
 import { IconX, IconFileText, IconPhoto, IconVideo, IconMusic, IconPlayerPlay } from "@tabler/icons-vue";
-import { useNodeFiles } from "@toonflow/nodes-scaffold/workspaceFiles";
-import type { NodeData } from "@toonflow/nodes-scaffold/connection";
-import type { NodeInputValue } from "@toonflow/nodes-scaffold/values";
+import { useNodeFiles } from "@lumo/nodes-scaffold/workspaceFiles";
+import type { NodeData } from "@lumo/nodes-scaffold/connection";
+import type { NodeInputValue } from "@lumo/nodes-scaffold/values";
 import { useMediaPreview } from "../mediaPreview";
 
 const props = defineProps<{ item: NodeInputValue; index: number }>();

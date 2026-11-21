@@ -13,7 +13,7 @@ bun run --cwd packages/ext/myEditor typecheck
 bun run --cwd packages/ext/myEditor build
 ```
 
-参数是小驼峰名称，不带 `ext-`；例如 `myEditor` 生成 ID `ext-myEditor` 和包名 `@toonflow/ext-myeditor`。已有同名目录时拒绝创建。命令只创建目录和文件，不隐式安装依赖、构建或修改宿主配置。
+参数是小驼峰名称，不带 `ext-`；例如 `myEditor` 生成 ID `ext-myEditor` 和包名 `@lumo/ext-myeditor`。已有同名目录时拒绝创建。命令只创建目录和文件，不隐式安装依赖、构建或修改宿主配置。
 
 写入中途失败时保留已创建文件，修复原因后可补齐或手动清理；脚手架不会递归删除目录回滚。
 
@@ -35,7 +35,7 @@ packages/ext/myEditor/
 
 ```ts
 // src/metadata.ts
-import type { ExtDefinition } from "@toonflow/ext-scaffold/runtime";
+import type { ExtDefinition } from "@lumo/ext-scaffold/runtime";
 
 export default {
   id: "ext-myEditor",
@@ -50,7 +50,7 @@ export default {
 入口 `src/index.ts` 将声明与组件加载函数组合：
 
 ```ts
-import { defineExt } from "@toonflow/ext-scaffold/runtime";
+import { defineExt } from "@lumo/ext-scaffold/runtime";
 import metadata from "./metadata";
 
 export default defineExt({ ...metadata, load: () => import("./index.vue") });
@@ -69,7 +69,7 @@ export default defineExt({ ...metadata, load: () => import("./index.vue") });
 ## 组件上下文
 
 ```ts
-import type { ExtContext } from "@toonflow/ext-scaffold/runtime";
+import type { ExtContext } from "@lumo/ext-scaffold/runtime";
 
 const props = defineProps<{ context: ExtContext }>();
 ```
@@ -115,18 +115,18 @@ const editor = new Editor({
 });
 ```
 
-共享模块包括 `@tiptap/core`、`@tiptap/vue-3`、`@tiptap/starter-kit`、`@tiptap/markdown`，以及 `extension-find-and-replace`、`extension-highlight`、`extension-image`、`extension-list`、`extension-subscript`、`extension-superscript`、`extension-table`、`extension-text-align`（均为 `@tiptap/` 前缀）；还包括 `@tiptap/pm/model`、`@tiptap/pm/state`、`@tiptap/pm/view`、`marked` 和 `dompurify`。构建产物引用 `window.toonflowTiptapHost` 中对应的依赖，不重复打包这些实现。
+共享模块包括 `@tiptap/core`、`@tiptap/vue-3`、`@tiptap/starter-kit`、`@tiptap/markdown`，以及 `extension-find-and-replace`、`extension-highlight`、`extension-image`、`extension-list`、`extension-subscript`、`extension-superscript`、`extension-table`、`extension-text-align`（均为 `@tiptap/` 前缀）；还包括 `@tiptap/pm/model`、`@tiptap/pm/state`、`@tiptap/pm/view`、`marked` 和 `dompurify`。构建产物引用 `window.lumoTiptapHost` 中对应的依赖，不重复打包这些实现。
 
 Tiptap 统一使用具名导入，例如 `{ StarterKit }`、`{ Image }`、`{ Highlight }`、`{ Superscript }`、`{ Subscript }`、`{ TextAlign }`、`{ FindAndReplace }`。当前 Vite 8 UMD 的默认导入会取整个外部模块对象，不能用于这些共享模块；DOMPurify 单独共享默认函数，继续使用 `import DOMPurify from "dompurify"`。无需启用影响所有依赖的旧版 CJS 兼容开关。
 
-宿主先检查 UMD 是否引用 `toonflowTiptapHost`，仅在需要时动态加载共享依赖，后续复用同一个 ES 模块；普通图片、视频或纯文本插件不会因此预载 Tiptap。组件的挂载、销毁、隐藏状态、正文更新和文件保存仍由各包管理。使用共享依赖的产物需要配套宿主版本。
+宿主先检查 UMD 是否引用 `lumoTiptapHost`，仅在需要时动态加载共享依赖，后续复用同一个 ES 模块；普通图片、视频或纯文本插件不会因此预载 Tiptap。组件的挂载、销毁、隐藏状态、正文更新和文件保存仍由各包管理。使用共享依赖的产物需要配套宿主版本。
 
 ## 独立构建与开发
 
 `viteConfig.ts` 使用共享配置：
 
 ```ts
-import { createExtConfig } from "@toonflow/ext-scaffold";
+import { createExtConfig } from "@lumo/ext-scaffold";
 import metadata from "./src/metadata.ts";
 
 export default createExtConfig(metadata, import.meta.url);
@@ -134,19 +134,19 @@ export default createExtConfig(metadata, import.meta.url);
 
 声明文件不导入组件，避免配置打包器提前解析 Vue 文件。每次重建重新读取声明及其依赖，后缀、图标与设置变更会同步进入 UMD 元数据；修改扩展 ID 后须重启构建。
 
-产物为 `build/ext/<name>.ext.js`，例如 ID `ext-image` 对应 `build/ext/image.ext.js`。文件名去掉 ID 的 `ext-` 前缀，使用小驼峰；包内保留原 ID，已有配置和市场身份不变。产物包含 `toonflowExt` JSON 元数据注释、版本、说明文档和自动注入的组件样式。产物仍使用 UMD 模块格式，导出 `window.toonflowExts[id]`，结构为 `ExtDefinition`；`.ext.js` 是扩展插件的文件类型标识。Vue、Element Plus 与 Toonflow 语言状态由宿主共享：
+产物为 `build/ext/<name>.ext.js`，例如 ID `ext-image` 对应 `build/ext/image.ext.js`。文件名去掉 ID 的 `ext-` 前缀，使用小驼峰；包内保留原 ID，已有配置和市场身份不变。产物包含 `lumoExt` JSON 元数据注释、版本、说明文档和自动注入的组件样式。产物仍使用 UMD 模块格式，导出 `window.lumoExts[id]`，结构为 `ExtDefinition`；`.ext.js` 是扩展插件的文件类型标识。Vue、Element Plus 与 Lumo 语言状态由宿主共享：
 
 ```ts
 import * as vue from "vue";
 import * as elementPlus from "element-plus";
-import * as i18n from "@toonflow/i18n/vue";
+import * as i18n from "@lumo/i18n/vue";
 
-Object.assign(window, { toonflowExtHost: { vue, elementPlus, i18n } });
+Object.assign(window, { lumoExtHost: { vue, elementPlus, i18n } });
 ```
 
-运行时使用 `@toonflow/ext-scaffold/runtime`；构建配置使用 `@toonflow/ext-scaffold`，避免把 Vite 与文件系统代码打包到浏览器。Element Plus 的基础样式由宿主加载，扩展自身的组件样式会打入产物。
+运行时使用 `@lumo/ext-scaffold/runtime`；构建配置使用 `@lumo/ext-scaffold`，避免把 Vite 与文件系统代码打包到浏览器。Element Plus 的基础样式由宿主加载，扩展自身的组件样式会打入产物。
 
-安装、导出与新构建统一使用 `.ext.js`。已有 `ext-<name>.umd.js` 保持兼容，新旧文件并存时优先加载 `.ext.js`，只展示一个扩展；读取和启动不会删除旧文件。安装前同时检查元数据 ID、脚本语法与实际导出，不要求无宿主依赖的扩展引用 `toonflowExtHost`，也不使用字符串中的示例判断脚本类型。
+安装、导出与新构建统一使用 `.ext.js`。已有 `ext-<name>.umd.js` 保持兼容，新旧文件并存时优先加载 `.ext.js`，只展示一个扩展；读取和启动不会删除旧文件。安装前同时检查元数据 ID、脚本语法与实际导出，不要求无宿主依赖的扩展引用 `lumoExtHost`，也不使用字符串中的示例判断脚本类型。
 
 `bun run --cwd packages/ext/myEditor dev` 持续构建，并把产物原子替换到 `data/ext/`，供本机插件市场与文档宿主读取。`NODE_ENV=dev` 或 `--mode development` 的单次构建同样同步；生产构建只输出 `build/ext/`。
 
@@ -160,4 +160,4 @@ HTTP 回调接收 `{ request, params, query, signal }`，由扩展处理路径�
 
 同一文档的分屏视图共享正文与保存状态，各自拥有独立服务；相同路由通过不同服务 ID 隔离。关闭视图或退出工作区时自动销毁所属服务，不影响其他视图；扩展停用时停止服务。处理函数运行在扩展的前端实例中，创作页面关闭后不再处理请求。断线不会重放旧请求，重新启动取得新的服务地址。
 
-访问端可从 `@toonflow/ext-scaffold/serverClient` 导入 `createServerClient(serviceUrl)`，使用当前服务内的相对路径访问 HTTP／WS，避免请求落到主应用或其他插件。共享通道协议、限制与客户端方法详见 `packages/pluginServer/readme.md`。此能力只接入 Node 与 Ext，不扩展 Tool 的执行上下文。
+访问端可从 `@lumo/ext-scaffold/serverClient` 导入 `createServerClient(serviceUrl)`，使用当前服务内的相对路径访问 HTTP／WS，避免请求落到主应用或其他插件。共享通道协议、限制与客户端方法详见 `packages/pluginServer/readme.md`。此能力只接入 Node 与 Ext，不扩展 Tool 的执行上下文。

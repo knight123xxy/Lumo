@@ -35,11 +35,11 @@ import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
 import { ElButton, ElCard, ElDialog, ElInputNumber, ElMessage, ElSlider } from "element-plus";
 import { IconArrowUp, IconX } from "@tabler/icons-vue";
-import { useNodeFfmpeg, useNodeFiles, type NodeMediaValue, type WorkspaceFiles } from "@toonflow/nodes-scaffold/runtime";
-import { showNodeError } from "@toonflow/node-shared/showNodeError";
+import { useNodeFfmpeg, useNodeFiles, type NodeMediaValue, type WorkspaceFiles } from "@lumo/nodes-scaffold/runtime";
+import { showNodeError } from "@lumo/node-shared/showNodeError";
 import { processAudio, type AudioSegment, type AudioProcessingOptions } from "../audioProcessing";
 import audioClipEditor from "./audioClipEditor.vue";
-import { getPcmOptions, isPcmMimeType, type PcmOptions } from "@toonflow/node-shared/pcmPreview";
+import { getPcmOptions, isPcmMimeType, type PcmOptions } from "@lumo/node-shared/pcmPreview";
 
 const props = defineProps<{ file?: NodeMediaValue; src: string; disabled?: boolean; target?: HTMLElement }>();
 const pcmOptions = defineModel<Partial<PcmOptions>>("pcmOptions", { default: () => ({}) });

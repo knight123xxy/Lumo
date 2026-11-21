@@ -8,4 +8,4 @@ export type ProviderBalance = Awaited<ReturnType<NonNullable<Provider["getBalanc
 export type ProviderTools = ProviderContext["tool"];
 export type ProviderTaskData = Parameters<NonNullable<ProviderContext["saveTaskData"]>>[0];
 export type AudioConvertOptions = Parameters<ProviderTools["audio"]["convert"]>[1];
-export type { FfmpegFactory, FfmpegCommand } from "@toonflow/ffmpeg/types";
+export type { FfmpegFactory, FfmpegCommand } from "@lumo/ffmpeg/types";

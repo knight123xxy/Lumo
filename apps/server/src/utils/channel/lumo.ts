@@ -193,7 +193,7 @@ const homeAdvertisement = z.object({
   return advertisementSettingsPanels.includes(advertisement.actionTarget);
 });
 
-export class Toonflow implements Channel {
+export class Lumo implements Channel {
   private async request<T>(params: {
     path: string; method: "GET" | "POST"; data?: unknown; token?: string; signal?: AbortSignal; timeout?: number; sensitiveValues?: string[]; cache?: "no-store";
   }): Promise<T> {

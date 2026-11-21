@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { ElButton, ElDialog, ElMessage, ElOption, ElProgress, ElSelect } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { formatTime } from "../timelineModel";
 import { exportTimeline } from "../timelineExport";

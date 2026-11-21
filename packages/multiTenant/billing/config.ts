@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { modelAmountSchema } from "@toonflow/multi-tenant-models/config";
+import { modelAmountSchema } from "@lumo/multi-tenant-models/config";
 
 export const billingCurrencySchema = z.enum(["CNY", "USD"]);
 export const billingCreditSchema = z.strictObject({

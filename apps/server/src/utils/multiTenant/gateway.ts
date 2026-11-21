@@ -1,5 +1,5 @@
 import { dirname } from "node:path";
-import { createModelGateway } from "@toonflow/multi-tenant-gateway";
+import { createModelGateway } from "@lumo/multi-tenant-gateway";
 import conf from "@/utils/conf";
 import { cloudSchema, formatModelPrice, loadModelCloud, modelAdapters } from "./modelAdapters";
 import type { Cloud, ModelCapabilities, ModelUpstreams } from "./modelAdapters";

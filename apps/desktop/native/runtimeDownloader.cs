@@ -84,7 +84,7 @@ internal sealed class downloadWindow : Form
         quietMode = quiet;
         targetDirectory = directory;
         cacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "local.toonflow.desktop", "runtime", "bun", runtimeConfig.version, "windows" + runtimeConfig.architecture);
+            "local.lumo.desktop", "runtime", "bun", runtimeConfig.version, "windows" + runtimeConfig.architecture);
         SuspendLayout();
         DoubleBuffered = true;
         ResizeRedraw = true;
@@ -361,7 +361,7 @@ internal sealed class downloadWindow : Form
         if (fileMatches(target, binarySize, binaryDigest)) return;
         Directory.CreateDirectory(cacheDirectory);
         var timer = Stopwatch.StartNew();
-        using (var mutex = new Mutex(false, "Local\\toonflowBun" + runtimeConfig.version + "Windows" + runtimeConfig.architecture))
+        using (var mutex = new Mutex(false, "Local\\lumoBun" + runtimeConfig.version + "Windows" + runtimeConfig.architecture))
         {
             bool locked = false;
             try

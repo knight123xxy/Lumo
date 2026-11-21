@@ -61,7 +61,7 @@
 
 <script setup lang="ts">
 import { ElButton } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { IconEye, IconEyeOff, IconPlus, IconTrash, IconVolume, IconVolumeOff } from "@tabler/icons-vue";
 import clipBlock from "./clipBlock.vue";
 import type { TimelineTrack } from "../timelineTypes";

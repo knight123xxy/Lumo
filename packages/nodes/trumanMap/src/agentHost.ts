@@ -15,7 +15,7 @@ const blockCharacters = 6000;
 type HostResponse<T> = { code?: number; data?: T; message?: string };
 
 async function getJson<T>(url: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(url, { headers: { "x-toonflow-workspace": "1" }, cache: "no-store", signal });
+  const response = await fetch(url, { headers: { "x-lumo-workspace": "1" }, cache: "no-store", signal });
   const result = await response.json().catch(() => null) as HostResponse<T> | null;
   if (!response.ok || result?.code !== 200) throw new Error(result?.message || `HTTP ${response.status}`);
   return result.data as T;

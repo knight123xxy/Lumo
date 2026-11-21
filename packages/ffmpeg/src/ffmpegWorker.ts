@@ -1,6 +1,6 @@
 import { parentPort } from "node:worker_threads";
-import { msg } from "@toonflow/i18n";
-import { messageError } from "@toonflow/i18n/errors";
+import { msg } from "@lumo/i18n";
+import { messageError } from "@lumo/i18n/errors";
 import { createFfmpeg } from "./runtime";
 import { executeRemoteFfmpeg, serializeError } from "./remote";
 import type { FfmpegWorkerRequest, FfmpegWorkerResponse } from "./workerClient";

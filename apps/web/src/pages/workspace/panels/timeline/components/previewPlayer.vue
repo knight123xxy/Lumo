@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElButton, ElSegmented } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { IconPlayerPause, IconPlayerPlay, IconZoomIn, IconZoomOut } from "@tabler/icons-vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { formatTime } from "../timelineModel";

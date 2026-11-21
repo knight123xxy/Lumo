@@ -92,7 +92,7 @@ export async function installMarketPlugin(plugin: MarketPlugin, signal?: AbortSi
     throw new Error(t`分页已失效，请重新搜索`);
   }
   const account = new AbortController();
-  const unsubscribe = u.conf.onDidChange("settings.toonflowAccount.token", () => {
+  const unsubscribe = u.conf.onDidChange("settings.lumoAccount.token", () => {
     if (u.ai.getAccountToken() !== source.token) account.abort(new Error(t`账号已变更，请刷新后重试`));
   });
   try {

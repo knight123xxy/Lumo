@@ -1,12 +1,12 @@
 import axios from "axios";
 import { ElMessage } from "element-plus";
 import type { useVueFlow } from "@vue-flow/core";
-import { uploadNodeFile } from "@toonflow/nodes-scaffold/workspaceFiles";
-import type { NodeOutput } from "@toonflow/nodes-scaffold/values";
+import { uploadNodeFile } from "@lumo/nodes-scaffold/workspaceFiles";
+import type { NodeOutput } from "@lumo/nodes-scaffold/values";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { getMediaMimeType, mediaMimeTypes } from "@toonflow/node-shared/mediaTypes";
+import { getMediaMimeType, mediaMimeTypes } from "@lumo/node-shared/mediaTypes";
 
-const assetDragType = "application/toonflow-asset";
+const assetDragType = "application/lumo-asset";
 const fileMimeTypes: Record<string, string> = {
   ...mediaMimeTypes,
   txt: "text/plain", md: "text/markdown", markdown: "text/markdown", csv: "text/csv", log: "text/plain",

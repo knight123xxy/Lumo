@@ -133,14 +133,14 @@
   "账号与余额": [
     "apps/web/src/components/settings/index.vue",
     "apps/web/src/pages/home/homeAccount.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue"
   ],
   "通用设置": [
     "apps/web/src/components/settings/index.vue"
   ],
   "文本模型": [
     "apps/web/src/components/settings/index.vue",
-    "apps/web/src/components/settings/toonflowProviderCard.vue",
+    "apps/web/src/components/settings/lumoProviderCard.vue",
     "apps/web/src/components/settings/panels/pluginMarket/a2aSettingsDialog.vue"
   ],
   "模型": [
@@ -150,7 +150,7 @@
   ],
   "媒体模型": [
     "apps/web/src/components/settings/index.vue",
-    "apps/web/src/components/settings/toonflowProviderCard.vue"
+    "apps/web/src/components/settings/lumoProviderCard.vue"
   ],
   "插件市场": [
     "apps/web/src/components/settings/index.vue",
@@ -193,37 +193,37 @@
     "packages/multiTenant/adminWeb/pages/users.vue"
   ],
   "官方": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue"
+    "apps/web/src/components/settings/lumoProviderCard.vue"
   ],
   "已加载": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue"
+    "apps/web/src/components/settings/lumoProviderCard.vue"
   ],
   "{0} 个模型": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue",
+    "apps/web/src/components/settings/lumoProviderCard.vue",
     "apps/web/src/components/settings/panels/languageModel/index.vue",
     "apps/web/src/components/settings/panels/mediaModel/index.vue"
   ],
   "跳转至网页查看": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue"
+    "apps/web/src/components/settings/lumoProviderCard.vue"
   ],
   "充值": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue",
+    "apps/web/src/components/settings/lumoProviderCard.vue",
     "apps/web/src/components/settings/panels/account/index.vue",
     "apps/web/src/components/settings/panels/account/rechargeDialog.vue",
     "apps/web/src/components/settings/panels/account/wallet.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue"
   ],
   "查看": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue",
+    "apps/web/src/components/settings/lumoProviderCard.vue",
     "apps/web/src/components/settings/panels/personalization/index.vue",
     "apps/web/src/components/settings/panels/about/index.vue",
     "apps/web/src/components/settings/panels/account/taskRecords.vue"
   ],
   "请先在账号与余额中登录 算力汇 账号": [
-    "apps/web/src/components/settings/toonflowProviderCard.vue",
+    "apps/web/src/components/settings/lumoProviderCard.vue",
     "apps/web/src/components/settings/panels/pluginMarket/marketUpload.ts",
     "apps/web/src/components/settings/panels/account/rechargeDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "Lumo 说明": [
     "apps/web/src/components/settings/panels/personalization/index.vue"
@@ -1909,15 +1909,15 @@
   ],
   "插件名称": [
     "apps/web/src/components/settings/panels/pluginMarket/uploadPluginDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件标识": [
     "apps/web/src/components/settings/panels/pluginMarket/uploadPluginDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "版本号": [
     "apps/web/src/components/settings/panels/pluginMarket/uploadPluginDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "例如 1.0.0": [
     "apps/web/src/components/settings/panels/pluginMarket/uploadPluginDialog.vue"
@@ -1981,7 +1981,7 @@
   ],
   "此类插件只支持 {0} 文件": [
     "apps/web/src/components/settings/panels/pluginMarket/uploadPluginDialog.vue",
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/routes/channel/plugin/uploadPlugin.ts"
   ],
   "插件文件内容为空": [
@@ -2420,7 +2420,7 @@
     "apps/web/src/components/settings/panels/account/index.vue",
     "apps/web/src/components/settings/panels/account/wallet.vue",
     "apps/web/src/components/settings/panels/account/walletBonus.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue",
     "packages/multiTenant/userWeb/account.vue",
     "packages/multiTenant/adminWeb/pages/users.vue"
   ],
@@ -2982,7 +2982,7 @@
   "获取模型列表失败，请检查连接配置": [
     "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue"
   ],
-  "toonflow 为账号供应商保留 ID，请使用其他 ID": [
+  "lumo 为账号供应商保留 ID，请使用其他 ID": [
     "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue"
   ],
   "模型 ID 不能为空或重复": [
@@ -3761,15 +3761,15 @@
   ],
   "本金余额": [
     "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue"
   ],
   "可用赠送金": [
     "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue"
   ],
   "累计消费金额": [
     "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue"
   ],
   "用量概览（今日）": [
     "apps/web/src/components/settings/panels/account/index.vue"
@@ -3894,7 +3894,7 @@
     "apps/web/src/components/settings/panels/account/index.vue",
     "apps/web/src/components/settings/panels/account/rechargeDialog.vue",
     "apps/web/src/pages/home/homeAccount.vue",
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue"
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue"
   ],
   "加载用量失败，请刷新重试": [
     "apps/web/src/components/settings/panels/account/index.vue"
@@ -3972,7 +3972,7 @@
   ],
   "请输入兑换码": [
     "apps/web/src/components/settings/panels/account/wallet.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "兑换码": [
     "apps/web/src/components/settings/panels/account/wallet.vue"
@@ -4341,7 +4341,7 @@
   ],
   "请输入凭证名称": [
     "apps/web/src/components/settings/panels/account/subAccounts.vue",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "额度设置": [
     "apps/web/src/components/settings/panels/account/subAccounts.vue"
@@ -6026,7 +6026,7 @@
   ],
   "供应商源码响应格式不正确": [
     "apps/web/src/lib/builtinProviders.ts",
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "供应商列表格式不正确": [
     "apps/web/src/lib/builtinProviders.ts"
@@ -7493,7 +7493,7 @@
     "apps/web/src/pages/workspace/panels/canvas/components/assetMenu.vue"
   ],
   "账户余额": [
-    "apps/web/src/pages/workspace/panels/canvas/components/toonflowBalance.vue",
+    "apps/web/src/pages/workspace/panels/canvas/components/lumoBalance.vue",
     "packages/multiTenant/adminWeb/pages/users.vue"
   ],
   "关闭素材库": [
@@ -8412,7 +8412,7 @@
   ],
   "请求已取消": [
     "apps/server/src/utils/multiTenant/modelAdapters.ts",
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/utils/channel/hosting.ts",
     "packages/multiTenant/gateway/index.ts"
   ],
@@ -8627,7 +8627,7 @@
   "文件不是兼容的 Lumo 节点，请使用节点脚手架构建生成的 .umd.js 文件": [
     "apps/server/src/utils/plugins/install.ts"
   ],
-  "文件名与节点导出名不一致：{0} 需要导出 toonflowNodes.{1}，请按实际节点名修改文件名": [
+  "文件名与节点导出名不一致：{0} 需要导出 lumoNodes.{1}，请按实际节点名修改文件名": [
     "apps/server/src/utils/plugins/install.ts"
   ],
   "节点脚本语法无效，请重新构建并上传完整的 .umd.js 文件": [
@@ -9656,302 +9656,302 @@
     "apps/server/src/utils/singleAgent/index.ts"
   ],
   "模型列表响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "账号金额格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "探索项目 ID 无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "作品互动响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "探索项目响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "算力汇 请求超时，请重试": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/utils/channel/hosting.ts"
   ],
   "算力汇 请求失败（HTTP {0}）": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "算力汇 响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/utils/channel/hosting.ts"
   ],
   "算力汇 请求失败，请检查网络连接": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/utils/channel/hosting.ts"
   ],
   "算力汇 请求失败": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/utils/channel/hosting.ts"
   ],
   "页码必须为正整数": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "每页数量必须为 1 至 100 的整数": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "搜索凭证格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "凭证响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "凭证名称不能超过 200 个字符": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "凭证额度类型无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "凭证有效期类型无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "请输入有效的凭证额度": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "不限额时无需设置额度": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "请选择未来的凭证到期时间": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "永久有效时无需设置到期时间": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "凭证 ID 无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "钱包充值套餐响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "充值协议信息响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "充值活动响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "赠送金状态无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "赠送金明细响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "钱包订单响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "兑换码长度不能超过 200 个字符": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "请选择充值套餐": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "不支持的支付方式": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "请输入 1 元及以上的自定义充值金额，最多保留两位小数": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/routes/channel/wallet/pay.ts"
   ],
   "请确认充值金额和赠送规则后重新支付": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "充值支付响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "充值活动规则已变化，请确认最新金额、赠送活动和有效期后重新支付": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "充值支付链接格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "微信支付二维码格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "请输入订单号": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "订单号长度不能超过 200 个字符": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "支付订单状态响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "任务 ID 格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "任务记录响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "凭证格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "结束时间不能早于开始时间，且时间格式必须正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "消耗查询响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "不支持的模型类型": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "模型计费响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "每页数量必须为 1 至 50 的整数": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "不支持的插件列表类型": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件搜索关键词格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件市场列表格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "待检查插件不能为空": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件 ID 必须为正整数": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件收藏响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件素材上传签名格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件文件内容": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件文件名": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "{0}不能为空": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "不支持的插件类型": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件描述格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "上传插件响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "插件文件只支持 .js 或 .zip 文件": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/routes/channel/plugin/updatePlugin.ts"
   ],
   "重新提交插件响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "删除插件响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "账号余额响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "每日消费数据格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "统计时间格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/routes/channel/account/getUsageStatistics.ts"
   ],
   "统计时间范围必须在 31 天以内，且结束时间不能早于开始时间": [
-    "apps/server/src/utils/channel/toonflow.ts",
+    "apps/server/src/utils/channel/lumo.ts",
     "apps/server/src/routes/channel/account/getUsageStatistics.ts"
   ],
   "统计模型名称格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "统计 API Key ID 必须为正整数": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "不支持的消费统计分组方式": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "消费统计响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "消费统计图表数据格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "供应商类型无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "供应商列表响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "供应商参数无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "供应商源码不能超过 2 MB": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "探索分页响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "探索分类响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "探索项目 ID 重复": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "作品详情响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程画布格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程节点格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程节点端口格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程分组存在循环": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程分组不存在": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程连线格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程分组不能连接端口": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "制作过程连线端口不存在或方向不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "项目下载地址无效": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "赞助商响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "作品上传签名格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "作品提交响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "首页广告响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
   "顶部横幅响应格式不正确": [
-    "apps/server/src/utils/channel/toonflow.ts"
+    "apps/server/src/utils/channel/lumo.ts"
   ],
-  "渠道未配置，请检查 TOONFLOW_CHANNEL": [
+  "渠道未配置，请检查 LUMO_CHANNEL": [
     "apps/server/src/utils/channel/index.ts"
   ],
   "未配置 Lumo 总账号 access_token（LUOMO_ACCESS_TOKEN）": [
@@ -10310,7 +10310,7 @@
   "插件服务公网地址必须是不含路径和凭据的 HTTP 或 HTTPS 根地址": [
     "apps/server/src/utils/pluginServer/gateway.ts"
   ],
-  "HTTPS 部署请配置 TOONFLOW_PLUGIN_SERVER_URL 与插件服务反向代理": [
+  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": [
     "apps/server/src/utils/pluginServer/gateway.ts"
   ],
   "供应商源码 ID 与所选供应商不一致或使用了账号保留 ID": [
@@ -10479,7 +10479,7 @@
   "供应商 TypeScript 语法错误：{0}": [
     "apps/server/src/utils/media/provider.ts"
   ],
-  "检测到旧版 Toonflow 供应商 TS，无法在 Toonflow 2.0 中使用。请在「添加自定义媒体供应商」中点击「一键复制提示词」，结合旧代码和接口资料重新生成新版代码后再导入。": [
+  "检测到旧版 Lumo 供应商 TS，无法在 Lumo 2.0 中使用。请在「添加自定义媒体供应商」中点击「一键复制提示词」，结合旧代码和接口资料重新生成新版代码后再导入。": [
     "apps/server/src/utils/media/provider.ts"
   ],
   "供应商须通过 export default 导出对象": [
@@ -10494,7 +10494,7 @@
   "{0} 必须使用字面量或顶层 const 常量": [
     "apps/server/src/utils/media/provider.ts"
   ],
-  "账号文本供应商 ID 必须为 Toonflow": [
+  "账号文本供应商 ID 必须为 Lumo": [
     "apps/server/src/utils/media/provider.ts"
   ],
   "供应商 ID 必须为小驼峰文件名": [
@@ -10548,7 +10548,7 @@
   "媒体供应商“{0}”已安装，请在「设置 → 媒体模型」中编辑，或先删除后重新安装。": [
     "apps/server/src/utils/media/provider.ts"
   ],
-  "账号媒体供应商 ID 必须为 toonflow": [
+  "账号媒体供应商 ID 必须为 lumo": [
     "apps/server/src/utils/media/provider.ts"
   ],
   "账号媒体供应商 token 无效": [
@@ -10563,7 +10563,7 @@
   "账号已变更，请重新登录后刷新": [
     "apps/server/src/utils/media/provider.ts"
   ],
-  "已有自定义文本供应商使用 toonflow ID，请先修改该 ID": [
+  "已有自定义文本供应商使用 lumo ID，请先修改该 ID": [
     "apps/server/src/utils/media/provider.ts"
   ],
   "已存在同名自定义供应商，请先处理文件冲突": [
@@ -10946,7 +10946,7 @@
   "图片上下文已调整，重新构建请求": [
     "apps/server/src/agent/runtime/requests.ts"
   ],
-  "onPayload 注入的图片必须提供稳定的 toonflowImageId，每次重新观察图片时使用新 ID": [
+  "onPayload 注入的图片必须提供稳定的 lumoImageId，每次重新观察图片时使用新 ID": [
     "apps/server/src/agent/runtime/requests.ts"
   ],
   "模型请求的非图片内容超过 {0} 字节预算，请压缩对话或减少附件内容后重试": [
@@ -11425,7 +11425,7 @@
   "无法读取文本：仅支持 UTF-8 或带 BOM 的 UTF-16 编码，请转换编码后重试。": [
     "apps/server/src/lib/documentFormats.ts"
   ],
-  "TOONFLOW_SERVER_PORT 必须是 1–65535 之间的整数": [
+  "LUMO_SERVER_PORT 必须是 1–65535 之间的整数": [
     "apps/server/src/index.ts"
   ],
   "设备互联启动失败：": [
@@ -11435,7 +11435,7 @@
   "系统提示词不能超过 {0} 个字符": [
     "apps/server/src/routes/settings/save.ts"
   ],
-  "toonflow 为账号供应商保留 ID": [
+  "lumo 为账号供应商保留 ID": [
     "apps/server/src/routes/settings/save.ts"
   ],
   "自定义更新源必须是不含账号、查询参数或锚点的 HTTP(S) 地址": [
@@ -12104,7 +12104,7 @@
   "安装链接不能包含换行或控制字符": [
     "apps/desktop/src/protocol.ts"
   ],
-  "安装链接格式不正确，应为：toonflow://install?type=node&url=编码后的下载地址。请检查或重新获取完整链接。": [
+  "安装链接格式不正确，应为：lumo://install?type=node&url=编码后的下载地址。请检查或重新获取完整链接。": [
     "apps/desktop/src/protocol.ts"
   ],
   "安装链接不能包含账号、密码、端口或 # 片段": [
@@ -12237,7 +12237,7 @@
   "无法获取本地服务端口": [
     "apps/mobile/src/server.ts"
   ],
-  "toonflow-mcp --url <MCP URL> --token-env <环境变量名>\ntoonflow-mcp --runtime <运行信息文件>\n": [
+  "lumo-mcp --url <MCP URL> --token-env <环境变量名>\nlumo-mcp --runtime <运行信息文件>\n": [
     "packages/mcp/src/stdio.ts"
   ],
   "请指定 --url 或 --runtime，二者只能选择一个": [
@@ -12550,7 +12550,7 @@
     "packages/multiTenant/models/secret.ts",
     "packages/multiTenant/db/index.ts"
   ],
-  "MySQL 部署必须配置 TOONFLOW_MULTI_TENANT_SECRET": [
+  "MySQL 部署必须配置 LUMO_MULTI_TENANT_SECRET": [
     "packages/multiTenant/models/secret.ts"
   ],
   "模型加密密钥文件缺失，请恢复原密钥": [

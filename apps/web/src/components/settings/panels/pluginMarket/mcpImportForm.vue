@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, onBeforeUnmount, ref } from "vue";
 import { IconFileCode, IconPackage, IconFolderOpen } from "@tabler/icons-vue";
@@ -63,7 +63,7 @@ type DxtInfo = { name: string; version: string; description?: string; userConfig
 type FieldDraft = DxtField & { textValue: string; numberValue: number | undefined; booleanValue: boolean };
 const { mode, localSupported } = defineProps<{ mode: "json" | "dxt"; localSupported: boolean }>();
 const emit = defineEmits<{ busy: [value: boolean]; saved: [count: number] }>();
-const requestHeaders = { "x-toonflow-workspace": "1" };
+const requestHeaders = { "x-lumo-workspace": "1" };
 const fileInput = ref<HTMLInputElement>();
 const fileName = ref("");
 const source = ref("");

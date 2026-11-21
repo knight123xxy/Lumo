@@ -12,15 +12,15 @@ import axios from "axios";
 import { markRaw, onMounted, provide, shallowRef, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { VueFlow, useVueFlow, type Node, type NodeTypesObject } from "@vue-flow/core";
-import type { NodePersistenceContext, NodeProjectContext } from "@toonflow/nodes-scaffold/nodeDocument";
-import { useNodeToolsContext } from "@toonflow/nodes-scaffold/nodeTools";
+import type { NodePersistenceContext, NodeProjectContext } from "@lumo/nodes-scaffold/nodeDocument";
+import { useNodeToolsContext } from "@lumo/nodes-scaffold/nodeTools";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { currentUser } from "@/stores/multiTenant";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { loadNodeComponent } from "@/pages/workspace/panels/canvas/loadNodeComponent";
 import assetLibrary from "@/pages/workspace/panels/canvas/components/assetLibrary.vue";
 
-type ProjectFile = { toonflowCanvas: true; nodes: Node[]; edges: unknown[]; viewport: { x: number; y: number; zoom: number } };
+type ProjectFile = { lumoCanvas: true; nodes: Node[]; edges: unknown[]; viewport: { x: number; y: number; zoom: number } };
 
 // request：首页“生成预演”新建的场景，打开后设好画幅，把描述作为第一条消息发给内置 Agent。
 const props = defineProps<{ directory: string; request?: { prompt: string; model: string; reasoningEffort: string; format: string } }>();
@@ -118,7 +118,7 @@ watch(() => flow.findNode(nodeId.value)?.data, (data, previous) => {
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get<{ data: { name: string; url: string; enabled?: boolean }[] }>("/api/nodes/get", { headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" } });
+    const { data } = await axios.get<{ data: { name: string; url: string; enabled?: boolean }[] }>("/api/nodes/get", { headers: { "Cache-Control": "no-cache", "x-lumo-workspace": "1" } });
     const plugin = data.data.find(item => item.name === nodeName && item.enabled !== false && item.url === `/api/nodes/files?name=${nodeName}`);
     if (!plugin) throw new Error("远程节点未加载，请确认插件已安装并启用");
     // 不支持独立项目的旧版插件挂上去不会打开编辑器，只会一直等：先查声明；页面里缓存的可能是更新前的脚本，重新拉一次最新安装的再判断。
@@ -132,10 +132,10 @@ onMounted(async () => {
     let saved: ProjectFile | undefined;
     if (listing.entries.some(entry => entry.path === projectPath && entry.type === "file")) saved = await target.readJson<ProjectFile>(projectPath);
     else {
-      saved = { toonflowCanvas: true, nodes: [{ id: crypto.randomUUID(), type: nodeType, position: { x: 0, y: 0 }, data: { label: nodeName } }], edges: [], viewport: { x: 0, y: 0, zoom: 1 } };
+      saved = { lumoCanvas: true, nodes: [{ id: crypto.randomUUID(), type: nodeType, position: { x: 0, y: 0 }, data: { label: nodeName } }], edges: [], viewport: { x: 0, y: 0, zoom: 1 } };
       await target.writeJson(projectPath, saved, true);
     }
-    const node = saved?.toonflowCanvas === true && Array.isArray(saved.nodes) ? saved.nodes.find(item => item?.type === nodeType && typeof item.id === "string") : undefined;
+    const node = saved?.lumoCanvas === true && Array.isArray(saved.nodes) ? saved.nodes.find(item => item?.type === nodeType && typeof item.id === "string") : undefined;
     if (!node) throw new Error("该文件夹里的“白模预演.json”不是白模预演场景，请换一个文件夹");
     workspaceStore.addScene(listing.directory);
     files = target;

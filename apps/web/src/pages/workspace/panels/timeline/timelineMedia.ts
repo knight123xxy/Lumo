@@ -1,4 +1,4 @@
-import type { BrowserFfmpegCommand, BrowserFfmpegFactory, FfprobeData } from "@toonflow/ffmpeg/browser";
+import type { BrowserFfmpegCommand, BrowserFfmpegFactory, FfprobeData } from "@lumo/ffmpeg/browser";
 
 function normalizePath(path: string) {
   if (!path || /[\x00-\x1f]/.test(path) || /^(?:[\\/]|[a-z][a-z\d+.-]*:)/i.test(path) || path.split(/[\\/]+/).includes("..")) {

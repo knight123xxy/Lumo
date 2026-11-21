@@ -11,8 +11,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { IconFileText, IconMusic, IconPhoto, IconVideo } from "@tabler/icons-vue";
-import { useNodeFiles } from "@toonflow/nodes-scaffold/workspaceFiles";
-import type { NodeMediaValue } from "@toonflow/nodes-scaffold/values";
+import { useNodeFiles } from "@lumo/nodes-scaffold/workspaceFiles";
+import type { NodeMediaValue } from "@lumo/nodes-scaffold/values";
 import { useMediaPreview } from "../mediaPreview";
 
 const props = defineProps<{ dataType?: string; avatar?: string | URL; media?: NodeMediaValue }>();

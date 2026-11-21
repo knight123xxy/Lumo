@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElMessage } from "element-plus";
-import type { AgentToolCall } from "@toonflow/server/agent/types";
+import type { AgentToolCall } from "@lumo/server/agent/types";
 import http from "@/lib/http";
 
 const { tool, directory } = defineProps<{ tool: AgentToolCall; directory?: string }>();

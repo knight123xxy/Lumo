@@ -1,14 +1,14 @@
 import axios from "axios";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { ElMessage } from "element-plus";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
-import type { PluginInstallRequest, PluginInstallType } from "@toonflow/server/desktop";
+import { invalidateNodeModels } from "@lumo/nodes-scaffold/nodeAi";
+import type { PluginInstallRequest, PluginInstallType } from "@lumo/server/desktop";
 import { confirmPluginInstall, pluginTypeLabels, withTerminalConfirm } from "./pluginInstallConfirmation";
 
 declare global {
   interface WindowEventMap {
-    "toonflow:install-plugin": CustomEvent<PluginInstallRequest>;
-    "toonflow:plugin-installed": CustomEvent<{ type: PluginInstallType; name: string }>;
+    "lumo:install-plugin": CustomEvent<PluginInstallRequest>;
+    "lumo:plugin-installed": CustomEvent<{ type: PluginInstallType; name: string }>;
   }
 }
 
@@ -16,7 +16,7 @@ export function registerDesktopProtocol() {
   const pending = new Set<string>();
   let queue = Promise.resolve();
 
-  const handleInstall = (event: WindowEventMap["toonflow:install-plugin"]) => {
+  const handleInstall = (event: WindowEventMap["lumo:install-plugin"]) => {
     const request = event.detail;
     if (!request || !Object.hasOwn(pluginTypeLabels, request.type) || typeof request.url !== "string" || typeof request.fileName !== "string") return;
     const key = `${request.type}:${request.url}`;
@@ -30,7 +30,7 @@ export function registerDesktopProtocol() {
       ElMessage.error(error instanceof Error ? error.message : "安装插件失败");
     }).finally(() => pending.delete(key));
   };
-  window.addEventListener("toonflow:install-plugin", handleInstall);
+  window.addEventListener("lumo:install-plugin", handleInstall);
 
   async function confirmInstall(request: PluginInstallRequest) {
     const url = new URL(request.url);
@@ -40,7 +40,7 @@ export function registerDesktopProtocol() {
     const loading = ElMessage({ message: "正在安装插件…", duration: 0 });
     try {
       const response = await withTerminalConfirm(allowTerminal => axios.post("/api/desktop/plugins/install", { type: request.type, url: request.url, allowTerminal }, {
-        headers: { "x-toonflow-desktop": "1" },
+        headers: { "x-lumo-desktop": "1" },
         timeout: 60000,
       }));
       if (!response) return;
@@ -48,8 +48,8 @@ export function registerDesktopProtocol() {
       if (data?.code !== 200) throw new Error(typeof data?.message === "string" && data.message.trim() ? data.message : "安装接口返回的响应无效，无法确认安装结果。请先检查插件列表，若未安装，请重启或更新 Lumo 后重试。");
       if (typeof data.data?.name !== "string" || !data.data.name.trim()) throw new Error("安装接口未返回有效的插件名称，请先检查插件列表，确认插件是否已安装。");
       if (request.type === "provider") invalidateNodeModels("media");
-      window.dispatchEvent(new CustomEvent("toonflow:plugin-installed", { detail: { type: request.type, name: data.data.name } }));
-      if (request.type === "ext") window.dispatchEvent(new CustomEvent("toonflow:ext-updated", { detail: { name: data.data.name } }));
+      window.dispatchEvent(new CustomEvent("lumo:plugin-installed", { detail: { type: request.type, name: data.data.name } }));
+      if (request.type === "ext") window.dispatchEvent(new CustomEvent("lumo:ext-updated", { detail: { name: data.data.name } }));
       ElMessage({ type: "success", message: `${pluginTypeLabels[request.type]}已安装` });
     } catch (error) {
       let message = error instanceof Error ? error.message : translate("安装失败，请稍后重试");
@@ -72,5 +72,5 @@ export function registerDesktopProtocol() {
       loading.close();
     }
   }
-  return () => window.removeEventListener("toonflow:install-plugin", handleInstall);
+  return () => window.removeEventListener("lumo:install-plugin", handleInstall);
 }

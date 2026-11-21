@@ -70,7 +70,7 @@ import { computed, ref } from "vue";
 import { useNode } from "@vue-flow/core";
 import { ElButton } from "element-plus";
 import { IconCameraRotate, IconRestore, IconX } from "@tabler/icons-vue";
-import type { NodeMediaValue } from "@toonflow/nodes-scaffold/runtime";
+import type { NodeMediaValue } from "@lumo/nodes-scaffold/runtime";
 import { buildMultiAnglePrompt, getMultiAngleShot, multiAnglePresets, readMultiAngleSettings, type MultiAngleSettings } from "../imageMultiAngle";
 import imageMultiAngleStage from "./imageMultiAngleStage.vue";
 import imageVariationGenerator from "./imageVariationGenerator.vue";

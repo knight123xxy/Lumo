@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { skeletalMotionSchema } from "./skeletalMotion";
 import { getPerformanceDefaultSpeed, type PerformanceEvent, type PerformanceTrack } from "./performanceDocument";
 import type { SceneObject } from "./sceneDocument";

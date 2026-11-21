@@ -1,4 +1,4 @@
-import type { ExtDefinition } from "@toonflow/ext-scaffold/runtime";
+import type { ExtDefinition } from "@lumo/ext-scaffold/runtime";
 
 export default {
   id: "ext-canvasNode",

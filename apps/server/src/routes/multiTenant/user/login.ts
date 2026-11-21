@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { adminAccountSchema, passwordSchema } from "@toonflow/multi-tenant-auth";
+import { adminAccountSchema, passwordSchema } from "@lumo/multi-tenant-auth";
 import u from "@/utils";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";

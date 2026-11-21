@@ -11,7 +11,7 @@ import {
   ElForm, ElFormItem, ElRow, ElCol, ElInput, ElInputNumber, ElSwitch,
   ElSelect, ElOption, ElCheckbox, ElCheckboxGroup, ElRadio, ElRadioGroup,
 } from "element-plus";
-import type { NodeMediaModel } from "@toonflow/nodes-scaffold/runtime";
+import type { NodeMediaModel } from "@lumo/nodes-scaffold/runtime";
 
 const props = defineProps<{ rules?: NodeMediaModel["rules"]; disabled?: boolean }>();
 const other = defineModel<Record<string, unknown>>({ required: true });

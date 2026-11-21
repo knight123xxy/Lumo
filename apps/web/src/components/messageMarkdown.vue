@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed, h } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { Markdown, NodeList, parseMarkdownIntoBlocks, useSanitizers } from "vue-stream-markdown";
 import { MarkdownAstParser, postnormalize, type DefinitionNode, type ParsedNode, type SyntaxTree } from "@markmend/ast";
 import type { CodeOptions, ImageNodeRendererProps, LinkNodeRendererProps, ShikiOptions } from "vue-stream-markdown";

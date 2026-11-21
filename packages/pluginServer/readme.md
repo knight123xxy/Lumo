@@ -1,6 +1,6 @@
 # 插件服务
 
-`@toonflow/plugin-server` 是 Node、Ext 共用的 HTTP／WebSocket 服务基础能力。插件注册处理函数，宿主负责实际网络入口、身份授权、服务命名空间与统一消息分发。这个包不依赖 VueFlow，也不执行服务端插件源码。
+`@lumo/plugin-server` 是 Node、Ext 共用的 HTTP／WebSocket 服务基础能力。插件注册处理函数，宿主负责实际网络入口、身份授权、服务命名空间与统一消息分发。这个包不依赖 VueFlow，也不执行服务端插件源码。
 
 Node 从 `useNode().server` 使用；Ext 从宿主提供的上下文 `server` 使用。插件专属交互、页面生成、请求参数校验和业务协议仍在所属插件中，不需要声明页面清单或静态文件。
 
@@ -45,7 +45,7 @@ const url = await server.start();
 外部页面可以使用纯浏览器子路径，不需要加载 Node、Ext 或 Vue：
 
 ```ts
-import { createServerClient } from "@toonflow/plugin-server/client";
+import { createServerClient } from "@lumo/plugin-server/client";
 
 const client = createServerClient(serviceUrl);
 const state = await client.get("/state");
@@ -75,10 +75,10 @@ ACT：当前桥按完整消息传输，HTTP 正文／响应上限 8 MB、请求�
 
 | 环境变量 | 含义 |
 | --- | --- |
-| `TOONFLOW_PLUGIN_SERVER_PORT` | 网关监听端口，默认 `0`，由系统分配；反向代理部署应设置固定端口。 |
-| `TOONFLOW_PLUGIN_SERVER_URL` | 外部可访问的 HTTP／HTTPS 根地址，不带路径、查询或凭据。反向代理需同时支持 HTTP 和 WebSocket upgrade。 |
+| `LUMO_PLUGIN_SERVER_PORT` | 网关监听端口，默认 `0`，由系统分配；反向代理部署应设置固定端口。 |
+| `LUMO_PLUGIN_SERVER_URL` | 外部可访问的 HTTP／HTTPS 根地址，不带路径、查询或凭据。反向代理需同时支持 HTTP 和 WebSocket upgrade。 |
 
-例如固定监听 `10900`，将 `https://plugins.example.com` 反向代理至该端口，再将其设为 `TOONFLOW_PLUGIN_SERVER_URL`。HTTPS 创作入口必须配置此地址，避免返回无法使用的明文服务入口。主应用的代理应保留 SSE 长连接并关闭事件流缓冲。
+例如固定监听 `10900`，将 `https://plugins.example.com` 反向代理至该端口，再将其设为 `LUMO_PLUGIN_SERVER_URL`。HTTPS 创作入口必须配置此地址，避免返回无法使用的明文服务入口。主应用的代理应保留 SSE 长连接并关闭事件流缓冲。
 
 返回地址包含本次服务的随机访问凭据，持有完整地址的客户端即可访问该服务，应只向预期访问者分享。每次启动生成新地址；关闭实例、断开宿主、注销或撤销授权后服务失效，WS 授权状态通过最长 15 秒的心跳复核。临时服务不写入数据库或工作区，不支持跨进程恢复。
 

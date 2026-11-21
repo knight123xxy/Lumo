@@ -1,4 +1,4 @@
-import { constants, copyFile, cp, lstat, mkdir, open, readdir, rename, rm, rmdir, unlink, realpath, writeAtomic } from "@toonflow/file";
+import { constants, copyFile, cp, lstat, mkdir, open, readdir, rename, rm, rmdir, unlink, realpath, writeAtomic } from "@lumo/file";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { Request } from "express";
 import { resolveWorkspace } from "@/utils/workspace";
@@ -74,8 +74,8 @@ async function hasCanvasFile(path: string, excludedPath?: string): Promise<boole
     const header = buffer.toString("utf8", 0, bytesRead);
     if (!/^\s*\{/.test(header)) return false;
     // ACT: 与前端一致，只快速识别根对象首字段；其他顺序完整解析，避免嵌套标记误判。
-    if (/^\s*\{\s*"toonflowCanvas"\s*:\s*true\s*[,}]/.test(header)) return true;
-    return JSON.parse((bytesRead < buffer.length ? header : await file.readFile("utf8")).trimStart())?.toonflowCanvas === true;
+    if (/^\s*\{\s*"lumoCanvas"\s*:\s*true\s*[,}]/.test(header)) return true;
+    return JSON.parse((bytesRead < buffer.length ? header : await file.readFile("utf8")).trimStart())?.lumoCanvas === true;
   } catch (error) {
     if (error instanceof SyntaxError) return false;
     throw error;

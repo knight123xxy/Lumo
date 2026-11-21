@@ -4,7 +4,7 @@ import * as vueRuntime from "vue";
 import * as vueFlowRuntime from "@vue-flow/core";
 import * as elementPlusRuntime from "element-plus";
 import * as threeRuntime from "three";
-import * as modelIcons from "@toonflow/model-icons";
+import * as modelIcons from "@lumo/model-icons";
 import { runAgentLoop } from "@earendil-works/pi-agent-core";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 
@@ -13,7 +13,7 @@ type NodeComponent = Exclude<NodeTypesObject[string], string>;
 const components = shallowReactive(new Map<string, NodeComponent>());
 const requests = new Map<string, Promise<NodeComponent>>();
 // 节点 UMD 脚本从这里取宿主共享的运行时；画布与白模预演都经此加载节点。
-(window as typeof window & { toonflowNodeHost?: unknown }).toonflowNodeHost = {
+(window as typeof window & { lumoNodeHost?: unknown }).lumoNodeHost = {
   vue: vueRuntime, vueFlow: vueFlowRuntime, elementPlus: elementPlusRuntime, three: threeRuntime, modelIcons, ai: { runAgentLoop, createAssistantMessageEventStream },
 };
 
@@ -25,8 +25,8 @@ export function getNodeIcon(type?: string): Component | undefined {
 export function loadNodeComponent(name: string, url: string, force = false): Promise<NodeComponent> {
   const pending = requests.get(name);
   if (pending) return pending;
-  const nodeWindow = window as typeof window & { toonflowNodes?: NodeTypesObject };
-  const cached = components.get(name) ?? (Object.hasOwn(nodeWindow.toonflowNodes ?? {}, name) ? nodeWindow.toonflowNodes?.[name] : undefined);
+  const nodeWindow = window as typeof window & { lumoNodes?: NodeTypesObject };
+  const cached = components.get(name) ?? (Object.hasOwn(nodeWindow.lumoNodes ?? {}, name) ? nodeWindow.lumoNodes?.[name] : undefined);
   if (!force && cached && (typeof cached === "object" || typeof cached === "function")) {
     components.set(name, cached);
     return Promise.resolve(cached);
@@ -38,15 +38,15 @@ export function loadNodeComponent(name: string, url: string, force = false): Pro
     const response = await fetch(scriptUrl);
     if (!response.ok) throw new Error(`节点脚本加载失败（HTTP ${response.status}）`);
     const code = await response.text();
-    if (code.includes("toonflowTiptapHost")) await import("@/lib/tiptapHost");
+    if (code.includes("lumoTiptapHost")) await import("@/lib/tiptapHost");
     return new Promise<NodeComponent>((resolve, reject) => {
-      delete nodeWindow.toonflowNodes?.[name];
+      delete nodeWindow.lumoNodes?.[name];
       const script = document.createElement("script");
       script.src = scriptUrl;
       script.onload = () => {
         script.remove();
-        const component = nodeWindow.toonflowNodes?.[name];
-        if (!Object.hasOwn(nodeWindow.toonflowNodes ?? {}, name) || !component || (typeof component !== "object" && typeof component !== "function")) {
+        const component = nodeWindow.lumoNodes?.[name];
+        if (!Object.hasOwn(nodeWindow.lumoNodes ?? {}, name) || !component || (typeof component !== "object" && typeof component !== "function")) {
           reject(new Error(`节点脚本未导出 ${name} 组件`));
           return;
         }
@@ -54,7 +54,7 @@ export function loadNodeComponent(name: string, url: string, force = false): Pro
       };
       script.onerror = () => {
         script.remove();
-        delete nodeWindow.toonflowNodes?.[name];
+        delete nodeWindow.lumoNodes?.[name];
         reject(new Error("节点脚本加载失败"));
       };
       document.head.append(script);

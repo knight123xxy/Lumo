@@ -59,7 +59,7 @@
           <section class="forwardFields" :aria-label="translate('平台转发目标')">
             <div class="formGrid">
               <el-form-item :label="translate('目标来源')" for="modelRouteTarget" required>
-                <el-select id="modelRouteTarget" v-model="form.target" @change="sourceChanged"><el-option value="backend" :label="translate('第三方模型')" /><el-option value="toonflowCloud" :label="translate('算力汇 云端')" /></el-select>
+                <el-select id="modelRouteTarget" v-model="form.target" @change="sourceChanged"><el-option value="backend" :label="translate('第三方模型')" /><el-option value="lumoCloud" :label="translate('算力汇 云端')" /></el-select>
               </el-form-item>
               <el-form-item :label="translate('目标供应商')" for="modelRouteProvider" required>
                 <el-select id="modelRouteProvider" v-model="form.providerId" filterable :noDataText="translate('当前没有可用的供应商')" @change="providerChanged">
@@ -93,8 +93,8 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { translate } from "@toonflow/i18n/vue";
-import { getPublicModelId, modelRouteSchema, modelRoutesSchema, type ModelPrice, type ModelRoute, type ModelRoutingSnapshot } from "@toonflow/multi-tenant-models/config";
+import { translate } from "@lumo/i18n/vue";
+import { getPublicModelId, modelRouteSchema, modelRoutesSchema, type ModelPrice, type ModelRoute, type ModelRoutingSnapshot } from "@lumo/multi-tenant-models/config";
 import { IconArrowRight } from "@tabler/icons-vue";
 import { ElAlert, ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElMessage, ElMessageBox, ElOption, ElSelect, ElSwitch, ElTable, ElTableColumn, ElTag, vLoading } from "element-plus";
 import priceEditor from "./components/priceEditor.vue";

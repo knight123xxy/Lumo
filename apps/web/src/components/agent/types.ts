@@ -1,4 +1,4 @@
-import type { AgentToolCall, AgentStats, AgentContext, AgentSubAgent, AgentMention, AgentQueue, AgentMessageDelivery } from "@toonflow/server/agent/types";
+import type { AgentToolCall, AgentStats, AgentContext, AgentSubAgent, AgentMention, AgentQueue, AgentMessageDelivery } from "@lumo/server/agent/types";
 
 export type AgentAttachment = { name: string; path: string; mimeType: string; file?: File };
 

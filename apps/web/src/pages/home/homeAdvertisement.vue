@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { HomeAdvertisement } from "@toonflow/server/channel";
+import type { HomeAdvertisement } from "@lumo/server/channel";
 import { IconArrowUpRight, IconX } from "@tabler/icons-vue";
 import { marked } from "marked";
 import DOMPurify from "dompurify";

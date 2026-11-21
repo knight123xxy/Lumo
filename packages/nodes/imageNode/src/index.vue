@@ -83,8 +83,8 @@
 import { computed, nextTick, ref } from "vue";
 import { IconPhoto, IconUpload, IconFolder, IconTransfer, IconLayoutGrid, IconBrush, IconPencil, IconSun, IconCameraRotate, IconPanoramaHorizontal, IconChevronDown } from "@tabler/icons-vue";
 import { ElButton, ElImageViewer, ElMessage } from "element-plus";
-import { nodeSkeleton, nodeTools, useNode, z, type NodeHandle } from "@toonflow/nodes-scaffold/runtime";
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
+import { nodeSkeleton, nodeTools, useNode, z, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
 import imageGridSplit from "./components/imageGridSplit.vue";
 import imageEditor from "./components/imageEditor.vue";
 import imageInpaintPrompt from "./components/imageInpaintPrompt.vue";

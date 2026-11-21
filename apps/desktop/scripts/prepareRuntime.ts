@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeAtomicSync } from "@toonflow/file";
+import { mkdirSync, readFileSync, writeAtomicSync } from "@lumo/file";
 import { resolve } from "node:path";
 
 type RuntimeEntry = {

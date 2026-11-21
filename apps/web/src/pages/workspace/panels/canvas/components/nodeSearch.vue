@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { useVueFlow } from "@vue-flow/core";
 import { IconSearch } from "@tabler/icons-vue";
 import type { InputInstance } from "element-plus";

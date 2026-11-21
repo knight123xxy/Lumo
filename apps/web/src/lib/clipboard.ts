@@ -1,7 +1,7 @@
 import axios from "axios";
 import { actualPlatform } from "./platform";
 
-const headers = { "x-toonflow-desktop": "1" };
+const headers = { "x-lumo-desktop": "1" };
 
 export async function readClipboardText(): Promise<string> {
   if (!actualPlatform.isDesktop) return navigator.clipboard.readText();

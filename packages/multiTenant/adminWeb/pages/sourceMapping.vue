@@ -15,7 +15,7 @@
         </div>
         <el-select :id="`sourceMapping${item.key}`" v-model="mappings[item.key]" :aria-label="item.label" :aria-describedby="`sourceMappingDescription${item.key}`">
           <el-option value="backend" :label="translate('多租户后端处理')" />
-          <el-option value="toonflowCloud" :label="translate('算力汇 云端')" />
+          <el-option value="lumoCloud" :label="translate('算力汇 云端')" />
         </el-select>
       </div>
     </el-form>
@@ -28,8 +28,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { translate } from "@toonflow/i18n/vue";
-import type { SourceMapping, SourceMappingSnapshot } from "@toonflow/multi-tenant-source-mapping/config";
+import { translate } from "@lumo/i18n/vue";
+import type { SourceMapping, SourceMappingSnapshot } from "@lumo/multi-tenant-source-mapping/config";
 import { ElAlert, ElButton, ElForm, ElMessage, ElMessageBox, ElOption, ElSelect, ElSkeleton } from "element-plus";
 import type { AdminRequest } from "../types";
 import "element-plus/es/components/alert/style/css";

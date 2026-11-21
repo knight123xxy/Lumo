@@ -1,9 +1,9 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { openDatabase } from "@toonflow/multi-tenant-db";
-import type { AdminDatabase, ListUserOptions, ManagedUser } from "@toonflow/multi-tenant-db";
+import { openDatabase } from "@lumo/multi-tenant-db";
+import type { AdminDatabase, ListUserOptions, ManagedUser } from "@lumo/multi-tenant-db";
 
-export type { ListUserOptions, ManagedUser } from "@toonflow/multi-tenant-db";
+export type { ListUserOptions, ManagedUser } from "@lumo/multi-tenant-db";
 
 export const adminAccountSchema = z.string().trim().transform(value => value.normalize("NFKC"))
   .pipe(z.string().min(1).max(64).regex(/^[^\s\u0000-\u001f\u007f]+$/))

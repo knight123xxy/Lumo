@@ -2,10 +2,10 @@ import { dirname } from "node:path";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { Application, Request, Response } from "express";
-import { createMultiTenant } from "@toonflow/multi-tenant-auth";
-import type { AuthIdentity, ListUserOptions } from "@toonflow/multi-tenant-auth";
-import { createSourceMapping } from "@toonflow/multi-tenant-source-mapping";
-import type { SourceMapping } from "@toonflow/multi-tenant-source-mapping/config";
+import { createMultiTenant } from "@lumo/multi-tenant-auth";
+import type { AuthIdentity, ListUserOptions } from "@lumo/multi-tenant-auth";
+import { createSourceMapping } from "@lumo/multi-tenant-source-mapping";
+import type { SourceMapping } from "@lumo/multi-tenant-source-mapping/config";
 import conf from "@/utils/conf";
 import { hosting } from "@/utils/channel";
 import { assertAppRequest } from "@/utils/mcp/control";
@@ -44,7 +44,7 @@ function assertUserRequest(req: Request) {
   if (!req.res?.locals.multiTenantWeb) return assertAppRequest(req);
   let source: URL | undefined;
   try { source = new URL(req.get("origin") ?? req.get("referer") ?? ""); } catch { /* 来源无效时统一拒绝。 */ }
-  if (!source || !["http:", "https:"].includes(source.protocol) || source.host !== req.get("host") || req.get("x-toonflow-workspace") !== "1") {
+  if (!source || !["http:", "https:"].includes(source.protocol) || source.host !== req.get("host") || req.get("x-lumo-workspace") !== "1") {
     throw Object.assign(new Error("只允许 Lumo 页面访问账号接口"), { status: 403 });
   }
 }
@@ -69,7 +69,7 @@ async function accessControl<T>(operation: () => Promise<T>) {
 
 export function canSetup(req: Request) {
   return !req.res?.locals.multiTenantWeb && !isMobileLinkRequest(req)
-    && req.get("x-toonflow-local-client") !== "0"
+    && req.get("x-lumo-local-client") !== "0"
     && !req.get("forwarded") && !req.get("x-forwarded-for") && !req.get("x-real-ip")
     && ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "")
     && ["localhost", "127.0.0.1", "[::1]"].includes(req.hostname);
@@ -82,18 +82,18 @@ export function registerHostClient(app: Application, secret: string) {
 
 export function authenticateHost(req: Request) {
   const host = hostClients.get(req.app);
-  const token = cookie(req, "toonflowHostSession");
+  const token = cookie(req, "lumoHostSession");
   return !!host && canSetup(req) && /^[a-f0-9]{64}$/.test(token) && sameSecret(token, digest(host.token));
 }
 
 export function hostSession(req: Request, res: Response) {
   assertControlRequest(req);
   const host = hostClients.get(req.app);
-  const secret = req.get("x-toonflow-host-token") ?? "";
+  const secret = req.get("x-lumo-host-token") ?? "";
   if (!host || !canSetup(req) || secret.length < 32 || secret.length > 256 || !sameSecret(secret, host.secretHash)) {
     throw Object.assign(new Error("主机身份验证失败"), { status: 403 });
   }
-  res.cookie("toonflowHostSession", host.token, cookieOptions(req, "/"));
+  res.cookie("lumoHostSession", host.token, cookieOptions(req, "/"));
   return { authenticated: true };
 }
 
@@ -117,7 +117,7 @@ export function setup(req: Request, userName: string, password: string, enabled:
 export async function login(req: Request, res: Response, userName: string, password: string) {
   assertControlRequest(req);
   const token = await accessControl(() => control.login(userName, password));
-  res.cookie("toonflowAdminSession", token, cookieOptions(req, "/api/multiTenant"));
+  res.cookie("lumoAdminSession", token, cookieOptions(req, "/api/multiTenant"));
   return { token, enabled: isEnabled() };
 }
 
@@ -125,23 +125,23 @@ export async function authorize(req: Request) {
   assertControlRequest(req);
   if (authenticateHost(req)) return;
   const value = req.get("authorization") ?? "";
-  await accessControl(() => control.authorize(value.startsWith("Bearer ") ? value.slice(7) : cookie(req, "toonflowAdminSession")));
+  await accessControl(() => control.authorize(value.startsWith("Bearer ") ? value.slice(7) : cookie(req, "lumoAdminSession")));
 }
 
 export async function logout(req: Request, res: Response) {
   assertControlRequest(req);
   const value = req.get("authorization") ?? "";
-  await accessControl(() => control.logout(value.startsWith("Bearer ") ? value.slice(7) : cookie(req, "toonflowAdminSession")));
+  await accessControl(() => control.logout(value.startsWith("Bearer ") ? value.slice(7) : cookie(req, "lumoAdminSession")));
   const host = hostClients.get(req.app);
   if (authenticateHost(req) && host) host.token = randomBytes(32).toString("hex");
-  res.clearCookie("toonflowAdminSession", cookieOptions(req, "/api/multiTenant"));
-  res.clearCookie("toonflowHostSession", cookieOptions(req, "/"));
+  res.clearCookie("lumoAdminSession", cookieOptions(req, "/api/multiTenant"));
+  res.clearCookie("lumoHostSession", cookieOptions(req, "/"));
   return { enabled: isEnabled() };
 }
 
 export async function authenticateWeb(req: Request): Promise<AuthIdentity | null> {
   if (!isEnabled()) return null;
-  return accessControl(() => control.authenticateWeb(cookie(req, "toonflowWebSession")));
+  return accessControl(() => control.authenticateWeb(cookie(req, "lumoWebSession")));
 }
 
 export async function userSession(req: Request) {
@@ -173,33 +173,33 @@ export async function registerUser(req: Request, res: Response, userName: string
     // ACT: 总账号 token 与子账号 key 不落日志，只记录可诊断的错误信息。
     console.error("Lumo 托管建子账号失败", error instanceof Error ? error.message : String(error));
   }
-  res.cookie("toonflowWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
+  res.cookie("lumoWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
   return { user: result.user };
 }
 
 export async function loginUser(req: Request, res: Response, userName: string, password: string) {
   assertUserRequest(req);
   const result = await accessControl(() => control.loginWeb(userName, password));
-  res.cookie("toonflowWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
+  res.cookie("lumoWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
   return { user: result.user };
 }
 
 export async function loginHostWeb(req: Request, res: Response) {
   assertUserRequest(req);
   const host = hostClients.get(req.app);
-  const secret = req.get("x-toonflow-host-token") ?? "";
+  const secret = req.get("x-lumo-host-token") ?? "";
   if (!req.res?.locals.multiTenantWeb || !host || secret.length < 32 || secret.length > 256 || !sameSecret(secret, host.secretHash)) {
     throw Object.assign(new Error("主机身份验证失败"), { status: 403 });
   }
   const result = await accessControl(() => control.loginHostWeb());
-  res.cookie("toonflowWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
+  res.cookie("lumoWebSession", result.token, { ...cookieOptions(req, "/"), maxAge: 8 * 60 * 60 * 1000 });
   return { user: result.user };
 }
 
 export async function logoutUser(req: Request, res: Response) {
   assertUserRequest(req);
-  await accessControl(() => control.logoutWeb(cookie(req, "toonflowWebSession")));
-  res.clearCookie("toonflowWebSession", cookieOptions(req, "/"));
+  await accessControl(() => control.logoutWeb(cookie(req, "lumoWebSession")));
+  res.clearCookie("lumoWebSession", cookieOptions(req, "/"));
   return { user: null };
 }
 

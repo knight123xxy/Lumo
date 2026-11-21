@@ -1,4 +1,4 @@
-import { lstat } from "@toonflow/file";
+import { lstat } from "@lumo/file";
 import { resolve } from "node:path";
 import { pluginDevelopmentSchema, type PluginDevelopmentHandler, type PluginDevelopmentHost } from "@/lib/pluginDevelopment";
 import { lockWorkspaceFiles, resolveWorkspacePath } from "@/utils/workspace/files";

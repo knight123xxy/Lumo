@@ -1,7 +1,7 @@
 import { t, translateError, translateMessage } from "@/lib/i18n";
 import { dirname, join } from "node:path";
-import { build, createFfmpeg, downloadSources, executeFfmpegInWorker, getToolStatus, installFfmpeg, target } from "@toonflow/ffmpeg";
-import type { BrowserFfmpegRequest, DownloadState, FfmpegMode, FfmpegRemoteEvent, SourceId } from "@toonflow/ffmpeg";
+import { build, createFfmpeg, downloadSources, executeFfmpegInWorker, getToolStatus, installFfmpeg, target } from "@lumo/ffmpeg";
+import type { BrowserFfmpegRequest, DownloadState, FfmpegMode, FfmpegRemoteEvent, SourceId } from "@lumo/ffmpeg";
 import conf from "@/utils/conf";
 import { getRuntimePlatform } from "@/lib/platform";
 

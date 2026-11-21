@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/multi-tenant-gateway",
+  "name": "@lumo/multi-tenant-gateway",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
   },
   "scripts": { "typecheck": "tsc" },
   "dependencies": {
-    "@toonflow/multi-tenant-models": "workspace:*",
-    "@toonflow/multi-tenant-billing": "workspace:*",
+    "@lumo/multi-tenant-models": "workspace:*",
+    "@lumo/multi-tenant-billing": "workspace:*",
     "zod": "^4.6.2"
   }
 }

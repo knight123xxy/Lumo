@@ -8,8 +8,8 @@
 <script setup lang="ts">
 import Artplayer from "artplayer";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { locale, msg, translate } from "@toonflow/i18n/vue";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import { locale, msg, translate } from "@lumo/i18n/vue";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 
 const props = withDefaults(defineProps<{
   src: string;

@@ -1,5 +1,5 @@
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasContext } from "@lumo/tools-scaffold/runtime";
 import type { AgentEvent, AgentPeerMessage } from "@/agent/runtime/types";
 import { run } from "@/agent/runtime";
 import { createAgentConversation, getToolResultText, registerAgentRun, trackAgentEvent, updateSubAgent } from "@/agent/runtime/sessions";

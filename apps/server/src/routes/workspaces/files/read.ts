@@ -1,4 +1,4 @@
-import { lstat, readFile } from "@toonflow/file";
+import { lstat, readFile } from "@lumo/file";
 import { createHash } from "node:crypto";
 import { sendFile } from "@/utils/fileHttp";
 import { Router } from "express";

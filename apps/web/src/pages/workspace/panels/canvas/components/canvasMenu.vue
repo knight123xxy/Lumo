@@ -39,9 +39,9 @@
     </el-card>
     <div class="menuExtension"><slot /></div>
   </panel>
-  <panel v-if="showToonflowBalance || otherProviderBalances.length" class="balanceMenuPanel" position="top-right">
+  <panel v-if="showLumoBalance || otherProviderBalances.length" class="balanceMenuPanel" position="top-right">
     <div class="balanceList" tabindex="0" aria-label="供应商余额">
-      <toonflowBalance v-if="showToonflowBalance" :token="toonflowAccountToken" />
+      <lumoBalance v-if="showLumoBalance" :token="lumoAccountToken" />
       <el-card v-for="item in otherProviderBalances" :key="item.id" class="balanceCard" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
         <el-button class="balanceTrigger" text :loading="item.loading" :title="item.error || `点击刷新 ${item.label} 余额`" :aria-label="`刷新 ${item.label} 余额`" @click="refreshProviderBalance(item.id)">
           <span class="providerLabel">{{ item.label }}</span>
@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { locale, translate } from "@toonflow/i18n/vue";
+import { locale, translate } from "@lumo/i18n/vue";
 import { computed, inject, nextTick, onBeforeUnmount, ref, shallowRef, watch, type ShallowRef } from "vue";
 import { Panel, useVueFlow, type FlowExportObject } from "@vue-flow/core";
 import { ElMessage, ElMessageBox, type DropdownInstance, type FilterNodeMethodFunction, type InputInstance, type LoadFunction, type TreeInstance } from "element-plus";
@@ -83,8 +83,8 @@ import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { getCanvasAssetDirectories, isCanvasFile } from "@/pages/workspace/canvasFile";
 import { findRemainingCanvas } from "../canvasFiles";
 import { providerBalances, refreshProviderBalance } from "@/lib/providerBilling";
-import { multiTenantEnabled, toonflowAccountToken } from "@/stores/settings";
-import toonflowBalance from "./toonflowBalance.vue";
+import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
+import lumoBalance from "./lumoBalance.vue";
 
 const props = defineProps<{
   directory?: string;
@@ -93,8 +93,8 @@ const props = defineProps<{
   flushSave: (action?: () => Promise<void>) => Promise<void>;
 }>();
 const workspaceStore = useWorkspaceStore();
-const showToonflowBalance = computed(() => !multiTenantEnabled.value && !!toonflowAccountToken.value);
-const otherProviderBalances = computed(() => providerBalances.value.filter(item => item.id !== "toonflow"));
+const showLumoBalance = computed(() => !multiTenantEnabled.value && !!lumoAccountToken.value);
+const otherProviderBalances = computed(() => providerBalances.value.filter(item => item.id !== "lumo"));
 const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 6 }));
 const workspaceName = computed(() => workspaceStore.project?.name || translate("未命名工作区"));
 const projectNameDraft = ref("");
@@ -383,9 +383,9 @@ async function applyCanvas(canvasId: string, directory: string, signal?: AbortSi
     return;
   }
   if (!nextCanvas.flow) {
-    const data = await useWorkspaceFiles(directory).readJson<Partial<NonNullable<Canvas["flow"]>> & { toonflowCanvas?: boolean } | null>(nextCanvas.id);
+    const data = await useWorkspaceFiles(directory).readJson<Partial<NonNullable<Canvas["flow"]>> & { lumoCanvas?: boolean } | null>(nextCanvas.id);
     checkCanvasDirectory(directory, signal);
-    if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !data.viewport
+    if (data?.lumoCanvas !== true || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !data.viewport
       || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0) throw new Error("画布文件格式无效");
     // 旧画布可能保存了临时导出进度，重新打开时任务已不存在。
     for (const node of data.nodes) if (node.type === "remote-videoNode" && node.data) delete node.data.exportProgress;
@@ -451,8 +451,8 @@ async function removeCanvas(canvas: Canvas) {
     checkCanvasDirectory(directory);
     if (activeCanvasId.value === id) await applyCanvas(nextCanvas.id, directory);
     const readNodes = async (canvasId: string) => {
-      const data = await files.readJson<{ toonflowCanvas?: boolean; nodes?: { id: string; data?: unknown }[] }>(canvasId);
-      if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || data.nodes.some(node => !node || typeof node.id !== "string")) {
+      const data = await files.readJson<{ lumoCanvas?: boolean; nodes?: { id: string; data?: unknown }[] }>(canvasId);
+      if (data?.lumoCanvas !== true || !Array.isArray(data.nodes) || data.nodes.some(node => !node || typeof node.id !== "string")) {
         throw new Error(`无法确认画布“${canvasId}”的素材引用，已停止后续删除操作。`);
       }
       return [...data.nodes, ...getRetainedNodes(canvasId)];
@@ -499,7 +499,7 @@ async function createCanvasFile(directory: string, name?: string, signal?: Abort
     const canvasName = name ?? `画布${number}`;
     const id = `${canvasName}.json`;
     try {
-      await files.writeJson(id, { toonflowCanvas: true, ...flow }, true);
+      await files.writeJson(id, { lumoCanvas: true, ...flow }, true);
       return { id, name: canvasName, flow };
     } catch (err) {
       if (name !== undefined || !axios.isAxiosError<{ data?: { code?: string } }>(err) || err.response?.status !== 409 || err.response.data.data?.code !== "EEXIST") throw err;

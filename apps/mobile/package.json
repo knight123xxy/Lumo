@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/mobile",
+  "name": "@lumo/mobile",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@toonflow/file": "workspace:*",
-    "@toonflow/server": "workspace:*",
-    "@toonflow/web": "workspace:*",
+    "@lumo/file": "workspace:*",
+    "@lumo/server": "workspace:*",
+    "@lumo/web": "workspace:*",
     "express": "^5.2.1"
   },
   "devDependencies": {

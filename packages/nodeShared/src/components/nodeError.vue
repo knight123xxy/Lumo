@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElButton, ElNotification, ElSelect, ElOption, ElOptionGroup } from "element-plus";
-import { getNodeModelIdentity, getNodeModelKey, useNodeAi, useNodeModelSelection, type NodeAiModel } from "@toonflow/nodes-scaffold/nodeAi";
+import { getNodeModelIdentity, getNodeModelKey, useNodeAi, useNodeModelSelection, type NodeAiModel } from "@lumo/nodes-scaffold/nodeAi";
 import { groupNodeModels } from "../groupNodeModels";
 import modelLabel from "./modelLabel.vue";
 

@@ -1,4 +1,4 @@
-import { readFile } from "@toonflow/file";
+import { readFile } from "@lumo/file";
 import { fileURLToPath } from "node:url";
 import { normalizePath, type Plugin } from "vite";
 

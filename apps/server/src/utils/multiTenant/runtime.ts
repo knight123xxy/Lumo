@@ -3,7 +3,7 @@ import type { Application, Request, Response, NextFunction } from "express";
 import type { Server } from "node:http";
 import type { Socket } from "node:net";
 import { posix } from "node:path";
-import type { AuthIdentity } from "@toonflow/multi-tenant-auth";
+import type { AuthIdentity } from "@lumo/multi-tenant-auth";
 import { authenticateHost, authenticateWeb } from "./index";
 import { creationPort, isEnabled } from "./mode";
 import { errorFromCause } from "@/lib/responseFormat";

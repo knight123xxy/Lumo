@@ -1,4 +1,4 @@
-import { z, type NodeAiTool } from "@toonflow/nodes-scaffold/runtime";
+import { z, type NodeAiTool } from "@lumo/nodes-scaffold/runtime";
 import { parseToolArgs } from "./toolArgs";
 import { modelSchema, type ModelDefinition } from "./modelGeometry";
 import { createSceneObject, getObjectGravityEnabled, assetThemes, assetStates, assetItemTypes, type SceneAnchor, type SceneAsset, type SceneDocument, type SceneObject, type SceneWeather } from "./sceneDocument";

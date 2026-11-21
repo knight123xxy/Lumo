@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Context, Message } from "@earendil-works/pi-ai";
-import type { ModelFinalization, ModelOutcome, ModelRunFailure } from "@toonflow/multi-tenant-gateway/types";
+import type { ModelFinalization, ModelOutcome, ModelRunFailure } from "@lumo/multi-tenant-gateway/types";
 import { validateFields } from "@/lib/middleware";
 import u from "@/utils";
 import { translateError, translateMessage, validationOptions } from "@/lib/i18n";

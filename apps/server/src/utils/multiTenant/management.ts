@@ -1,6 +1,6 @@
 import type { Request } from "express";
-import type { ModelProvider, ModelRoute } from "@toonflow/multi-tenant-models/config";
-import type { BillingCredit } from "@toonflow/multi-tenant-billing/config";
+import type { ModelProvider, ModelRoute } from "@lumo/multi-tenant-models/config";
+import type { BillingCredit } from "@lumo/multi-tenant-billing/config";
 import { authorize } from "./index";
 import { requestIdentity } from "./runtime";
 import { modelGateway } from "./gateway";

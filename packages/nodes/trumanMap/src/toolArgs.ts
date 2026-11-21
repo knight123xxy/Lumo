@@ -1,4 +1,4 @@
-import type { z } from "@toonflow/nodes-scaffold/runtime";
+import type { z } from "@lumo/nodes-scaffold/runtime";
 
 // ACT: 工具参数不合规时给中文说明（字段路径+原因），不把zod的原始JSON抛给模型或显示给用户。
 export function describeToolArgsError(name: string, error: z.ZodError) {

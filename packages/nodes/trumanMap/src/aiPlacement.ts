@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { Box3 } from "three";
 import { createSceneObject, type SceneAsset, type SceneDocument, type SceneObject } from "./sceneDocument";
 import { createPathBrushObject, pavingBrushStyles, treeBrushAssets, wallBrushStyles } from "./sceneBrushAssets";

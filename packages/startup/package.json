@@ -1,10 +1,10 @@
 {
-  "name": "@toonflow/startup",
+  "name": "@lumo/startup",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "dependencies": {
-    "@toonflow/file": "workspace:*"
+    "@lumo/file": "workspace:*"
   }
 }

@@ -47,8 +47,8 @@
 import axios from "axios";
 import { ref, useId, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { translate } from "@toonflow/i18n/vue";
-import { nodeToolPermissionsSchema } from "@toonflow/tool-canvas/runtime";
+import { translate } from "@lumo/i18n/vue";
+import { nodeToolPermissionsSchema } from "@lumo/tool-canvas/runtime";
 import { agentNodeToolPermissions, saveSettings } from "@/stores/settings";
 
 const visible = defineModel<boolean>({ default: false });

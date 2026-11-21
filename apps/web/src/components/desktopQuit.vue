@@ -61,12 +61,12 @@ function confirmQuit(event: Event) {
 }
 
 onMounted(() => {
-  window.addEventListener("toonflow:confirm-quit", confirmQuit);
+  window.addEventListener("lumo:confirm-quit", confirmQuit);
   hostWindow.__electrobunSendToHost?.({ type: "quitReady", ready: true });
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("toonflow:confirm-quit", confirmQuit);
+  window.removeEventListener("lumo:confirm-quit", confirmQuit);
   cancel();
   hostWindow.__electrobunSendToHost?.({ type: "quitReady", ready: false });
 });

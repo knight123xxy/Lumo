@@ -1,5 +1,5 @@
-import { createBrowserFfmpeg } from "@toonflow/ffmpeg/browser";
-import { translate } from "@toonflow/i18n/vue";
+import { createBrowserFfmpeg } from "@lumo/ffmpeg/browser";
+import { translate } from "@lumo/i18n/vue";
 import { runCommand } from "./timelineMedia";
 import type { TimelineClip, TimelineProject, TimelineTrack } from "./timelineTypes";
 

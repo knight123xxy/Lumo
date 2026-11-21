@@ -217,7 +217,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate, t } from "@toonflow/i18n/vue";
+import { translate, t } from "@lumo/i18n/vue";
 
 import { computed, defineAsyncComponent, onMounted, onBeforeUnmount, ref } from "vue";
 import { publicWeb } from "@/stores/multiTenant";
@@ -237,8 +237,8 @@ import {
   IconBrandWechat,
   IconQrcode,
 } from "@tabler/icons-vue";
-import logoUrl from "@toonflow/assets/logo.svg";
-import type { Sponsor } from "@toonflow/server/channel";
+import logoUrl from "@lumo/assets/logo.svg";
+import type { Sponsor } from "@lumo/server/channel";
 import http from "@/lib/http";
 import { saveSettings } from "@/stores/settings";
 import {

@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from "vue-router";
-import { adminRoutes } from "@toonflow/multi-tenant-admin-web/routes";
+import { adminRoutes } from "@lumo/multi-tenant-admin-web/routes";
 import { publicWeb } from "@/stores/multiTenant";
 
 export const adminRoute: RouteRecordRaw = {

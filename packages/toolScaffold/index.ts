@@ -1,5 +1,5 @@
-import { copyFile, mkdir, readFile } from "@toonflow/file";
-import { file, write } from "@toonflow/file/bun";
+import { copyFile, mkdir, readFile } from "@lumo/file";
+import { file, write } from "@lumo/file/bun";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, type PluginOption } from "vite";
@@ -47,14 +47,14 @@ export async function createToolConfig(
   let clientBanner = "";
   const componentEntries = Object.entries(components ?? {});
   if (componentEntries.length) {
-    const entryId = "\0toonflowToolClient";
+    const entryId = "\0lumoToolClient";
     const clientResult = await build({
       configFile: false,
       root,
       css: { postcss: postcssConfig },
       plugins: [...(options.clientPlugins ?? []), vue(), {
         name: "toolClientEntry",
-        resolveId(id) { return id === "virtual:toonflowToolClient" ? entryId : undefined; },
+        resolveId(id) { return id === "virtual:lumoToolClient" ? entryId : undefined; },
         load(id) {
           if (id !== entryId) return;
           const imports = componentEntries.map(([, entry], index) =>
@@ -69,23 +69,23 @@ export async function createToolConfig(
         assetsInlineLimit: Number.MAX_SAFE_INTEGER,
         cssCodeSplit: false,
         lib: {
-          entry: "virtual:toonflowToolClient",
-          name: `toonflowToolViews.${metadata.name}`,
+          entry: "virtual:lumoToolClient",
+          name: `lumoToolViews.${metadata.name}`,
           formats: ["umd"],
           fileName: () => `${metadata.name}.client.js`,
         },
         rolldownOptions: {
-          input: "virtual:toonflowToolClient",
+          input: "virtual:lumoToolClient",
           external: ["vue", "@vue/runtime-core", "@vue/runtime-dom", "element-plus", "axios", "@form-create/element-ui"],
           output: {
             exports: "default",
             globals: {
-              vue: "toonflowToolHost.vue",
-              "@vue/runtime-core": "toonflowToolHost.vue",
-              "@vue/runtime-dom": "toonflowToolHost.vue",
-              "element-plus": "toonflowToolHost.elementPlus",
-              axios: "toonflowToolHost.axios",
-              "@form-create/element-ui": "toonflowToolHost.formCreate",
+              vue: "lumoToolHost.vue",
+              "@vue/runtime-core": "lumoToolHost.vue",
+              "@vue/runtime-dom": "lumoToolHost.vue",
+              "element-plus": "lumoToolHost.elementPlus",
+              axios: "lumoToolHost.axios",
+              "@form-create/element-ui": "lumoToolHost.formCreate",
             },
           },
         },
@@ -99,7 +99,7 @@ export async function createToolConfig(
     const css = output.filter(item => item.type === "asset").map(item =>
       typeof item.source === "string" ? item.source : new TextDecoder().decode(item.source)).join("\n");
     const clientJson = JSON.stringify({ code: chunks[0]!.code, css }).replaceAll("/", "\\u002f");
-    clientBanner = `/*! toonflowToolClient:${clientJson} */\n`;
+    clientBanner = `/*! lumoToolClient:${clientJson} */\n`;
   }
   const result = await Bun.build({
     plugins: [{
@@ -108,7 +108,7 @@ export async function createToolConfig(
         // ACT: Bun 1.3 的 external 会保留原始路径，用虚拟转发模块保证产物引用宿主。
         build.onResolve({ filter: /^zod$/ }, () => ({ path: "zod", namespace: "toolHost" }));
         build.onLoad({ filter: /^zod$/, namespace: "toolHost" }, () => ({
-          contents: 'module.exports = require("toonflow:tool-zod");',
+          contents: 'module.exports = require("lumo:tool-zod");',
           loader: "js",
         }));
       },
@@ -129,7 +129,7 @@ export async function createToolConfig(
     target: "bun",
     format: "esm",
     packages: "bundle",
-    external: ["toonflow:tool-zod"],
+    external: ["lumo:tool-zod"],
     minify: true,
     tsconfig: options.tsconfig,
   });
@@ -137,7 +137,7 @@ export async function createToolConfig(
   if (result.outputs.length !== 1) throw new Error(`工具必须构建为单个脚本，不能包含未内联的资源：${metadata.name}`);
   // Bun 会把 @bun 标记放在 banner 前，构建完成后再写入首行元数据。
   const builtPath = resolve(outDir, fileName);
-  await write(builtPath, `/*! toonflowTool:${metadataJson} */\n${clientBanner}${await result.outputs[0].text()}`);
+  await write(builtPath, `/*! lumoTool:${metadataJson} */\n${clientBanner}${await result.outputs[0].text()}`);
   if (options.syncToData ?? process.env.NODE_ENV === "dev") {
     await mkdir(dataDir, { recursive: true });
     // ACT: Windows 的 bun --watch 占用已加载模块，开发同步直接复制覆盖，不使用 rename。

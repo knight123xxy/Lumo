@@ -75,10 +75,10 @@ import { ElMessage, type ButtonInstance } from "element-plus";
 import { IconArrowLeft, IconCloudUpload, IconFolder, IconPhotoPlus, IconPlus } from "@tabler/icons-vue";
 import axios from "axios";
 import { zip } from "fflate";
-import type { ExploreSubmission, ExploreUploadSignature, ExploreUploadSignatureParams } from "@toonflow/server/channel";
+import type { ExploreSubmission, ExploreUploadSignature, ExploreUploadSignatureParams } from "@lumo/server/channel";
 import http from "@/lib/http";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { toonflowAccountToken } from "@/stores/settings";
+import { lumoAccountToken } from "@/stores/settings";
 import videoPlayer from "@/components/videoPlayer.vue";
 import publishProjectPicker from "./publishProjectPicker.vue";
 
@@ -203,7 +203,7 @@ async function uploadFile(file: File, kind: ExploreUploadSignatureParams["kind"]
 
 async function publishWork() {
   if (submitting.value || projectPickerVisible.value || !visible.value) return;
-  const token = toonflowAccountToken.value;
+  const token = lumoAccountToken.value;
   if (!token) { ElMessage.warning("请先在账号设置中登录"); return; }
   const title = name.value.trim();
   if (!title || title.length > 80) { ElMessage.warning("请填写不超过 80 字的作品名称"); return; }
@@ -242,7 +242,7 @@ async function publishWork() {
   }
 }
 
-watch(toonflowAccountToken, () => {
+watch(lumoAccountToken, () => {
   if (!submitting.value) return;
   controller?.abort();
   uploadError.value = "账号已变更，请确认登录账号后重新提交";

@@ -1,4 +1,4 @@
-import { findNodeModel, getNodeModelIdentity, type BrowserFfmpegFactory, type NodeAiModel, type NodeAiRequest, type NodeAiResult, type WorkspaceFiles } from "@toonflow/nodes-scaffold/runtime";
+import { findNodeModel, getNodeModelIdentity, type BrowserFfmpegFactory, type NodeAiModel, type NodeAiRequest, type NodeAiResult, type WorkspaceFiles } from "@lumo/nodes-scaffold/runtime";
 import { analysisPath, runFfmpeg } from "./videoAnalysis";
 import type { AnalysisResult, AnalysisScene } from "./videoAnalysis";
 

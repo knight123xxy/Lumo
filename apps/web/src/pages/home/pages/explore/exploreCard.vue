@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ExploreProject } from "@toonflow/server/channel";
+import type { ExploreProject } from "@lumo/server/channel";
 
 defineProps<{ item: ExploreProject }>();
 </script>

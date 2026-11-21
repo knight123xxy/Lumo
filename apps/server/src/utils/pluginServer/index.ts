@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Application, Request, Response } from "express";
 import { z } from "zod";
-import { base64ToBytes, normalizeServicePath, pluginServerLimits, validateSocketClose } from "@toonflow/plugin-server/protocol";
+import { base64ToBytes, normalizeServicePath, pluginServerLimits, validateSocketClose } from "@lumo/plugin-server/protocol";
 import { translateError, translateMessage } from "@/lib/i18n";
 import { assertAppRequest, getAppOrigin } from "@/utils/mcp/control";
 import { authenticateWeb } from "@/utils/multiTenant";
@@ -44,7 +44,7 @@ export function createConnection(req: Request) {
   const user = req.res?.locals.multiTenantUser as { id: string; role: string } | undefined;
   if (enabled && (!req.res?.locals.multiTenantWeb || !user)) throw Object.assign(new Error("请先登录 算力汇"), { status: 401 });
   const origin = getAppOrigin(req);
-  const deviceToken = isMobileLinkRequest(req) ? req.get("x-toonflow-device-token") ?? "" : undefined;
+  const deviceToken = isMobileLinkRequest(req) ? req.get("x-lumo-device-token") ?? "" : undefined;
   const identity = user ? `${user.role}:${user.id}` : deviceToken ? `device:${digest(deviceToken)}` : `host:${origin}`;
   if (runtime.owners.size >= 128 || [...runtime.owners.values()].filter(owner => owner.identity === identity).length >= 8) {
     throw Object.assign(new Error("插件服务连接数量超过限制"), { status: 429 });

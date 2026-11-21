@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { useMediaPreview } from "@toonflow/node-shared/mediaPreview";
+import { useMediaPreview } from "@lumo/node-shared/mediaPreview";
 
 const props = defineProps<{ thumbnail?: { url: string; mimeType: string }; directory?: string; globalAsset?: boolean }>();
 const element = ref<HTMLElement>();

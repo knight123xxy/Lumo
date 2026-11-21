@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import { IconAdjustments, IconCoins, IconExternalLink, IconLayoutDashboard, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconPlugConnected, IconRoute, IconSettings, IconUsersGroup, IconUserShield } from "@tabler/icons-vue";

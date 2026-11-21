@@ -50,10 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import { locale, translate } from "@toonflow/i18n/vue";
+import { locale, translate } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { ElAlert, ElButton, ElSkeleton } from "element-plus";
-import type { BillingSnapshot, BillingTransaction } from "@toonflow/multi-tenant-billing/config";
+import type { BillingSnapshot, BillingTransaction } from "@lumo/multi-tenant-billing/config";
 import type { UserRequest } from "./types";
 import "element-plus/es/components/alert/style/css";
 import "element-plus/es/components/button/style/css";

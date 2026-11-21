@@ -89,14 +89,14 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { IconBrowser, IconDownload, IconFileCode, IconInfoCircle } from "@tabler/icons-vue";
-import type { ToolCall } from "@toonflow/tools-scaffold/runtime";
-import type { SingleAgentStatus } from "@toonflow/server/singleAgent/types";
-import browserPanel from "@toonflow/tool-browser/panel";
-import { isBrowserTool } from "@toonflow/tool-browser/client";
+import type { ToolCall } from "@lumo/tools-scaffold/runtime";
+import type { SingleAgentStatus } from "@lumo/server/singleAgent/types";
+import browserPanel from "@lumo/tool-browser/panel";
+import { isBrowserTool } from "@lumo/tool-browser/client";
 import singleAgentDialog, { type SingleAgentTool } from "@/components/singleAgentDialog.vue";
 import type { AgentMessage } from "@/components/agent/types";
 import toolMessage from "@/components/agent/toolMessage.vue";
@@ -105,7 +105,7 @@ import { writeClipboardText } from "@/lib/clipboard";
 import { settings } from "@/stores/settings";
 import providerTestPanel from "./providerTestPanel.vue";
 import { providerPrompt } from "./providerPrompt";
-import type { MediaProvider } from "@toonflow/provider-web/types";
+import type { MediaProvider } from "@lumo/provider-web/types";
 
 const props = defineProps<{ askUserEnabled: boolean; provider?: MediaProvider; source?: string }>();
 const visible = defineModel<boolean>({ default: false });
@@ -174,7 +174,7 @@ const submitTool: SingleAgentTool = {
     const source = args.source;
     const providerId = editingProvider.value?.id;
     if (typeof source !== "string" || !source.trim() || new Blob([source]).size > 1024 * 1024) throw new Error("请提交不超过 1 MB 的完整供应商源码");
-    const { data } = await axios.post<{ code: number; data: MediaProvider; message?: string }>("/api/providers/media/validate", { source }, { headers: { "x-toonflow-workspace": "1" }, signal });
+    const { data } = await axios.post<{ code: number; data: MediaProvider; message?: string }>("/api/providers/media/validate", { source }, { headers: { "x-lumo-workspace": "1" }, signal });
     signal.throwIfAborted();
     if (data.code !== 200 || !data.data || data.data.loadError) throw new Error(data.data?.loadError || data.message || "供应商文件检查失败");
     if (providerId && data.data.id !== providerId) throw new Error(`修改供应商时必须保留原有 ID：${providerId}`);
@@ -217,7 +217,7 @@ watch([visible, activePane, generatedSource], async ([opened, pane]) => {
   try {
     const { data } = await axios.post<{ code: number; data: MediaProvider; message?: string }>("/api/providers/media/validate", {
       source: initialSource.value,
-    }, { headers: { "x-toonflow-workspace": "1" }, signal: controller.signal });
+    }, { headers: { "x-lumo-workspace": "1" }, signal: controller.signal });
     if (controller.signal.aborted) return;
     if (data.code !== 200 || !data.data || data.data.loadError) throw new Error(data.data?.loadError || data.message || "供应商文件检查失败");
     if (editingProvider.value && data.data.id !== editingProvider.value.id) throw new Error(`修改供应商时必须保留原有 ID：${editingProvider.value.id}`);

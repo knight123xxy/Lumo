@@ -3649,7 +3649,7 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
   // 家具台面（桌、床、柜、凳）不当落脚面：落到家具上就是走到它旁边的地板。
   const furniturePartName = /家具|桌|椅|凳|床|榻|柜|炕|沙发|table|chair|bed|desk|sofa|stool|cabinet/i;
   function hitPartName(hit: Intersection) {
-    const names: unknown = hit.object.userData.toonflowPartNames;
+    const names: unknown = hit.object.userData.lumoPartNames;
     return hit.object instanceof InstancedMesh && hit.instanceId !== undefined && Array.isArray(names) && typeof names[hit.instanceId] === "string" ? names[hit.instanceId] as string : hit.object.name;
   }
   function isRoofHit(hit: Intersection) { const name = hitPartName(hit); return roofPartName.test(name) && !terracePartName.test(name); }

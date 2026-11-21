@@ -1,10 +1,10 @@
 import { createRequire, isBuiltin } from "node:module";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { readFile, readFileSync, realpath, realpathSync, statSync } from "@toonflow/file";
+import { readFile, readFileSync, realpath, realpathSync, statSync } from "@lumo/file";
 import { build, type Plugin } from "vite";
-import { createNodeConfig } from "@toonflow/nodes-scaffold";
-import { createToolConfig } from "@toonflow/tools-scaffold";
+import { createNodeConfig } from "@lumo/nodes-scaffold";
+import { createToolConfig } from "@lumo/tools-scaffold";
 import { babelParse, parse, registerTS } from "vue/compiler-sfc";
 import { pluginManifestSchema } from "./runtime";
 
@@ -127,7 +127,7 @@ try {
           });
           builder.onResolve({ filter: /.*/ }, async args => {
             if (isBuiltin(args.path)) return { path: args.path, external: true };
-            if (args.path === "toonflow:tool-zod") return { path: args.path, external: true };
+            if (args.path === "lumo:tool-zod") return { path: args.path, external: true };
             const path = Bun.resolveSync(args.path, args.resolveDir || (args.importer ? dirname(args.importer) : root));
             return { path: await allowedPath(path) };
           });

@@ -1,4 +1,4 @@
-import { lstat } from "@toonflow/file";
+import { lstat } from "@lumo/file";
 import { sendFile } from "@/utils/fileHttp";
 import { basename } from "node:path";
 import { Router } from "express";

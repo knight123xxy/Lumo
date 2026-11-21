@@ -1,5 +1,5 @@
 {
-  "name": "@toonflow/nodes-scaffold",
+  "name": "@lumo/nodes-scaffold",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -31,10 +31,10 @@
     "element-plus": "^2.14.5"
   },
   "dependencies": {
-    "@toonflow/asr": "workspace:*",
-    "@toonflow/file": "workspace:*",
-    "@toonflow/ffmpeg": "workspace:*",
-    "@toonflow/plugin-server": "workspace:*",
+    "@lumo/asr": "workspace:*",
+    "@lumo/file": "workspace:*",
+    "@lumo/ffmpeg": "workspace:*",
+    "@lumo/plugin-server": "workspace:*",
     "@earendil-works/pi-agent-core": "0.85.1",
     "@earendil-works/pi-ai": "0.85.1",
     "@tabler/icons-vue": "^3.46.0",
@@ -47,6 +47,6 @@
     "@form-create/element-ui": "^3",
     "typescript": "~6.0.3",
     "vue-tsc": "^3.3.11",
-    "@toonflow/tools-scaffold": "workspace:*"
+    "@lumo/tools-scaffold": "workspace:*"
   }
 }

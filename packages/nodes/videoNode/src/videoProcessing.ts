@@ -1,4 +1,4 @@
-import type { BrowserFfmpegCommand, BrowserFfmpegFactory, FfprobeData } from "@toonflow/ffmpeg/browser";
+import type { BrowserFfmpegCommand, BrowserFfmpegFactory, FfprobeData } from "@lumo/ffmpeg/browser";
 
 export type VideoProcessingOptions = {
   action: "extractAudio" | "separate" | "trim";

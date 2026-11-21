@@ -1,9 +1,9 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
 import { useNode, useVueFlow } from "@vue-flow/core";
-import { nodeTools, z } from "@toonflow/nodes-scaffold/nodeTools";
-import { useNodePersistence, type NodePersistenceContext } from "@toonflow/nodes-scaffold/nodeDocument";
-import type { NodeAudioRequest, NodeImageRequest, NodeMediaResult, NodeMediaTaskStatus, NodeVideoRequest, useNodeAi } from "@toonflow/nodes-scaffold/nodeAi";
-import type { NodeOutputs } from "@toonflow/nodes-scaffold/values";
+import { nodeTools, z } from "@lumo/nodes-scaffold/nodeTools";
+import { useNodePersistence, type NodePersistenceContext } from "@lumo/nodes-scaffold/nodeDocument";
+import type { NodeAudioRequest, NodeImageRequest, NodeMediaResult, NodeMediaTaskStatus, NodeVideoRequest, useNodeAi } from "@lumo/nodes-scaffold/nodeAi";
+import type { NodeOutputs } from "@lumo/nodes-scaffold/values";
 import { showNodeError } from "./showNodeError";
 
 export type NodeGenerationTask = {

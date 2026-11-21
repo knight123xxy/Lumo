@@ -1,4 +1,4 @@
-import { mkdirSync } from "@toonflow/file";
+import { mkdirSync } from "@lumo/file";
 import { join } from "node:path";
 import { createApp } from "@/app";
 

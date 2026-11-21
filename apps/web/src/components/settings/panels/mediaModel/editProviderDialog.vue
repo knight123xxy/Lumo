@@ -61,17 +61,17 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 
 import axios from "axios";
 import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef, toRaw, watch, type Component } from "vue";
 import { IconPlus, IconTrash, IconDeviceFloppy, IconEdit, IconPlayerPlay } from "@tabler/icons-vue";
-import formCreate, { copyProviderRules, type Api, type Options } from "@toonflow/provider-web/formCreate";
-import { modelIcon } from "@toonflow/model-icons";
+import formCreate, { copyProviderRules, type Api, type Options } from "@lumo/provider-web/formCreate";
+import { modelIcon } from "@lumo/model-icons";
 import messageMarkdown from "@/components/messageMarkdown.vue";
-import type { MediaProvider, MediaProviderModel } from "@toonflow/provider-web/types";
+import type { MediaProvider, MediaProviderModel } from "@lumo/provider-web/types";
 import { settings, saveSettings } from "@/stores/settings";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
+import { invalidateNodeModels } from "@lumo/nodes-scaffold/nodeAi";
 import providerTestPanel from "./providerTestPanel.vue";
 
 const { provider } = defineProps<{ provider?: MediaProvider }>();
@@ -132,7 +132,7 @@ async function testModel(index: number) {
     const config = structuredClone(toRaw(formApi.value?.formData() ?? formValues.value));
     const modelId = model.id;
     const { data } = await axios.get<{ code: number; data: { source: string; revision: string }; message?: string }>("/api/providers/media/source", {
-      params: { fileName: currentProvider.fileName }, headers: { "x-toonflow-workspace": "1" }, signal: controller.signal,
+      params: { fileName: currentProvider.fileName }, headers: { "x-lumo-workspace": "1" }, signal: controller.signal,
     });
     if (controller.signal.aborted) return;
     if (data.code !== 200 || !data.data) throw new Error(data.message || "读取供应商代码失败");
@@ -159,7 +159,7 @@ function modelTags(model: MediaProviderModel) {
 }
 
 function editModel(index?: number) {
-  modelEditorDialog.value ??= defineAsyncComponent(() => import("@toonflow/provider-web/modelEditor"));
+  modelEditorDialog.value ??= defineAsyncComponent(() => import("@lumo/provider-web/modelEditor"));
   editingModelIndex.value = index;
   modelEditorVisible.value = true;
 }

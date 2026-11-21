@@ -1,3 +1,3 @@
 import { themeLight } from "dockview-vue";
 
-export const theme = { ...themeLight, name: "toonflow", className: "dockviewLumo" };
+export const theme = { ...themeLight, name: "lumo", className: "dockviewLumo" };

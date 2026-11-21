@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import type { Vector3Value } from "./sceneDocument";
 import { storedPerformanceTracksSchema } from "./performanceDocument";
 

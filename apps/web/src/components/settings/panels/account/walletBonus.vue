@@ -66,9 +66,9 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { IconReceipt } from "@tabler/icons-vue";
-import type { WalletBonusBatch, WalletBonusBatchesPage, WalletBonusBatchesParams } from "@toonflow/server/channel";
+import type { WalletBonusBatch, WalletBonusBatchesPage, WalletBonusBatchesParams } from "@lumo/server/channel";
 import http from "@/lib/http";
 
 const props = defineProps<{ visible: boolean; token: string; serverTime: number }>();

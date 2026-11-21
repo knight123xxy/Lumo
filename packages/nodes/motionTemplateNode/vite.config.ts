@@ -1,4 +1,4 @@
-import { createNodeConfig } from "@toonflow/nodes-scaffold";
+import { createNodeConfig } from "@lumo/nodes-scaffold";
 
 export default createNodeConfig({
   name: "motionTemplateNode",

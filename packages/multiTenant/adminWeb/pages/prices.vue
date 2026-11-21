@@ -44,8 +44,8 @@
 
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, toRaw } from "vue";
-import { translate } from "@toonflow/i18n/vue";
-import { getPublicModelId, modelRouteSchema, modelRoutesSchema, type ModelPrice, type ModelRoute, type ModelRoutingSnapshot } from "@toonflow/multi-tenant-models/config";
+import { translate } from "@lumo/i18n/vue";
+import { getPublicModelId, modelRouteSchema, modelRoutesSchema, type ModelPrice, type ModelRoute, type ModelRoutingSnapshot } from "@lumo/multi-tenant-models/config";
 import { ElAlert, ElButton, ElDialog, ElForm, ElMessage, ElMessageBox, ElTable, ElTableColumn, vLoading } from "element-plus";
 import type { AdminRequest } from "../types";
 import priceEditor from "./components/priceEditor.vue";

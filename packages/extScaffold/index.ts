@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, rename, rm } from "@toonflow/file";
+import { copyFile, mkdir, readFile, rename, rm } from "@lumo/file";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, loadConfigFromFile } from "vite";
@@ -7,23 +7,23 @@ import { z } from "zod";
 import { defineExt, type ExtDefinition } from "./src/runtime.ts";
 
 const tiptapGlobals = {
-  "@tiptap/core": "toonflowTiptapHost.core",
-  "@tiptap/vue-3": "toonflowTiptapHost.vue3",
-  "@tiptap/starter-kit": "toonflowTiptapHost.starterKit",
-  "@tiptap/markdown": "toonflowTiptapHost.markdown",
-  "@tiptap/extension-find-and-replace": "toonflowTiptapHost.findAndReplace",
-  "@tiptap/extension-highlight": "toonflowTiptapHost.highlight",
-  "@tiptap/extension-image": "toonflowTiptapHost.image",
-  "@tiptap/extension-list": "toonflowTiptapHost.list",
-  "@tiptap/extension-subscript": "toonflowTiptapHost.subscript",
-  "@tiptap/extension-superscript": "toonflowTiptapHost.superscript",
-  "@tiptap/extension-table": "toonflowTiptapHost.table",
-  "@tiptap/extension-text-align": "toonflowTiptapHost.textAlign",
-  "@tiptap/pm/model": "toonflowTiptapHost.model",
-  "@tiptap/pm/state": "toonflowTiptapHost.state",
-  "@tiptap/pm/view": "toonflowTiptapHost.view",
-  "marked": "toonflowTiptapHost.marked",
-  "dompurify": "toonflowTiptapHost.dompurify",
+  "@tiptap/core": "lumoTiptapHost.core",
+  "@tiptap/vue-3": "lumoTiptapHost.vue3",
+  "@tiptap/starter-kit": "lumoTiptapHost.starterKit",
+  "@tiptap/markdown": "lumoTiptapHost.markdown",
+  "@tiptap/extension-find-and-replace": "lumoTiptapHost.findAndReplace",
+  "@tiptap/extension-highlight": "lumoTiptapHost.highlight",
+  "@tiptap/extension-image": "lumoTiptapHost.image",
+  "@tiptap/extension-list": "lumoTiptapHost.list",
+  "@tiptap/extension-subscript": "lumoTiptapHost.subscript",
+  "@tiptap/extension-superscript": "lumoTiptapHost.superscript",
+  "@tiptap/extension-table": "lumoTiptapHost.table",
+  "@tiptap/extension-text-align": "lumoTiptapHost.textAlign",
+  "@tiptap/pm/model": "lumoTiptapHost.model",
+  "@tiptap/pm/state": "lumoTiptapHost.state",
+  "@tiptap/pm/view": "lumoTiptapHost.view",
+  "marked": "lumoTiptapHost.marked",
+  "dompurify": "lumoTiptapHost.dompurify",
 };
 
 export type ExtMetadata = Omit<ExtDefinition, "load">;
@@ -75,10 +75,10 @@ export function createExtConfig(config: ExtMetadata, configUrl: string) {
             css += typeof asset.source === "string" ? asset.source : new TextDecoder().decode(asset.source);
             delete bundle[name];
           }
-          const styleId = JSON.stringify(`toonflowExt-${config.id}`);
+          const styleId = JSON.stringify(`lumoExt-${config.id}`);
           const injectStyle = css ? `if(typeof document!=="undefined"){let style=document.getElementById(${styleId});if(!style){style=document.createElement("style");style.id=${styleId};document.head.appendChild(style)}style.textContent=${JSON.stringify(css)}}\n` : "";
           // 压缩完成后加入元数据和样式，单个 JS 即可供扩展加载器使用。
-          chunk.code = `/*! toonflowExt:${JSON.stringify({ ...metadata, configRules, version, readme }).replaceAll("/", "\\u002f")} */\n${injectStyle}${chunk.code}`;
+          chunk.code = `/*! lumoExt:${JSON.stringify({ ...metadata, configRules, version, readme }).replaceAll("/", "\\u002f")} */\n${injectStyle}${chunk.code}`;
           if (Buffer.byteLength(chunk.code, "utf8") > 20 * 1024 * 1024) throw new Error(`扩展文件不能超过 20 MB：${config.id}`);
         },
         async writeBundle() {
@@ -104,22 +104,22 @@ export function createExtConfig(config: ExtMetadata, configUrl: string) {
       cssCodeSplit: false,
       lib: {
         entry: resolve(root, "src/index.ts"),
-        name: `toonflowExts.${config.id}`,
+        name: `lumoExts.${config.id}`,
         formats: ["umd"],
         fileName: () => fileName,
       },
       rolldownOptions: {
-        external: ["vue", "@vue/runtime-core", "@vue/runtime-dom", "element-plus", "@toonflow/i18n/vue", ...Object.keys(tiptapGlobals)],
+        external: ["vue", "@vue/runtime-core", "@vue/runtime-dom", "element-plus", "@lumo/i18n/vue", ...Object.keys(tiptapGlobals)],
         output: {
           exports: "default",
           codeSplitting: false,
           globals: {
             ...tiptapGlobals,
-            vue: "toonflowExtHost.vue",
-            "@vue/runtime-core": "toonflowExtHost.vue",
-            "@vue/runtime-dom": "toonflowExtHost.vue",
-            "element-plus": "toonflowExtHost.elementPlus",
-            "@toonflow/i18n/vue": "toonflowExtHost.i18n",
+            vue: "lumoExtHost.vue",
+            "@vue/runtime-core": "lumoExtHost.vue",
+            "@vue/runtime-dom": "lumoExtHost.vue",
+            "element-plus": "lumoExtHost.elementPlus",
+            "@lumo/i18n/vue": "lumoExtHost.i18n",
           },
         },
       },

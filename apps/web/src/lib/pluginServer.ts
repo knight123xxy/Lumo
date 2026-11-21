@@ -1,7 +1,7 @@
-import { createPluginServer } from "@toonflow/plugin-server";
-import { pluginServerLimits, type PluginServerTransport, type ToHostMessage, type ToPluginMessage } from "@toonflow/plugin-server/protocol";
-import { reactivePluginServer } from "@toonflow/plugin-server/vue";
-import { locale, t } from "@toonflow/i18n/vue";
+import { createPluginServer } from "@lumo/plugin-server";
+import { pluginServerLimits, type PluginServerTransport, type ToHostMessage, type ToPluginMessage } from "@lumo/plugin-server/protocol";
+import { reactivePluginServer } from "@lumo/plugin-server/vue";
+import { locale, t } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 
 type OwnerConnection = {
@@ -59,7 +59,7 @@ export function createPluginServerHost() {
       const stream = async () => {
         try {
           const response = await fetch(`/api/pluginServer/events?connectionId=${encodeURIComponent(current.connectionId)}`, {
-            headers: { Authorization: `Bearer ${current.token}`, "x-toonflow-workspace": "1", "Accept-Language": locale.value }, signal,
+            headers: { Authorization: `Bearer ${current.token}`, "x-lumo-workspace": "1", "Accept-Language": locale.value }, signal,
           });
           if (!response.ok || !response.body) throw new Error(t`插件服务连接失败（${response.status}）`);
           const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();

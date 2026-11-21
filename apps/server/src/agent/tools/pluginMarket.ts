@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ToolDefinition } from "@earendil-works/pi-coding-agent";
-import type { QuestionContext, QuestionRequest } from "@toonflow/tools-scaffold/runtime";
+import type { QuestionContext, QuestionRequest } from "@lumo/tools-scaffold/runtime";
 import { translateMessage } from "@/lib/i18n";
 import { searchPluginMarketSchema, installMarketPluginSchema, searchPluginMarket, resolveMarketPlugin, installMarketPlugin } from "@/lib/pluginMarket";
 

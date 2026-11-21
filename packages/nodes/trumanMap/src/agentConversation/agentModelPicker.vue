@@ -36,7 +36,7 @@
 import { computed, ref, useId, watch } from "vue";
 import { ElButton, ElForm, ElFormItem, ElOption, ElOptionGroup, ElPopover, ElSelect } from "element-plus";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-vue";
-import modelLabel from "@toonflow/node-shared/modelLabel";
+import modelLabel from "@lumo/node-shared/modelLabel";
 import type { ThinkingLevel } from "../singleAgent";
 
 /**

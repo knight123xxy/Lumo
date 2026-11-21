@@ -1,4 +1,4 @@
-import { z } from "@toonflow/nodes-scaffold/runtime";
+import { z } from "@lumo/nodes-scaffold/runtime";
 import { type SceneAsset, type SceneDocument, type SceneObject } from "./sceneDocument";
 import { createOccupancy, createPlacer, faceRotation, measureAssetFootprint, scatterCrowd, seededRandom } from "./setDressing";
 import { worldSizeLimits } from "./terrainModel";

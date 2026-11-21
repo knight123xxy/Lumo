@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import type { Server, ServerWebSocket } from "bun";
-import type { PluginHttpResponse, PluginServiceRoute, ToPluginMessage } from "@toonflow/plugin-server/protocol";
+import type { PluginHttpResponse, PluginServiceRoute, ToPluginMessage } from "@lumo/plugin-server/protocol";
 
 export type PluginOwner = {
   id: string;

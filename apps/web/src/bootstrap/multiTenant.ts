@@ -1,16 +1,16 @@
 import { createApp, h, type App } from "vue";
 import { ElConfigProvider } from "element-plus";
-import { elementLocales } from "@toonflow/i18n/elementPlus";
-import { locale } from "@toonflow/i18n/vue";
-import type { UserSession } from "@toonflow/multi-tenant-user-web/types";
-import logoUrl from "@toonflow/assets/logo.svg";
+import { elementLocales } from "@lumo/i18n/elementPlus";
+import { locale } from "@lumo/i18n/vue";
+import type { UserSession } from "@lumo/multi-tenant-user-web/types";
+import logoUrl from "@lumo/assets/logo.svg";
 import http from "@/lib/http";
 import { actualPlatform } from "@/lib/platform";
 import { currentUser, publicWeb, hostWeb } from "@/stores/multiTenant";
 
 export async function initializeMultiTenant(): Promise<{ session: UserSession; app: App<Element> | undefined }> {
-  const hostWindow = window as Window & { toonflowHostReady?: Promise<void> };
-  await hostWindow.toonflowHostReady;
+  const hostWindow = window as Window & { lumoHostReady?: Promise<void> };
+  await hostWindow.lumoHostReady;
   const session = await http<UserSession>({ method: "GET", url: "/api/multiTenant/user/session", headers: { "Accept-Language": locale.value } });
   currentUser.value = session.user;
   publicWeb.value = session.publicWeb;
@@ -19,7 +19,7 @@ export async function initializeMultiTenant(): Promise<{ session: UserSession; a
 
   if (session.publicWeb && !session.user) {
     const [{ default: userWeb }, { default: authBackdrop }] = await Promise.all([
-      import("@toonflow/multi-tenant-user-web"), import("@/pages/hello/bg.vue"),
+      import("@lumo/multi-tenant-user-web"), import("@/pages/hello/bg.vue"),
     ]);
     app = createApp({ render: () => h(ElConfigProvider, { locale: elementLocales[locale.value] }, () => h(userWeb, {
       request: http, logoUrl, registrationEnabled: session.registrationEnabled, onAuthenticated: () => window.location.reload(),

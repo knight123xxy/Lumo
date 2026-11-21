@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" class="toonflowRechargeDialog" title="充值" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose @closed="emit('closed')">
+  <el-dialog v-model="visible" class="lumoRechargeDialog" title="充值" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose @closed="emit('closed')">
     <el-alert v-if="!token" title="请先在账号与余额中登录 算力汇 账号" type="info" :closable="false" showIcon />
     <template v-else>
       <el-alert v-if="errorMessage" :title="errorMessage" type="error" :closable="false" showIcon />
@@ -10,8 +10,8 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent, onBeforeUnmount, ref, watch } from "vue";
-import { translate } from "@toonflow/i18n/vue";
-import type { PreviewData } from "@toonflow/server/channel";
+import { translate } from "@lumo/i18n/vue";
+import type { PreviewData } from "@lumo/server/channel";
 import http from "@/lib/http";
 import { refreshProviderBalance } from "@/lib/providerBilling";
 
@@ -48,7 +48,7 @@ async function refreshBalance() {
   if (!visible.value || !token) return;
   await refreshPreview();
   if (!visible.value || props.token !== token) return;
-  await refreshProviderBalance("toonflow");
+  await refreshProviderBalance("lumo");
   if (visible.value && props.token === token) emit("balanceChanged");
 }
 
@@ -67,7 +67,7 @@ onBeforeUnmount(() => controller?.abort());
 </script>
 
 <style lang="scss">
-.toonflowRechargeDialog {
+.lumoRechargeDialog {
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 32px);

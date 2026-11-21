@@ -27,10 +27,10 @@
   </el-card>
   <el-dialog
     v-model="catalogVisible"
-    class="toonflowCatalogDialog"
-    :class="{ catalogReady: !!toonflowAccountToken }"
+    class="lumoCatalogDialog"
+    :class="{ catalogReady: !!lumoAccountToken }"
     title="Lumo"
-    :width="toonflowAccountToken ? 'min(1040px, calc(100vw - 32px))' : 'min(520px, calc(100vw - 32px))'"
+    :width="lumoAccountToken ? 'min(1040px, calc(100vw - 32px))' : 'min(520px, calc(100vw - 32px))'"
     alignCenter
     appendToBody
     destroyOnClose>
@@ -43,30 +43,30 @@
         </div>
       </div>
     </template>
-    <el-alert v-if="!toonflowAccountToken" title="请先在账号与余额中登录 算力汇 账号" type="info" :closable="false" showIcon />
+    <el-alert v-if="!lumoAccountToken" title="请先在账号与余额中登录 算力汇 账号" type="info" :closable="false" showIcon />
     <modelCatalog
       v-else-if="catalogVisible"
       class="dialogCatalog"
       :class="{ textCatalog: scope === 'text' }"
       :visible="catalogVisible"
-      :token="toonflowAccountToken"
+      :token="lumoAccountToken"
       :scope="scope" />
   </el-dialog>
-  <component :is="rechargeDialog" v-model="rechargeVisible" :token="toonflowAccountToken" />
+  <component :is="rechargeDialog" v-model="rechargeVisible" :token="lumoAccountToken" />
 </template>
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref } from "vue";
 import { IconCircleCheck, IconCreditCard, IconExternalLink, IconEye } from "@tabler/icons-vue";
-import logoUrl from "@toonflow/assets/logo.svg";
-import { toonflowAccountToken } from "@/stores/settings";
+import logoUrl from "@lumo/assets/logo.svg";
+import { lumoAccountToken } from "@/stores/settings";
 
 const props = defineProps<{ scope: "text" | "media"; provider?: { models: unknown[]; loadError?: string } }>();
 const modelCatalog = defineAsyncComponent(() => import("./panels/account/modelCatalog.vue"));
 const rechargeDialog = defineAsyncComponent(() => import("./panels/account/rechargeDialog.vue"));
 const catalogVisible = ref(false);
 const rechargeVisible = ref(false);
-const providerLoaded = computed(() => !!toonflowAccountToken.value && !!props.provider && !props.provider.loadError);
+const providerLoaded = computed(() => !!lumoAccountToken.value && !!props.provider && !props.provider.loadError);
 </script>
 
 <style lang="scss" scoped>
@@ -214,7 +214,7 @@ const providerLoaded = computed(() => !!toonflowAccountToken.value && !!props.pr
 </style>
 
 <style lang="scss">
-.toonflowCatalogDialog {
+.lumoCatalogDialog {
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 48px);

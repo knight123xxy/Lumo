@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { createRequire, isBuiltin } from "node:module";
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { readFile, readFileSync, realpath, realpathSync, statSync } from "@toonflow/file";
-import { file } from "@toonflow/file/bun";
+import { readFile, readFileSync, realpath, realpathSync, statSync } from "@lumo/file";
+import { file } from "@lumo/file/bun";
 import { babelParse, compileScript, compileStyle, compileTemplate, parse, registerTS } from "vue/compiler-sfc";
 import pxtorem from "postcss-pxtorem";
 import type { Loader } from "bun";
@@ -95,13 +95,13 @@ export async function buildBrowser(root: string, sdkModules: string, manifest: P
   }
   const packageName = (source: string) => source.startsWith("@") ? source.split("/").slice(0, 2).join("/") : source.split("/")[0]!;
   const supportedPackages = new Set([
-    "@toonflow/nodes-scaffold", "@toonflow/tools-scaffold", "@toonflow/node-shared", "@toonflow/asr", "@toonflow/ffmpeg", "@toonflow/file", "@toonflow/plugin-server",
+    "@lumo/nodes-scaffold", "@lumo/tools-scaffold", "@lumo/node-shared", "@lumo/asr", "@lumo/ffmpeg", "@lumo/file", "@lumo/plugin-server",
     "@tabler/icons-vue", "@form-create/element-ui", "vue-draggable-plus", "x-sender", "eventsource-parser", "zod",
     ...Object.keys(registry.node).map(packageName), ...Object.keys(registry.tool).map(packageName),
   ]);
   const styles = new Map<string, string>();
   const failures: Error[] = [];
-  const entryId = "toonflow:browserEntry";
+  const entryId = "lumo:browserEntry";
 
   function missingDependency(source: string) {
     return Object.assign(new Error(`SDK_DEPENDENCY_MISSING: 内置 SDK 未包含依赖：${source}`), { code: "SDK_DEPENDENCY_MISSING" });
@@ -156,7 +156,7 @@ export async function buildBrowser(root: string, sdkModules: string, manifest: P
     }
     const hash = createHash("sha256").update(relative(root, filename)).update(source).digest("hex").slice(0, 12);
     const scopeId = `data-v-${hash}`;
-    const component = `__toonflowComponent${hash}`;
+    const component = `__lumoComponent${hash}`;
     const scoped = descriptor.styles.some(style => style.scoped);
     for (const [index, style] of descriptor.styles.entries()) {
       if (style.src || style.module || (style.lang && style.lang !== "css")) throw new Error("插件组件的 style 仅支持内联普通 CSS");
@@ -268,11 +268,11 @@ export async function buildBrowser(root: string, sdkModules: string, manifest: P
   if (result.outputs.length !== 1) throw new Error("插件浏览器构建必须生成单个脚本，资源须内联");
   const source = await result.outputs[0]!.text();
   const style = [...styles.values()].join("\n");
-  const target = manifest.type === "node" ? "toonflowNodes" : "toonflowToolViews";
-  const host = manifest.type === "node" ? 'if(!globalThis.toonflowNodeHost)throw new Error("缺少节点宿主");' : "";
+  const target = manifest.type === "node" ? "lumoNodes" : "lumoToolViews";
+  const host = manifest.type === "node" ? 'if(!globalThis.lumoNodeHost)throw new Error("缺少节点宿主");' : "";
   let code = `;(() => {${host}const module={exports:{}};const exports=module.exports;${source}\nglobalThis.${target} ??= {};globalThis.${target}.${manifest.name}=module.exports.default;})();`;
   if (manifest.type === "node" && style) {
-    code += `\n;(() => {const id=${JSON.stringify(`toonflowNodeStyle:${manifest.name}`)};let style=document.getElementById(id);if(!style){style=document.createElement("style");style.id=id;document.head.append(style);}style.textContent=${JSON.stringify(style)};})();`;
+    code += `\n;(() => {const id=${JSON.stringify(`lumoNodeStyle:${manifest.name}`)};let style=document.getElementById(id);if(!style){style=document.createElement("style");style.id=id;document.head.append(style);}style.textContent=${JSON.stringify(style)};})();`;
   }
   return { code, css: style };
 }

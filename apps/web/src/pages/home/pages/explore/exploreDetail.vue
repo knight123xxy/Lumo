@@ -51,11 +51,11 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { IconArrowLeft, IconShare, IconTopologyStar3, IconCopy, IconX } from "@tabler/icons-vue";
-import type { ExploreDetail, ExploreProcess } from "@toonflow/server/channel";
+import type { ExploreDetail, ExploreProcess } from "@lumo/server/channel";
 import http from "@/lib/http";
 import { writeClipboardText } from "@/lib/clipboard";
 import useWorkspaceFiles from "@/lib/workspaceFiles";

@@ -117,10 +117,10 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, watch } from "vue";
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { IconChartBar, IconExternalLink, IconSearch } from "@tabler/icons-vue";
-import { modelIcon } from "@toonflow/model-icons";
-import type { PointsConsumption, TaskRecord, TaskRecordsPage } from "@toonflow/server/channel";
+import { modelIcon } from "@lumo/model-icons";
+import type { PointsConsumption, TaskRecord, TaskRecordsPage } from "@lumo/server/channel";
 import http from "@/lib/http";
 
 const props = defineProps<{ visible: boolean; token: string }>();

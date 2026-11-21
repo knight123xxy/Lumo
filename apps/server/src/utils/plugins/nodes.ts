@@ -1,6 +1,6 @@
 import { t } from "@/lib/i18n";
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, readdir, writeAtomic } from "@toonflow/file";
+import { lstat, mkdir, readFile, readdir, writeAtomic } from "@lumo/file";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
 import conf from "@/utils/conf";
@@ -13,7 +13,7 @@ type ConfigRule = z.infer<typeof configRulesSchema>[number];
 
 function parseNodeMetadata(source: string): Record<string, unknown> {
   try {
-    const header = source.match(/^\/\*! toonflowNode:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1];
+    const header = source.match(/^\/\*! lumoNode:([^\r\n]*) \*\/(?:\r?\n|$)/)?.[1];
     const parsed = header ? JSON.parse(header) : null;
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch { return {}; }

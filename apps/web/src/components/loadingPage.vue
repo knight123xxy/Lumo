@@ -13,8 +13,8 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
-import logoRaw from "@toonflow/assets/logo.svg?raw";
-import logoUrl from "@toonflow/assets/logo.svg";
+import logoRaw from "@lumo/assets/logo.svg?raw";
+import logoUrl from "@lumo/assets/logo.svg";
 
 const props = defineProps<{ active: boolean }>();
 const visible = defineModel<boolean>("visible", { default: false });

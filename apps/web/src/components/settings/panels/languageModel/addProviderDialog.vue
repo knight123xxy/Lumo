@@ -29,7 +29,7 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import axios from "axios";
 import { IconRefresh } from "@tabler/icons-vue";
-import formCreate, { copyProviderRules, type Api, type Options } from "@toonflow/provider-web/formCreate";
+import formCreate, { copyProviderRules, type Api, type Options } from "@lumo/provider-web/formCreate";
 import type { BuiltinLanguageProvider } from "@/lib/builtinProviders";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 import type { Column } from "element-plus";

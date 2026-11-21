@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { t, translate } from "@toonflow/i18n/vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, onScopeDispose, provide, ref, shallowReactive, shallowRef, watch } from "vue";
 import axios from "axios";
 import { debounce } from "lodash-es";
@@ -156,7 +156,7 @@ import {
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { useCanvasTools } from "./useCanvasTools";
-import type { CanvasContext } from "@toonflow/tool-canvas/runtime";
+import type { CanvasContext } from "@lumo/tool-canvas/runtime";
 import { loadNodeComponent } from "./loadNodeComponent";
 import { useCanvasHistory } from "./useCanvasHistory";
 import { copyNodeToClipboard, copyNodesToClipboard, nodeClipboardCommand, readClipboardNodes } from "./nodeClipboard";
@@ -173,12 +173,12 @@ import groupNode from "./components/groupNode.vue";
 import selectionToolbar from "./components/selectionToolbar.vue";
 import nodeSearch from "./components/nodeSearch.vue";
 import { finishGroupDrag, fitGroupBounds, getSelectionTree } from "./selectionNodes";
-import type { NodeOutput } from "@toonflow/nodes-scaffold/values";
-import { getAssetOutputs, validateConnection, type NodeConnectionFeedback, type NodeHandle } from "@toonflow/nodes-scaffold/connection";
-import { getMediaMimeType } from "@toonflow/node-shared/mediaTypes";
-import { useNodeEvent } from "@toonflow/nodes-scaffold/nodeEvent";
-import type { NodeDocumentContext, NodeDocumentState } from "@toonflow/nodes-scaffold/nodeDocument";
-import { useNodeToolsContext } from "@toonflow/nodes-scaffold/nodeTools";
+import type { NodeOutput } from "@lumo/nodes-scaffold/values";
+import { getAssetOutputs, validateConnection, type NodeConnectionFeedback, type NodeHandle } from "@lumo/nodes-scaffold/connection";
+import { getMediaMimeType } from "@lumo/node-shared/mediaTypes";
+import { useNodeEvent } from "@lumo/nodes-scaffold/nodeEvent";
+import type { NodeDocumentContext, NodeDocumentState } from "@lumo/nodes-scaffold/nodeDocument";
+import { useNodeToolsContext } from "@lumo/nodes-scaffold/nodeTools";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { currentUser } from "@/stores/multiTenant";
 import { generalSettings, settingsStorage } from "@/stores/settings";
@@ -432,7 +432,7 @@ const { createCanvasContext, getNodeRevision } = useCanvasTools({
   availableNodes,
   flushSave: flushCanvasSave,
   async reloadPlugin(type, name) {
-    const event = new CustomEvent("toonflow:plugin-installed", { detail: { type, name } });
+    const event = new CustomEvent("lumo:plugin-installed", { detail: { type, name } });
     // ACT: 当前画布等待目标节点加载，其他监听者仍通过安装事件刷新，避免本画布重复请求。
     handledPluginEvents.add(event);
     window.dispatchEvent(event);
@@ -580,9 +580,9 @@ function documentHandles(node: Node<DocumentNodeData>) {
 async function readDocumentCanvas(directory: string, canvasPath: string, nodeId: string) {
   checkDocumentDirectory(directory);
   const files = useWorkspaceFiles(directory);
-  const canvas = await files.readJson<{ toonflowCanvas?: boolean; nodes?: Node<DocumentNodeData>[] }>(canvasPath);
+  const canvas = await files.readJson<{ lumoCanvas?: boolean; nodes?: Node<DocumentNodeData>[] }>(canvasPath);
   checkDocumentDirectory(directory);
-  if (canvas?.toonflowCanvas !== true || !Array.isArray(canvas.nodes)) throw new Error("文件不是有效画布");
+  if (canvas?.lumoCanvas !== true || !Array.isArray(canvas.nodes)) throw new Error("文件不是有效画布");
   const node = canvas.nodes.find((item) => item && item.id === nodeId);
   if (!node) throw new Error("节点已删除，请刷新文件树");
   if (node.data !== undefined && (!node.data || typeof node.data !== "object" || Array.isArray(node.data))) throw new Error("节点数据无效");
@@ -748,7 +748,7 @@ const saveCanvas = debounce((directory: string, fileName: string) => {
   // ACT: 同页保存按顺序完成，防止慢请求覆盖后续修改；不处理多个客户端的并发编辑。
   saving = saving.then(async () => {
     try {
-      await useWorkspaceFiles(directory).writeJson(fileName, { toonflowCanvas: true, nodes: flow.nodes, edges: flow.edges, viewport: flow.viewport });
+      await useWorkspaceFiles(directory).writeJson(fileName, { lumoCanvas: true, nodes: flow.nodes, edges: flow.edges, viewport: flow.viewport });
       saveError = undefined;
       canvasSaveError.value = "";
       if (revision === saveRevision) canvasDirty.value = false;
@@ -1250,7 +1250,7 @@ function resetCanvasKeys() {
 
 watch([() => props.active, () => props.settingsVisible, () => generalSettings.value.canvasShortcuts], resetCanvasKeys, { deep: true, flush: "sync", immediate: true });
 
-function refreshInstalled(event: WindowEventMap["toonflow:plugin-installed"]) {
+function refreshInstalled(event: WindowEventMap["lumo:plugin-installed"]) {
   if (event.detail.type === "node" && !handledPluginEvents.has(event)) void loadRemoteNodes(event.detail.name);
 }
 
@@ -1261,8 +1261,8 @@ onMounted(() => {
   window.addEventListener("keydown", updateCanvasKeys, true);
   window.addEventListener("keyup", updateCanvasKeys, true);
   window.addEventListener("blur", resetCanvasKeys);
-  window.addEventListener("toonflow:plugin-installed", refreshInstalled);
-  window.addEventListener("toonflow:node-config-updated", refreshNodeConfig);
+  window.addEventListener("lumo:plugin-installed", refreshInstalled);
+  window.addEventListener("lumo:node-config-updated", refreshNodeConfig);
   document.addEventListener("paste", pasteNode);
   document.addEventListener("copy", copyNode);
   document.addEventListener("beforecopy", beforeClipboard);
@@ -1273,8 +1273,8 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", updateCanvasKeys, true);
   window.removeEventListener("keyup", updateCanvasKeys, true);
   window.removeEventListener("blur", resetCanvasKeys);
-  window.removeEventListener("toonflow:plugin-installed", refreshInstalled);
-  window.removeEventListener("toonflow:node-config-updated", refreshNodeConfig);
+  window.removeEventListener("lumo:plugin-installed", refreshInstalled);
+  window.removeEventListener("lumo:node-config-updated", refreshNodeConfig);
   document.removeEventListener("paste", pasteNode);
   document.removeEventListener("copy", copyNode);
   document.removeEventListener("beforecopy", beforeClipboard);
@@ -1289,7 +1289,7 @@ provide("nodeConfig", (nodeType: string) => nodeConfigs.value[nodeType] ?? {});
 // 生成节点上次手动选择的模型按媒体类型写入用户设置，新建节点优先使用。
 function readModelMemory(): Record<string, unknown> {
   try {
-    const value = JSON.parse(settingsStorage.getItem("toonflow.nodeModels") ?? "{}");
+    const value = JSON.parse(settingsStorage.getItem("lumo.nodeModels") ?? "{}");
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   } catch { return {}; }
 }
@@ -1300,7 +1300,7 @@ provide("nodeModelMemory", {
   },
   set: (type: string, key: string) => {
     const memory = readModelMemory();
-    if (memory[type] !== key) settingsStorage.setItem("toonflow.nodeModels", JSON.stringify({ ...memory, [type]: key }));
+    if (memory[type] !== key) settingsStorage.setItem("lumo.nodeModels", JSON.stringify({ ...memory, [type]: key }));
   },
 });
 provide("workspaceFiles", () => {
@@ -1368,7 +1368,7 @@ async function loadRemoteNodes(reloadName?: string, requireReload = false) {
   try {
     const { data } = await axios.get<{ code: number; data: { name: string; displayName: string; url: string; enabled?: boolean; config?: Record<string, unknown> }[] }>(
       "/api/nodes/get",
-      { headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" } }
+      { headers: { "Cache-Control": "no-cache", "x-lumo-workspace": "1" } }
     );
     if (requestId !== loadRequest) {
       if (requireReload) throw new Error("画布正在加载或编辑，请稍后重试");

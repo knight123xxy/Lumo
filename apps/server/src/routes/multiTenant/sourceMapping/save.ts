@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sourceMappingRevisionSchema, sourceMappingSchema } from "@toonflow/multi-tenant-source-mapping/config";
+import { sourceMappingRevisionSchema, sourceMappingSchema } from "@lumo/multi-tenant-source-mapping/config";
 import u from "@/utils";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";

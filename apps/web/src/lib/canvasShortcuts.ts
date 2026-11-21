@@ -1,5 +1,5 @@
 import { isMac } from "./platform";
-import { t } from "@toonflow/i18n/vue";
+import { t } from "@lumo/i18n/vue";
 
 const primaryModifier = isMac ? "Meta" : "Ctrl";
 const modifiers = ["Ctrl", "Alt", "Shift", "Meta"];

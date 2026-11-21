@@ -38,9 +38,9 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
+import { translate } from "@lumo/i18n/vue";
 import { computed, defineAsyncComponent, shallowRef, watch } from "vue";
-import userAccount from "@toonflow/multi-tenant-user-web/account";
+import userAccount from "@lumo/multi-tenant-user-web/account";
 import { hasDesktopUpdate } from "@/stores/desktopUpdate";
 import { multiTenantEnabled } from "@/stores/settings";
 import { currentUser, publicWeb } from "@/stores/multiTenant";

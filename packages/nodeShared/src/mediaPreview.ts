@@ -34,7 +34,7 @@ export async function createMediaPreview(source: string, kind: MediaPreviewKind,
   const content = new Blob(chunks);
   signal.throwIfAborted();
   const response = await fetch(`/api/media/preview?kind=${kind}`, {
-    method: "POST", headers: { "Content-Type": "application/octet-stream", "x-toonflow-workspace": "1" }, body: content, signal,
+    method: "POST", headers: { "Content-Type": "application/octet-stream", "x-lumo-workspace": "1" }, body: content, signal,
   });
   if (!response.ok) {
     const details = await response.json().catch(() => null) as { message?: string } | null;

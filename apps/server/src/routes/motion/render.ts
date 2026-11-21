@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";
-import { runMotion } from "@toonflow/motiongit";
+import { runMotion } from "@lumo/motiongit";
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { userIdSchema } from "@toonflow/multi-tenant-auth";
+import { userIdSchema } from "@lumo/multi-tenant-auth";
 import u from "@/utils";
 import { validateFields } from "@/lib/middleware";
 import { success } from "@/lib/responseFormat";

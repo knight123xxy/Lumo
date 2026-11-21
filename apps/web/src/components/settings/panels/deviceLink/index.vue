@@ -92,7 +92,7 @@
               <p class="description">无法连接时可尝试其他地址，并检查电脑防火墙是否允许 Lumo 联网。</p>
             </el-form-item>
             <el-form-item v-if="addressMode === 'public'" label="公网 HTTPS 地址">
-              <el-input v-model="form.publicUrl" placeholder="https://toonflow.example.com" aria-label="公网 HTTPS 地址" />
+              <el-input v-model="form.publicUrl" placeholder="https://lumo.example.com" aria-label="公网 HTTPS 地址" />
               <p class="description">请将这个 HTTPS 地址转发到下方互联端口，保留请求路径。保存后生效。</p>
             </el-form-item>
             <el-form-item label="互联端口">
@@ -123,7 +123,7 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { msg, translate, type MessageDescriptor } from "@toonflow/i18n/vue";
+import { msg, translate, type MessageDescriptor } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
@@ -140,7 +140,7 @@ type ApiResponse<T> = { code: number; data: T; message?: string };
 
 const props = withDefaults(defineProps<{ visible?: boolean }>(), { visible: true });
 const workspaceStore = useWorkspaceStore();
-const headers = { "x-toonflow-mobile-link": "1" };
+const headers = { "x-lumo-mobile-link": "1" };
 const status = ref<LinkStatus>();
 const form = reactive({ enabled: false, port: 43123, publicUrl: "", directories: [] as string[] });
 const directoryPicker = ref<InstanceType<typeof workspacePicker>>();

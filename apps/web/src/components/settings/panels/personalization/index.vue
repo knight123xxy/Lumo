@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { msg, translate } from "@toonflow/i18n/vue";
+import { msg, translate } from "@lumo/i18n/vue";
 import { computed, onActivated, reactive, ref, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -149,7 +149,7 @@ type DocumentResponse = { code: number; data: DocumentContent; message?: string 
 
 const props = defineProps<{ visible: boolean }>();
 const maxLength = 20000;
-const headers = { "x-toonflow-workspace": "1" };
+const headers = { "x-lumo-workspace": "1" };
 const conflictMessage = msg`文件已被其他操作修改。当前草稿已保留，请先复制需要保留的内容，再重新加载最新版本。`;
 const document = reactive<DocumentState>({
   content: "",
