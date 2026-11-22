@@ -28,7 +28,14 @@
     </header>
 
     <div class="timelineBody">
-      <assetLibrary ref="assetLibraryRef" class="assetPane" :assets="assets" :busy="busy" @import-files="onImportFiles" @add-clip="onAddAsset" />
+      <div class="leftPane">
+        <div class="leftTabs" role="tablist" :aria-label="translate('剪辑面板')">
+          <button class="leftTab" :class="{ active: leftTab === 'assets' }" type="button" role="tab" @click="leftTab = 'assets'">{{ translate("素材") }}</button>
+          <button class="leftTab" :class="{ active: leftTab === 'styles' }" type="button" role="tab" @click="leftTab = 'styles'">{{ translate("风格") }}</button>
+        </div>
+        <assetLibrary v-show="leftTab === 'assets'" ref="assetLibraryRef" class="assetPane" :assets="assets" :busy="busy" @import-files="onImportFiles" @add-clip="onAddAsset" />
+        <stylePanel v-show="leftTab === 'styles'" class="assetPane" :currentStyle="project.style" @apply-style="onApplyStyle" />
+      </div>
 
       <div class="centerPane">
         <previewPlayer
@@ -49,6 +56,12 @@
           </el-tooltip>
           <el-tooltip :content="translate('变速')" placement="top" :showArrow="false">
             <el-button class="toolButton" text size="small" @click="propertyVisible = true"><icon-gauge :size="16" /></el-button>
+          </el-tooltip>
+          <el-tooltip :content="translate('剪沉默')" placement="top" :showArrow="false">
+            <el-button class="toolButton" text size="small" :disabled="!canSilenceEdit" @click="onSilenceEdit('tighten')"><icon-eraser :size="16" /></el-button>
+          </el-tooltip>
+          <el-tooltip :content="translate('加速停顿')" placement="top" :showArrow="false">
+            <el-button class="toolButton" text size="small" :disabled="!canSilenceEdit" @click="onSilenceEdit('speedUp')"><icon-player-skip-forward :size="16" /></el-button>
           </el-tooltip>
           <el-tooltip :content="translate('字幕')" placement="top" :showArrow="false">
             <el-button class="toolButton" text size="small" :disabled="!selectedClip || (selectedClip.kind !== 'video' && selectedClip.kind !== 'audio')" @click="onGenerateSubtitles"><icon-subtitles :size="16" /></el-button>
@@ -112,7 +125,7 @@
       <div class="emptyCard">
         <p class="emptyTitle">{{ translate("导入素材开始剪辑") }}</p>
         <p class="emptyTip">{{ translate("上传视频、音频、图片或字幕，拖到时间线即可编排。") }}</p>
-        <el-button type="primary" @click="assetLibraryRef?.openPicker()">{{ translate("导入素材") }}</el-button>
+        <el-button type="primary" @click="openAssetPicker">{{ translate("导入素材") }}</el-button>
       </div>
     </div>
 
@@ -129,10 +142,12 @@ import {
   IconArrowForwardUp,
   IconChevronLeft,
   IconDownload,
+  IconEraser,
   IconGauge,
   IconMagnet,
   IconMicrophone,
   IconPalette,
+  IconPlayerSkipForward,
   IconPointer,
   IconScissors,
   IconSubtitles,
@@ -146,7 +161,9 @@ import trackRow from "./components/trackRow.vue";
 import timelineRuler from "./components/timelineRuler.vue";
 import propertyPanel from "./components/propertyPanel.vue";
 import exportDialog from "./components/exportDialog.vue";
-import type { AssetItem, TrackType } from "./timelineTypes";
+import stylePanel from "./components/stylePanel.vue";
+import { type SilenceEditMode } from "./timelineSilence";
+import type { AssetItem, ProjectStyle, TrackType } from "./timelineTypes";
 
 const props = defineProps<{ directory: string }>();
 
@@ -168,6 +185,7 @@ const {
 
 const propertyVisible = ref(true);
 const exportVisible = ref(false);
+const leftTab = ref<"assets" | "styles">("assets");
 const assetLibraryRef = ref<InstanceType<typeof assetLibrary>>();
 const timelineScrollRef = ref<HTMLElement>();
 const timelineInnerRef = ref<HTMLElement>();
@@ -175,6 +193,7 @@ const timelineInnerRef = ref<HTMLElement>();
 const contentWidth = computed(() => Math.max(600, duration.value * pixelsPerSecond + 200));
 const playheadLeft = computed(() => trackGutter + playhead.value * pixelsPerSecond);
 const hasContent = computed(() => assets.value.length > 0 || tracks.value.some(track => track.clips.length > 0));
+const canSilenceEdit = computed(() => !!selectedClip.value && (selectedClip.value.kind === "video" || selectedClip.value.kind === "audio"));
 
 const previewClip = computed<PreviewClip | null>(() => {
   const track = project.value.tracks.find(item => item.type === "video" && !item.hidden);
@@ -190,6 +209,16 @@ function onImportFiles(files: File[]) {
 
 function onAddAsset(asset: AssetItem) {
   timeline.addClip(asset, asset.kind === "audio" ? "audio" : "video");
+}
+
+function onApplyStyle(style: ProjectStyle) {
+  timeline.setStyle(style);
+  void timeline.flushSave();
+}
+
+function openAssetPicker() {
+  leftTab.value = "assets";
+  assetLibraryRef.value?.openPicker();
 }
 
 function setPlayhead(value: number) {
@@ -240,6 +269,12 @@ function onGenerateSubtitles() {
   const clip = selectedClip.value;
   if (!clip) return;
   void timeline.generateSubtitles(clip.id).catch(error => ElMessage.error(error instanceof Error ? error.message : translate("识别字幕失败")));
+}
+
+function onSilenceEdit(mode: SilenceEditMode) {
+  void timeline.silenceEdit(mode)
+    .then(result => { if (result.silenceCount) ElMessage.success(translate("口播剪辑完成")); else ElMessage.info(translate("未检测到静音")); })
+    .catch(error => ElMessage.error(error instanceof Error ? error.message : translate("口播剪辑失败")));
 }
 
 function isEditableTarget(target: EventTarget | null) {
@@ -347,9 +382,37 @@ defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready });
     flex: 1;
     min-height: 0;
 
-    .assetPane {
+    .leftPane {
+      display: flex;
+      flex-direction: column;
       flex: 0 0 240px;
       min-width: 0;
+
+      .leftTabs {
+        display: flex;
+        flex: 0 0 32px;
+        border-bottom: 1px solid var(--el-border-color-lighter);
+
+        .leftTab {
+          flex: 1;
+          border: 0;
+          background: transparent;
+          color: var(--el-text-color-secondary);
+          font-size: 12px;
+          cursor: pointer;
+
+          &.active {
+            color: var(--el-color-primary);
+            box-shadow: inset 0 -2px 0 var(--el-color-primary);
+          }
+        }
+      }
+
+      .assetPane {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+      }
     }
 
     .centerPane {

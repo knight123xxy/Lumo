@@ -22,7 +22,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function atempoChain(speed: number) {
+export function atempoChain(speed: number) {
   const parts: string[] = [];
   let remaining = speed;
   // ffmpeg atempo 稳定区间为 0.5~2.0，超出时串联多个滤镜。

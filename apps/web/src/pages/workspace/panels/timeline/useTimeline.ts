@@ -18,7 +18,8 @@ import {
   uid,
 } from "./timelineModel";
 import { extractAudio, probeMedia } from "./timelineMedia";
-import type { AssetItem, ClipFilter, ClipCrop, TimelineClip, TimelineProject, TrackType } from "./timelineTypes";
+import { applySilenceEdit, type SilenceEditMode } from "./timelineSilence";
+import type { AssetItem, ClipFilter, ClipCrop, ProjectStyle, TimelineClip, TimelineProject, TrackType } from "./timelineTypes";
 
 type Selection = { trackId: string; clipId: string };
 
@@ -268,6 +269,11 @@ export function useTimeline(directory: string) {
     applyToClip(clipId, { text });
   }
 
+  function setStyle(style: ProjectStyle | undefined) {
+    commit();
+    project.value.style = style;
+  }
+
   function setClipRange(clipId: string, inPoint: number, outPoint: number) {
     const clip = findInTracks(clipId)?.clip;
     if (!clip) return;
@@ -386,6 +392,42 @@ export function useTimeline(directory: string) {
     }
   }
 
+  // ---------- 口播自动化（剪沉默 / 加速停顿） ----------
+
+  async function silenceEdit(mode: SilenceEditMode) {
+    const clip = selectedClip.value;
+    if (!clip) throw new Error(translate("请先选择要处理的口播片段"));
+    if (clip.kind !== "video" && clip.kind !== "audio") throw new Error(translate("仅支持视频或音频片段"));
+    // ACT: 对整段源素材做口播自动化，忽略片段已裁剪的 inPoint/outPoint 与变速，处理后重置为整段成品。
+    const duration = clip.sourceDuration > 0 ? clip.sourceDuration : clip.outPoint;
+    if (!clip.source || duration <= 0) throw new Error(translate("片段缺少源素材"));
+    const suffix = clip.kind === "video" ? "mp4" : "mp3";
+    const outputPath = `assets/timeline/${clip.id}-${mode}.${suffix}`;
+    busy.value = true;
+    try {
+      const result = await applySilenceEdit(
+        await getFfmpeg(),
+        { path: clip.source, duration, hasVideo: clip.kind === "video" },
+        outputPath,
+        mode,
+        lifetime.signal,
+      );
+      if (!result.silenceCount) return { silenceCount: 0, removedSeconds: 0 };
+      commit();
+      applyToClip(clip.id, {
+        source: outputPath,
+        sourceDuration: result.newDuration,
+        inPoint: 0,
+        outPoint: result.newDuration,
+        timelineDuration: result.newDuration,
+        speed: 1,
+      });
+      return { silenceCount: result.silenceCount, removedSeconds: result.removedSeconds };
+    } finally {
+      busy.value = false;
+    }
+  }
+
   function clearSelection() {
     selection.value = null;
   }
@@ -431,6 +473,7 @@ export function useTimeline(directory: string) {
     setFilter,
     setCrop,
     setText,
+    setStyle,
     setClipRange,
     trimClip,
     moveClipTo,
@@ -441,6 +484,7 @@ export function useTimeline(directory: string) {
     undo,
     redo,
     generateSubtitles,
+    silenceEdit,
     select(trackId: string, clipId: string) {
       selection.value = { trackId, clipId };
     },
@@ -463,5 +507,6 @@ function normalizeProject(data: TimelineProject): TimelineProject {
   project.fps = data.fps || project.fps;
   project.assets = Array.isArray(data.assets) ? data.assets : [];
   project.tracks = Array.isArray(data.tracks) && data.tracks.length ? data.tracks : project.tracks;
+  project.style = data.style;
   return project;
 }

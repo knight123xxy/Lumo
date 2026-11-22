@@ -62,6 +62,17 @@ export interface AssetItem {
   subtitles?: { start: number; end: number; text: string }[]; // srt 导入后解析出的字幕
 }
 
+export interface ProjectStyle {
+  slug: string;
+  name: string;
+  group: string;
+  summary: string;
+  essence?: string;
+  colors?: string;
+  fonts?: string;
+  motion?: string;
+}
+
 export interface TimelineProject {
   version: 1;
   name: string;
@@ -70,6 +81,7 @@ export interface TimelineProject {
   fps: number;
   assets: AssetItem[];
   tracks: TimelineTrack[];
+  style?: ProjectStyle;
 }
 
 export const trackDefaults: Record<TrackType, { name: string; hidden: boolean; muted: boolean }> = {
