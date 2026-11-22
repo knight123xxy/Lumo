@@ -82,7 +82,10 @@ async function exportNow() {
   try {
     const files = useWorkspaceFiles(props.directory);
     await files.mkdir("exports").catch(() => {});
-    const outputPath = `exports/剪辑_${Date.now()}.mp4`;
+    const style = props.project.style;
+    const slug = style?.slug.replace(/[^\w.-]+/g, "_").replace(/^_+|_+$/g, "") || "";
+    const baseName = `剪辑${slug ? `_${slug}` : ""}_${Date.now()}`;
+    const outputPath = `exports/${baseName}.mp4`;
     await exportTimeline(props.project, {
       directory: props.directory,
       outputPath,
@@ -91,6 +94,8 @@ async function exportNow() {
       videoBitrate: bitrate.value,
       onProgress: percent => { progress.value = Math.round(percent); },
     });
+    // 附带风格元数据：导出的 MP4 旁写一份同名 .style.json，保留 slug/name/essence/colors/fonts/motion。
+    if (style) await files.writeJson(`exports/${baseName}.style.json`, style);
     resultPath.value = outputPath;
     const handle = files.acquireUrl(outputPath, "video/mp4");
     const url = await handle.url;

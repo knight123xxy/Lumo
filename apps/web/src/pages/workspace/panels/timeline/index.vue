@@ -20,6 +20,11 @@
             <icon-magnet :size="17" />
           </el-button>
         </el-tooltip>
+        <el-tooltip :content="translate('按风格重新生成')" placement="bottom" :showArrow="false">
+          <el-button class="barButton" text size="small" :disabled="!project.style" :aria-label="translate('按风格重新生成')" @click="regenerateWithStyle">
+            <icon-refresh :size="17" />
+          </el-button>
+        </el-tooltip>
         <el-button class="exportButton" type="primary" size="small" :disabled="!duration" @click="exportVisible = true">
           <icon-download :size="15" />
           {{ translate("导出") }}
@@ -149,12 +154,16 @@ import {
   IconPalette,
   IconPlayerSkipForward,
   IconPointer,
+  IconRefresh,
   IconScissors,
   IconSubtitles,
   IconTrash,
 } from "@tabler/icons-vue";
+import { useWorkspaceStore } from "@/stores/workspace";
+import { modelChoices } from "@/stores/settings";
 import { useTimeline } from "./useTimeline";
 import { pixelsPerSecond, timelineAssetMime, trackGutter } from "./timelineModel";
+import { buildStyleConstraint } from "./stylePrompt";
 import assetLibrary from "./components/assetLibrary.vue";
 import previewPlayer, { type PreviewClip } from "./components/previewPlayer.vue";
 import trackRow from "./components/trackRow.vue";
@@ -167,6 +176,7 @@ import type { AssetItem, ProjectStyle, TrackType } from "./timelineTypes";
 
 const props = defineProps<{ directory: string }>();
 
+const workspaceStore = useWorkspaceStore();
 const timeline = useTimeline(props.directory);
 const {
   project,
@@ -214,6 +224,20 @@ function onAddAsset(asset: AssetItem) {
 function onApplyStyle(style: ProjectStyle) {
   timeline.setStyle(style);
   void timeline.flushSave();
+}
+
+// 按已套用风格走 Agent 重新生成：把风格约束拼进 prompt，走 pendingAgentMessage 推给已打开的 Agent。
+function regenerateWithStyle() {
+  const style = project.value.style;
+  if (!style) return;
+  // ACT: 模型沿用「节点回退首个可用模型」的约定，选第一个语言模型；无可用模型时留空，由 Agent 提示选择。
+  const model = modelChoices.value[0]?.value ?? "";
+  workspaceStore.pendingAgentMessage = {
+    directory: props.directory,
+    prompt: `请按以下风格约束重新生成：\n\n${buildStyleConstraint(style)}`,
+    model,
+    reasoningEffort: "",
+  };
 }
 
 function openAssetPicker() {
