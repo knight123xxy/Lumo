@@ -83,7 +83,13 @@ export async function buildAutomaticFilm(input: AutomaticFilmInput, directory: s
   for (const [index, { text, source }] of shots.entries()) {
     signal.throwIfAborted();
     progress(`${translate("正在合成配音")} ${index + 1}/${shots.length}`);
-    const [file] = await ai.generateAudio({ ...getNodeModelIdentity(input.narrator), prompt: text, directory, outputDirectory: "assets/timeline" }, signal);
+    // ACT: 单句配音最长等 180 秒，超时按失败处理；否则上游不返回时整单会无限挂起。
+    const narrateSignal = AbortSignal.any([signal, AbortSignal.timeout(180_000)]);
+    const [file] = await ai.generateAudio({ ...getNodeModelIdentity(input.narrator), prompt: text, directory, outputDirectory: "assets/timeline" }, narrateSignal)
+      .catch(error => {
+        if (narrateSignal.aborted && !signal.aborted) throw new Error(translate("配音生成超时，请稍后重试"));
+        throw error;
+      });
     if (!file) throw new Error(translate("配音模型未返回音频"));
     const media = await probeMedia(ffmpeg, file.path, signal);
     const seconds = Number(media.format.duration);

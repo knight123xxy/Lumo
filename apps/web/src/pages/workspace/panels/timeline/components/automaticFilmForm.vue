@@ -158,7 +158,9 @@ async function generate() {
       details.push(`${translate("整单保守预估")} · ${totals.map(({ currency, amount }) => `${amount} ${currency}`).join(" + ")}`);
       details.push(translate("文案按钱包预占上限计算，配音最多六次，实扣以用量结算"));
     } else {
-      const quote = await ai.getMediaPrice({ ...narratorModel, mediaType: "audio", directory: props.directory, outputDirectory: "assets/timeline", prompt: "" }, request.signal).catch(() => null);
+      // ACT: 供应商报价可能长时间不返回，超时即降级为「未提供报价」，不能把整单卡在报价阶段。
+      const quoteSignal = AbortSignal.any([request.signal, AbortSignal.timeout(8000)]);
+      const quote = await ai.getMediaPrice({ ...narratorModel, mediaType: "audio", directory: props.directory, outputDirectory: "assets/timeline", prompt: "" }, quoteSignal).catch(() => null);
       details.push(`${translate("配音报价")} · ${quote?.price ?? translate("供应商未提供报价")}`);
       details.push(translate("整单金额未知，以供应商账单为准"));
     }
