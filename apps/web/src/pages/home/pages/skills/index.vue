@@ -29,9 +29,9 @@
       <div class="sectionHeader">
         <div>
           <h2 id="installedTitle">{{ translate('我的技能') }}</h2>
-          <p class="sectionHint">{{ translate('已安装的技能包，安装与卸载在插件市场管理。') }}</p>
+          <p class="sectionHint">{{ translate('直接在这里启用、停用或卸载；安装新技能包去插件市场。') }}</p>
         </div>
-        <el-button size="small" @click="emit('manage')">{{ translate('管理技能包') }}</el-button>
+        <el-button size="small" @click="emit('manage')">{{ translate('去市场安装') }}</el-button>
       </div>
       <p v-if="errorText" class="skillsError" role="alert">{{ errorText }}</p>
       <div v-if="skills.length" class="skillList">
@@ -44,6 +44,10 @@
             <span v-if="skill.builtin" class="skillBadge">{{ translate('内置') }}</span>
             <span v-if="!skill.enabled" class="skillBadge muted">{{ translate('已停用') }}</span>
             <span v-if="skill.version" class="skillVersion">v{{ skill.version }}</span>
+            <el-switch :model-value="skill.enabled" size="small" :loading="busy(skill.name)" :disabled="busy(skill.name) || loading"
+              :aria-label="translate(skill.enabled ? '停用技能' : '启用技能')" @update:model-value="value => void toggle(skill, Boolean(value))" />
+            <el-button v-if="!skill.builtin" size="small" text type="danger" :loading="busy(skill.name)" :disabled="busy(skill.name) || loading"
+              @click="remove(skill)">{{ translate('卸载') }}</el-button>
           </div>
         </div>
       </div>
@@ -68,6 +72,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 import { pipelineCatalog, type Pipeline } from "./pipelineCatalog";
@@ -83,11 +88,58 @@ const emit = defineEmits<{
 
 const skills = ref<InstalledSkill[]>([]);
 const loading = ref(false);
+const pending = ref<Set<string>>(new Set());
 const errorText = ref("");
 const dialogVisible = ref(false);
 const activePipeline = ref<Pipeline | null>(null);
 const topic = ref("");
 let loaded = false;
+
+const busy = (name: string) => pending.value.has(name);
+function mark(name: string, on: boolean) {
+  const next = new Set(pending.value);
+  if (on) next.add(name); else next.delete(name);
+  pending.value = next;
+}
+const describe = (error: unknown, fallback: string) => error instanceof Error && error.message ? error.message : fallback;
+
+async function toggle(skill: InstalledSkill, enabled: boolean) {
+  if (busy(skill.name) || skill.enabled === enabled) return;
+  mark(skill.name, true);
+  try {
+    await http({ method: "PUT", url: "/api/skills/setEnabled", data: { name: skill.name, enabled } });
+    skill.enabled = enabled;
+    ElMessage.success(enabled ? translate("已启用") : translate("已停用"));
+  } catch (error) {
+    ElMessage.error(describe(error, translate("操作失败")));
+  } finally {
+    mark(skill.name, false);
+  }
+}
+
+async function remove(skill: InstalledSkill) {
+  if (busy(skill.name)) return;
+  const label = skill.displayName || skill.name;
+  try {
+    await ElMessageBox.confirm(
+      translate("卸载") + `「${label}」？` + translate("卸载后需要重新安装才能使用。"),
+      translate("卸载技能包"),
+      { type: "warning", confirmButtonText: translate("卸载"), cancelButtonText: translate("取消") },
+    );
+  } catch {
+    return;
+  }
+  mark(skill.name, true);
+  try {
+    await http({ method: "DELETE", url: "/api/skills/uninstall", data: { name: skill.name } });
+    skills.value = skills.value.filter(item => item.name !== skill.name);
+    ElMessage.success(translate("技能已卸载"));
+  } catch (error) {
+    ElMessage.error(describe(error, translate("卸载失败")));
+  } finally {
+    mark(skill.name, false);
+  }
+}
 
 async function loadSkills() {
   if (loaded || loading.value) return;
