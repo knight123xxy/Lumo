@@ -23,6 +23,13 @@
         <el-button :disabled="working || busy" :loading="uploading === 'screen'" @click="screenInput?.click()">{{ translate('上传录屏') }}</el-button>
         <input ref="screenInput" type="file" accept="video/*,.mp4,.mov,.webm,.m4v" hidden @change="upload($event, 'screen')" />
       </div>
+      <label :id="`${formId}TitleCard`">{{ translate('纸片标题卡') }}</label>
+      <div class="templateTitleCard">
+        <el-checkbox v-model="titleCardEnabled" :disabled="working">{{ translate('插入一段纸片标题卡') }}</el-checkbox>
+        <span class="templateHint">{{ translate(titleCardEnabled ? '+2 秒，接在录屏之后、「一句话主张」之前' : '可选，默认不加') }}</span>
+      </div>
+      <el-input v-if="titleCardEnabled" :id="`${formId}TitleCardText`" v-model="titleCardText" :maxlength="180" showWordLimit
+        :disabled="running" :placeholder="translate('卡片文案，1-180 字')" :aria-labelledby="`${formId}TitleCard`" />
       <label :id="`${formId}Result`">{{ translate('结果素材') }}</label>
       <div class="templateSlot">
         <el-select v-model="resultPath" clearable :disabled="working" :aria-labelledby="`${formId}Result`" :placeholder="translate('可选，视频或图片')">
@@ -31,19 +38,19 @@
         <el-button :disabled="working || busy" :loading="uploading === 'result'" @click="resultInput?.click()">{{ translate('上传结果素材') }}</el-button>
         <input ref="resultInput" type="file" accept="video/*,.mp4,.mov,.webm,.m4v,.jpg,.jpeg,.png,.webp,.bmp" hidden @change="upload($event, 'result')" />
       </div>
-      <p v-if="stage" role="status">{{ stage }}</p>
+      <p v-if="titleCardMissing" class="templateError" role="alert">{{ translate('纸片标题卡需要 1-180 字文案') }}</p>
       <p v-if="error" role="alert" class="templateError">{{ error }}</p>
       <div class="templateActions">
         <el-button :disabled="working" @click="emit('update:modelValue', false)">{{ translate('关闭') }}</el-button>
-        <el-button type="primary" :loading="running" :disabled="working || !title.trim() || props.busy" @click="render">{{ translate(props.canvas ? '渲染并加入画布' : '渲染并加入时间线') }}</el-button>
+        <el-button type="primary" :loading="running" :disabled="working || !title.trim() || titleCardMissing || props.busy" @click="render">{{ translate(props.canvas ? '渲染并加入画布' : '渲染并加入时间线') }}</el-button>
       </div>
     </div>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId } from "vue";
-import { ElButton, ElDialog, ElInput, ElOption, ElSelect } from "element-plus";
+import { computed, ref, useId, watch } from "vue";
+import { ElButton, ElCheckbox, ElDialog, ElInput, ElOption, ElSelect } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 import type { AssetItem } from "../timelineTypes";
@@ -74,11 +81,15 @@ const claim = ref("");
 const cta = ref("");
 const screenPath = ref("");
 const resultPath = ref("");
+const titleCardEnabled = ref(false);
+const titleCardText = ref("");
 const running = ref(false);
 const screenInput = ref<HTMLInputElement>();
 const resultInput = ref<HTMLInputElement>();
 const uploading = ref<"screen" | "result">();
 const working = computed(() => running.value || !!uploading.value);
+const titleCardMissing = computed(() => titleCardEnabled.value && !titleCardText.value.trim());
+watch(titleCardEnabled, enabled => { if (enabled && !titleCardText.value.trim()) titleCardText.value = title.value.trim(); });
 const stage = ref("");
 const error = ref("");
 
@@ -123,6 +134,9 @@ async function render() {
           cta: cta.value.trim() || undefined,
           screenPath: screenPath.value || undefined,
           resultPath: resultPath.value || undefined,
+          titleCard: titleCardEnabled.value && titleCardText.value.trim()
+            ? { shotId: "paper-title-card" as const, text: titleCardText.value.trim() }
+            : undefined,
         },
       },
     });
@@ -152,6 +166,8 @@ async function render() {
     gap: 8px;
   }
   .templateError { color: var(--el-color-danger); margin: 0; }
+  .templateTitleCard { display: flex; align-items: center; gap: 8px; }
+  .templateHint { color: var(--el-text-color-secondary); font-size: 12px; }
   .templateActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 }
 </style>
