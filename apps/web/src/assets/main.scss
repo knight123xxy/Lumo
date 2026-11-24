@@ -1,6 +1,48 @@
-// Lumo 品牌 token（267 §二 + §六）。固定中性深色 + 单一靛蓝 #7b83f7。
-// 同时覆盖浅色与深色两套 Element Plus 变量，使应用无论系统配色都呈现 Lumo 暗色外观。
-:root,
+// Lumo 品牌 token。两套语义：默认浅色（蓝青科技感）+ html.dark 深色。
+// 主色统一为蓝青 #0EA5E9（浅）/ #38BDF8（深），强调色只用一处，避免多彩。
+:root {
+  // 品牌自定义 token
+  --color-bg: #f4f7fa;
+  --color-window: #ffffff;
+  --color-panel: #ffffff;
+  --color-panel-2: #f7fafc;
+  --color-field: #ffffff;
+  --color-dark: #0f1720;
+  --color-border: #e3e9ef;
+  --color-border-2: #cfd8e2;
+  --color-text: #0f1720;
+  --color-text-2: #5a6773;
+  --color-text-3: #8a97a5;
+  --color-accent: #0ea5e9;
+  --color-accent-soft: rgba(14, 165, 233, 0.12);
+  --color-accent-text: #0369a1;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+
+  // Element Plus 主色系列（#0ea5e9 派生）
+  --el-color-primary: #0ea5e9;
+  --el-color-primary-light-3: #55bef0;
+  --el-color-primary-light-5: #87d1f4;
+  --el-color-primary-light-7: #b9e4f9;
+  --el-color-primary-light-8: #d0ecfb;
+  --el-color-primary-light-9: #e7f5fd;
+  --el-color-primary-dark-2: #0b84ba;
+
+  // Element Plus 中性色与排版
+  --el-bg-color-page: #f4f7fa;
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-border-color: #e3e9ef;
+  --el-border-color-light: #edf1f5;
+  --el-text-color-primary: #0f1720;
+  --el-text-color-regular: #5a6773;
+  --el-text-color-secondary: #8a97a5;
+  --el-border-radius-base: 10px;
+  --el-font-size-base: 15px;
+  --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
 html.dark {
   // 品牌自定义 token
   --color-bg: #07090b;
@@ -14,21 +56,21 @@ html.dark {
   --color-text: #e8eaed;
   --color-text-2: #9ba1aa;
   --color-text-3: #626a74;
-  --color-accent: #7b83f7;
-  --color-accent-soft: rgba(123, 131, 247, 0.15);
-  --color-accent-text: #cdd1ff;
+  --color-accent: #38bdf8;
+  --color-accent-soft: rgba(56, 189, 248, 0.18);
+  --color-accent-text: #bae6fd;
   --color-success: #34d399;
   --color-danger: #f87171;
   --color-warning: #fbbf24;
 
-  // Element Plus 主色系列（#7b83f7 派生，暗色语义：light-* 混 bg、dark-2 混白）
-  --el-color-primary: #7b83f7;
-  --el-color-primary-light-3: #5a61b3;
-  --el-color-primary-light-5: #454a85;
-  --el-color-primary-light-7: #2f3357;
-  --el-color-primary-light-8: #242741;
-  --el-color-primary-light-9: #191c2a;
-  --el-color-primary-dark-2: #959cf9;
+  // Element Plus 主色系列（#38bdf8 派生，暗色语义：light-* 混 bg、dark-2 混白）
+  --el-color-primary: #38bdf8;
+  --el-color-primary-light-3: #2a8cb8;
+  --el-color-primary-light-5: #20688a;
+  --el-color-primary-light-7: #18455c;
+  --el-color-primary-light-8: #133546;
+  --el-color-primary-light-9: #0e2431;
+  --el-color-primary-dark-2: #60cbfa;
 
   // Element Plus 中性色与排版
   --el-bg-color-page: #07090b;
@@ -39,12 +81,13 @@ html.dark {
   --el-text-color-primary: #e8eaed;
   --el-text-color-regular: #9ba1aa;
   --el-text-color-secondary: #626a74;
-  --el-border-radius-base: 8px;
+  --el-border-radius-base: 10px;
+  --el-font-size-base: 15px;
   --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 html:root {
-  --ui-radius: 8px;
+  --ui-radius: 10px;
   --ui-radius-small: calc(var(--ui-radius) * 0.5);
   --ui-radius-large: calc(var(--ui-radius) * 1.5);
   --el-border-radius-base: var(--ui-radius);

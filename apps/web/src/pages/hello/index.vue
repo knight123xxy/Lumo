@@ -1,5 +1,6 @@
 <template>
   <main class="hello" :class="{ configuring: !multiTenantEnabled && view !== 'welcome' }">
+    <div class="glow" aria-hidden="true"></div>
     <div class="pageLanguage"><languageSelect popover /></div>
     <section class="welcomePanel" aria-labelledby="welcomeTitle">
       <div v-if="!multiTenantEnabled && view !== 'welcome'" class="providerContent">
@@ -19,7 +20,8 @@
         </el-button>
       </div>
       <div v-else class="welcomeContent">
-        <h1 id="welcomeTitle">快速开始</h1>
+        <p class="eyebrow">LUMO · 本地模式</p>
+        <h1 id="welcomeTitle">让一个想法<br />变成一支片</h1>
         <template v-if="multiTenantEnabled">
           <p class="description">登录 Lumo 即可免配置快速开始，直接开启创作。</p>
           <accountPanel v-if="!loggedIn" class="accountContent" @loggedIn="startWithAccount" />
@@ -46,13 +48,6 @@
         <p>© {{ new Date().getFullYear() }} Lumo · 保留所有权利。</p>
       </footer>
     </section>
-    <div class="artPanel" aria-hidden="true">
-      <bg class="artBg" />
-      <div class="artBrand">
-        <span class="artLogo" v-html="logoSvg" />
-        <span class="artName">Lumo</span>
-      </div>
-    </div>
     <mobileConnect v-model="mobileConnectVisible" />
   </main>
 </template>
@@ -65,8 +60,6 @@ import { IconArrowLeft, IconDevices } from "@tabler/icons-vue";
 import { customProviders, multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
 import { useHelloStore } from "@/stores/hello";
 import anonymousData from "@/lib/anonymousData";
-import logoSvg from "@lumo/assets/logo.svg?raw";
-import bg from "./bg.vue";
 import languageSelect from "@/components/languageSelect.vue";
 import { mobileConnectionLabel } from "@/lib/mobile";
 
@@ -327,6 +320,92 @@ async function completeSetup() {
     .artPanel {
       display: none;
     }
+  }
+}
+
+// Lumo 品牌化首屏：单栏居中 + 网格底纹 + 顶部蓝青光晕，去掉 Toonflow 的双栏海报感。
+.hello {
+  grid-template-columns: 1fr;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-text) 5%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+
+  .glow {
+    position: absolute;
+    inset: -24% -12% auto -12%;
+    height: 66vh;
+    pointer-events: none;
+    background:
+      radial-gradient(46% 58% at 50% 4%, color-mix(in srgb, #0ea5e9 30%, transparent) 0%, transparent 70%),
+      radial-gradient(38% 46% at 68% 10%, color-mix(in srgb, #14b8a6 22%, transparent) 0%, transparent 72%);
+  }
+
+  .pageLanguage { inset-inline-end: 24px; max-width: none; }
+
+  .welcomePanel {
+    position: relative;
+    z-index: 1;
+    grid-template-rows: auto;
+    gap: 0;
+    width: min(560px, 90vw);
+    min-width: 0;
+    min-height: 0;
+    padding: 0 0 24px;
+    text-align: center;
+  }
+
+  .welcomeContent {
+    max-width: 100%;
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--color-accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.14;
+      letter-spacing: -0.025em;
+    }
+
+    .description {
+      max-width: 420px;
+      margin: 0 auto 28px;
+      color: var(--el-text-color-regular);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .startButton {
+      width: 100%;
+      max-width: 320px;
+      height: 52px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 14px;
+    }
+
+    .accountContent { text-align: left; }
+    .secondaryActions { justify-content: center; margin-top: 16px; }
+  }
+
+  .pageFooter {
+    position: relative;
+    inset: auto;
+    gap: 10px;
+    margin-top: 40px;
+    color: var(--el-text-color-secondary);
   }
 }
 </style>

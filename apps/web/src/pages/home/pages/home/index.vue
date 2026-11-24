@@ -403,11 +403,11 @@ async function restoreAttachment(index: number) {
         opacity: .82;
       }
 
-      &.tone0 { background: linear-gradient(135deg, #3b4a6b, #6f7ea3); }
-      &.tone1 { background: linear-gradient(135deg, #4a3b5f, #8a6fa3); }
-      &.tone2 { background: linear-gradient(135deg, #2f4f4a, #5f9a8f); }
-      &.tone3 { background: linear-gradient(135deg, #5b3d33, #a37a5f); }
-      &.tone4 { background: linear-gradient(135deg, #2d3f52, #5f8aa3); }
+      &.tone0 { background: linear-gradient(135deg, #0b84ba, #38bdf8); }
+      &.tone1 { background: linear-gradient(135deg, #0e7490, #22d3ee); }
+      &.tone2 { background: linear-gradient(135deg, #0f766e, #2dd4bf); }
+      &.tone3 { background: linear-gradient(135deg, #0369a1, #7dd3fc); }
+      &.tone4 { background: linear-gradient(135deg, #155e75, #67e8f9); }
     }
 
     .templateName { padding: 0 12px; font-size: 13px; font-weight: 500; }

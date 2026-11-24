@@ -47,7 +47,7 @@ export const settingsStorage = {
   },
 };
 
-export const defaultUiSettings = { theme: "dark", language: "system", primaryColor: "#409eff", fontScale: 100, mobileScale: 75, radius: 8, startupAnimation: true };
+export const defaultUiSettings = { theme: "light", language: "system", primaryColor: "#0ea5e9", fontScale: 100, mobileScale: 75, radius: 12, startupAnimation: true };
 export const uiSettings = computed(() => {
   const raw = settings.value.ui;
   const ui = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
