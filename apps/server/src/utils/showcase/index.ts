@@ -50,7 +50,7 @@ function paperTitleCardHtml(text: string, theme: typeof templateThemes[keyof typ
   return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>
 html,body{margin:0;background:${theme.bg};overflow:hidden}#stage{width:${width}px;height:${height}px;display:flex;flex-direction:column;justify-content:center;padding:150px 96px 220px;background:${theme.surface};color:${theme.ink};font-family:${fontStack}}
 .title{font-family:Georgia,"Songti SC",serif;font-size:92px;font-weight:700;line-height:1.18;max-width:100%}.rule{width:180px;height:6px;margin-top:40px;background:${theme.accent};transform-origin:left}
-</style><div id="stage"><div class="title">${escaped}</div><div class="rule"></div></div><script>const title=document.querySelector('.title'),rule=document.querySelector('.rule');window.renderFrame=t=>{const p=Math.max(0,Math.min(1,t/.45));title.style.opacity=String(p);title.style.transform='translateY('+((1-p)*24)+'px)';rule.style.transform='scaleX('+Math.max(0,Math.min(1,(t-.55)/.4))+')';if(t>1.55)document.getElementById('stage').style.opacity=String(Math.max(0,1-(t-1.55)/.25))};window.renderFrame(0)</script></html>`;
+</style><div id="stage"><div class="title">${escaped}</div><div class="rule"></div></div><script>const title=document.querySelector('.title'),rule=document.querySelector('.rule');window.renderFrame=t=>{const p=Math.max(0,Math.min(1,t/.45));title.style.opacity=String(p);title.style.transform='translateY('+((1-p)*24)+'px)';rule.style.transform='scaleX('+Math.max(0,Math.min(1,(t-.55)/.4))+')';if(t>1.7)document.getElementById('stage').style.opacity=String(Math.max(0,1-(t-1.7)/.3))};window.renderFrame(0)</script></html>`;
 }
 
 function cardHtml(options: { eyebrow: string; title: string; body?: string; themeId: keyof typeof templateThemes }) {
@@ -114,7 +114,7 @@ export async function renderTemplate(workspace: string, outputPath: string, slot
     const order: ({ beats: number; html: string } | { beats: number; path: string })[] = [
       { beats: 6, html: cardHtml({ eyebrow: "LUMO", title, body: slots.subtitle?.trim() || undefined, themeId: themeId as keyof typeof templateThemes }) },
       ...(slots.screenPath ? [{ beats: 8, path: slots.screenPath }] : []),
-      ...(slots.titleCard?.text.trim() ? [{ beats: 3, html: paperTitleCardHtml(slots.titleCard.text.trim(), templateThemes[themeId as keyof typeof templateThemes]) }] : []),
+      ...(slots.titleCard?.text.trim() ? [{ beats: 4, html: paperTitleCardHtml(slots.titleCard.text.trim(), templateThemes[themeId as keyof typeof templateThemes]) }] : []),
       { beats: 5, html: cardHtml({ eyebrow: "一句话", title: slots.claim?.trim() || title, themeId: themeId as keyof typeof templateThemes }) },
       ...(slots.resultPath ? [{ beats: 6, path: slots.resultPath }] : []),
       { beats: 5, html: cardHtml({ eyebrow: "下一步", title: slots.cta?.trim() || "现在就去试", themeId: themeId as keyof typeof templateThemes }) },
