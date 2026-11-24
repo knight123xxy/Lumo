@@ -3,6 +3,11 @@
     :closeOnClickModal="!working" :closeOnPressEscape="!working" :showClose="!working" @update:modelValue="emit('update:modelValue', $event)">
     <div class="templateForm">
       <p class="templateTip">{{ translate('竖屏模板固定镜头顺序与版式，只需换文案和素材。') }}</p>
+      <label :for="`${formId}Template`">{{ translate('模板结构') }}</label>
+      <el-select :id="`${formId}Template`" v-model="templateId" :disabled="working">
+        <el-option v-for="item in templates" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
+      <p class="templateHint">{{ activeTemplate.summary }}</p>
       <label :for="`${formId}Theme`">{{ translate('视觉主题') }}</label>
       <el-select :id="`${formId}Theme`" v-model="themeId" :disabled="working">
         <el-option v-for="theme in themes" :key="theme.id" :label="theme.name" :value="theme.id" />
@@ -66,6 +71,14 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: boolean]; generated: [video: { path: string; name: string; mimeType: string }] }>();
 const formId = useId();
+const templates = [
+  { id: "vertical-beat", name: "竖屏卡点", summary: "标题 → 录屏 → 纸片卡 → 主张 → 结果 → 行动，适合产品演示与口播。" },
+  { id: "product-three", name: "三段产品片", summary: "痛点 → 解法 → 证据 → 行动，四拍讲清一个产品。" },
+  { id: "knowledge-qa", name: "知识三问", summary: "提问 → 拆解 → 例证 → 收束，适合讲解类与科普内容。" },
+  { id: "data-brief", name: "数据播报", summary: "数字 → 来源 → 图表 → 结论，适合财经与数据解读。" },
+] as const;
+const templateId = ref<(typeof templates)[number]["id"]>("vertical-beat");
+const activeTemplate = computed(() => templates.find(item => item.id === templateId.value) ?? templates[0]);
 const themes = [
   { id: "coral-noir", name: "珊瑚暗夜" },
   { id: "claude-light", name: "橙光白" },
@@ -128,6 +141,7 @@ async function render() {
         directory: props.directory, output,
         slots: {
           title: title.value.trim(),
+          templateId: templateId.value,
           themeId: themeId.value,
           subtitle: subtitle.value.trim() || undefined,
           claim: claim.value.trim() || undefined,

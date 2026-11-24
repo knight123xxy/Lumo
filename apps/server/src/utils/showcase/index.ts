@@ -6,7 +6,7 @@ import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/
 import { beatSeconds, buildTemplateMusic } from "./templateMusic";
 import { lowerThird, lowerThirdHtml, type LowerThirdEffectId } from "./lowerThird";
 
-// ACT: 首版只内置一套竖屏模板（5 段），素材段可缺省，缺省时自动缩短总时长。
+// ACT: 多套竖屏模板共用同一渲染管线，模板只决定镜头顺序与文案槽位；素材段可缺省，缺省时自动缩短总时长。
 export type TemplateSlots = {
   title?: string;
   subtitle?: string;
@@ -15,10 +15,17 @@ export type TemplateSlots = {
   screenPath?: string;
   resultPath?: string;
   themeId?: string;
+  templateId?: string;
   titleCard?: { shotId: "paper-title-card"; text: string };
 };
 
 export type TemplateResult = { output: string; seconds: number; segments: number };
+
+export const templateIds = ["vertical-beat", "product-three", "knowledge-qa", "data-brief"] as const;
+export type TemplateId = typeof templateIds[number];
+
+type Segment = { beats: number; html: string } | { beats: number; path: string };
+type TemplateDefinition = { name: string; summary: string; build: (slots: TemplateSlots, themeId: keyof typeof templateThemes) => Segment[] };
 
 const width = 1080;
 const height = 1920;
@@ -91,6 +98,61 @@ function run(command: string, args: string[], signal?: AbortSignal) {
   });
 }
 
+const templates: Record<TemplateId, TemplateDefinition> = {
+  "vertical-beat": {
+    name: "竖屏卡点",
+    summary: "标题 → 录屏 → 纸片卡 → 主张 → 结果 → 行动，适合产品演示与口播。",
+    build: (slots, themeId) => [
+      { beats: 6, html: cardHtml({ eyebrow: "LUMO", title: slots.title?.trim() || "", body: slots.subtitle?.trim() || undefined, themeId }) },
+      ...(slots.screenPath ? [{ beats: 8, path: slots.screenPath } as Segment] : []),
+      ...titleCardSegments(slots, themeId),
+      { beats: 5, html: cardHtml({ eyebrow: "一句话", title: slots.claim?.trim() || slots.title?.trim() || "", themeId }) },
+      ...(slots.resultPath ? [{ beats: 6, path: slots.resultPath } as Segment] : []),
+      { beats: 5, html: cardHtml({ eyebrow: "下一步", title: slots.cta?.trim() || "现在就去试", themeId }) },
+    ],
+  },
+  "product-three": {
+    name: "三段产品片",
+    summary: "痛点 → 解法 → 证据 → 行动，四拍讲清一个产品。",
+    build: (slots, themeId) => [
+      { beats: 6, html: cardHtml({ eyebrow: "痛点", title: slots.subtitle?.trim() || slots.title?.trim() || "", themeId }) },
+      { beats: 6, html: cardHtml({ eyebrow: "解法", title: slots.title?.trim() || "", body: slots.claim?.trim() || undefined, themeId }) },
+      ...(slots.screenPath ? [{ beats: 8, path: slots.screenPath } as Segment] : [{ beats: 6, html: cardHtml({ eyebrow: "证据", title: slots.claim?.trim() || slots.title?.trim() || "", themeId }) }]),
+      ...titleCardSegments(slots, themeId),
+      { beats: 5, html: cardHtml({ eyebrow: "行动", title: slots.cta?.trim() || "现在就去试", themeId }) },
+    ],
+  },
+  "knowledge-qa": {
+    name: "知识三问",
+    summary: "提问 → 拆解 → 例证 → 收束，适合讲解类与科普内容。",
+    build: (slots, themeId) => [
+      { beats: 6, html: cardHtml({ eyebrow: "问题", title: slots.title?.trim() || "", body: slots.subtitle?.trim() || undefined, themeId }) },
+      { beats: 7, html: cardHtml({ eyebrow: "拆解", title: slots.claim?.trim() || slots.title?.trim() || "", themeId }) },
+      ...titleCardSegments(slots, themeId),
+      ...(slots.resultPath ? [{ beats: 6, path: slots.resultPath } as Segment] : [{ beats: 6, html: cardHtml({ eyebrow: "例证", title: slots.claim?.trim() || slots.title?.trim() || "", themeId }) }]),
+      { beats: 5, html: cardHtml({ eyebrow: "收束", title: slots.cta?.trim() || "记住这一点", themeId }) },
+    ],
+  },
+  "data-brief": {
+    name: "数据播报",
+    summary: "数字 → 来源 → 图表 → 结论，适合财经与数据解读。",
+    build: (slots, themeId) => [
+      { beats: 6, html: cardHtml({ eyebrow: "数据", title: slots.subtitle?.trim() || slots.title?.trim() || "", body: slots.claim?.trim() || undefined, themeId }) },
+      { beats: 6, html: cardHtml({ eyebrow: "来源", title: slots.title?.trim() || "", themeId }) },
+      ...((slots.resultPath || slots.screenPath)
+        ? [{ beats: 8, path: (slots.resultPath || slots.screenPath) as string } as Segment]
+        : [{ beats: 6, html: cardHtml({ eyebrow: "图表", title: slots.claim?.trim() || slots.title?.trim() || "", themeId }) }]),
+      ...titleCardSegments(slots, themeId),
+      { beats: 5, html: cardHtml({ eyebrow: "结论", title: slots.cta?.trim() || "以上", themeId }) },
+    ],
+  },
+};
+
+function titleCardSegments(slots: TemplateSlots, themeId: keyof typeof templateThemes): Segment[] {
+  const text = slots.titleCard?.text.trim();
+  return text ? [{ beats: 4, html: paperTitleCardHtml(text, templateThemes[themeId]) }] : [];
+}
+
 function mediaArgs(input: string, seconds: number, output: string, still: boolean) {
   const filter = `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},fps=${fps},setsar=1${still ? "" : `,tpad=stop_mode=clone:stop_duration=${seconds}`}`;
   return [
@@ -104,6 +166,9 @@ export async function renderTemplate(workspace: string, outputPath: string, slot
   if (!title) throw Object.assign(new Error("请填写模板标题"), { status: 400 });
   const themeId = slots.themeId || "coral-noir";
   if (!Object.hasOwn(templateThemes, themeId)) throw Object.assign(new Error("模板主题无效"), { status: 400 });
+  const templateId = (slots.templateId || "vertical-beat") as TemplateId;
+  const template = Object.hasOwn(templates, templateId) ? templates[templateId] : undefined;
+  if (!template) throw Object.assign(new Error("模板类型无效"), { status: 400 });
   const target = await resolveWorkspacePath(workspace, outputPath, true);
   await mkdir(join(workspace, "exports"), { recursive: true }).catch(() => {});
   const work = await mkdtemp(join(tmpdir(), "lumo-template-"));
@@ -111,14 +176,7 @@ export async function renderTemplate(workspace: string, outputPath: string, slot
   let beats = 0;
 
   try {
-    const order: ({ beats: number; html: string } | { beats: number; path: string })[] = [
-      { beats: 6, html: cardHtml({ eyebrow: "LUMO", title, body: slots.subtitle?.trim() || undefined, themeId: themeId as keyof typeof templateThemes }) },
-      ...(slots.screenPath ? [{ beats: 8, path: slots.screenPath }] : []),
-      ...(slots.titleCard?.text.trim() ? [{ beats: 4, html: paperTitleCardHtml(slots.titleCard.text.trim(), templateThemes[themeId as keyof typeof templateThemes]) }] : []),
-      { beats: 5, html: cardHtml({ eyebrow: "一句话", title: slots.claim?.trim() || title, themeId: themeId as keyof typeof templateThemes }) },
-      ...(slots.resultPath ? [{ beats: 6, path: slots.resultPath }] : []),
-      { beats: 5, html: cardHtml({ eyebrow: "下一步", title: slots.cta?.trim() || "现在就去试", themeId: themeId as keyof typeof templateThemes }) },
-    ];
+    const order = template.build({ ...slots, title }, themeId as keyof typeof templateThemes);
 
     const script = scriptPath();
     for (const [position, step] of order.entries()) {

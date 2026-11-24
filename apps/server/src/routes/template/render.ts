@@ -12,6 +12,7 @@ const slots = z.strictObject({
   screenPath: z.string().min(1).max(1024).optional(),
   resultPath: z.string().min(1).max(1024).optional(),
   themeId: z.enum(["coral-noir", "claude-light", "amber-noir", "blueprint-stone", "celadon-paper", "graphite-signal"]).optional(),
+  templateId: z.enum(["vertical-beat", "product-three", "knowledge-qa", "data-brief"]).optional(),
   titleCard: z.object({ shotId: z.literal("paper-title-card"), text: z.string().trim().min(1).max(180) }).optional(),
 });
 const input = z.strictObject({ directory: z.string().min(1).max(4096), output: z.string().min(1).max(1024), slots });

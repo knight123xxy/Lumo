@@ -9,8 +9,8 @@
       </div>
       <div class="pipelineGrid">
         <article class="pipelineCard">
-          <div class="pipelineHead"><strong>{{ translate('竖屏卡点模板') }}</strong></div>
-          <p class="pipelineSummary">{{ translate('替换文案、录屏与结果素材，生成竖屏卡点视频。') }}</p>
+          <div class="pipelineHead"><strong>{{ translate('竖屏模板') }}</strong></div>
+          <p class="pipelineSummary">{{ translate('4 套结构可选：竖屏卡点、三段产品片、知识三问、数据播报；换文案、录屏与结果素材即可成片。') }}</p>
           <el-button type="primary" size="small" :disabled="disabled" @click="emit('openTemplate')">{{ translate('使用模板') }}</el-button>
         </article>
         <article v-for="pipeline in pipelineCatalog" :key="pipeline.slug" class="pipelineCard">
