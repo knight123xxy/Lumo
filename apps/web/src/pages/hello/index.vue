@@ -20,9 +20,15 @@
       </div>
       <div v-else class="welcomeContent">
         <h1 id="welcomeTitle">快速开始</h1>
-        <p class="description">登录 Lumo 即可免配置快速开始，直接开启创作。</p>
-        <accountPanel v-if="!loggedIn" class="accountContent" @loggedIn="startWithAccount" />
-        <el-button v-else class="startButton" type="primary" :loading="saving" @click="completeSetup">开始使用</el-button>
+        <template v-if="multiTenantEnabled">
+          <p class="description">登录 Lumo 即可免配置快速开始，直接开启创作。</p>
+          <accountPanel v-if="!loggedIn" class="accountContent" @loggedIn="startWithAccount" />
+          <el-button v-else class="startButton" type="primary" :loading="saving" @click="completeSetup">开始使用</el-button>
+        </template>
+        <template v-else>
+          <p class="description">当前为本地模式，云端账号未启用。配置模型或稍后配置都能直接开始创作。</p>
+          <el-button class="startButton" type="primary" :loading="saving" @click="completeSetup">开始使用</el-button>
+        </template>
         <div class="secondaryActions">
           <template v-if="!multiTenantEnabled">
             <el-button class="secondaryButton" round :disabled="saving" @click="view = 'custom'">
