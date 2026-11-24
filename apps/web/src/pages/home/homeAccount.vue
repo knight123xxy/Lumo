@@ -2,13 +2,13 @@
   <div class="homeAccount" :class="{ collapsed }">
     <el-dropdown class="accountDropdown" trigger="click" placement="top-start" popperClass="homeAccountMenu" @command="handleCommand" @visibleChange="(opened: boolean) => { if (opened) refreshBalance(); }">
       <button class="accountTrigger" type="button" :aria-label="loggedIn ? '账号与余额' : '更多'" :title="loggedIn ? accountName : '更多'" aria-haspopup="menu">
+        <icon-user-circle :size="20" aria-hidden="true" />
         <span v-if="loggedIn" class="accountInfo">
           <span class="accountName">{{ accountName }}</span>
           <span v-if="showBalance" class="accountBalance" :title="balanceError || balanceText"><span>余额</span><span>{{ balanceText || '—' }}</span></span>
         </span>
-        <icon-dots v-else class="moreIcon" :size="18" aria-hidden="true" />
         <span v-if="!loggedIn" class="moreLabel">更多</span>
-        <icon-chevron-up v-if="loggedIn" class="accountChevron" :size="14" aria-hidden="true" />
+        <icon-chevron-down v-if="loggedIn" class="accountChevron" :size="14" aria-hidden="true" />
       </button>
       <template #dropdown>
         <el-dropdown-menu>
@@ -17,6 +17,7 @@
             <span>{{ mobileConnectionLabel }}</span>
           </el-dropdown-item>
           <el-dropdown-item class="accountMenuItem" :icon="IconBrandGithub" command="github">Github</el-dropdown-item>
+          <el-dropdown-item v-if="publicWeb && currentUser?.role === 'user'" class="accountMenuItem" command="redeem">{{ translate('兑换充值卡') }}</el-dropdown-item>
           <el-dropdown-item v-if="loggedIn" class="accountMenuItem" :icon="IconLogout" command="logout" :disabled="loggingOut">退出登录</el-dropdown-item>
           <el-dropdown-item v-else class="accountMenuItem" :icon="IconLogin" command="account">登录</el-dropdown-item>
         </el-dropdown-menu>
@@ -30,7 +31,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { IconBrandGithub, IconDeviceDesktop, IconDownload, IconLogin, IconLogout, IconQrcode, IconSettings } from "@tabler/icons-vue";
 import { locale, translate } from "@lumo/i18n/vue";
 import type { Login, PreviewData } from "@lumo/server/channel";
@@ -76,6 +77,29 @@ async function handleCommand(command: string) {
   if (command === "account") emit("openAccount");
   if (command === "deviceLink") emit("openDeviceLink");
   if (command === "github") window.open("https://github.com/knight123xxy/Lumo", "_blank", "noopener,noreferrer");
+  if (command === "redeem") {
+    const result = await ElMessageBox.prompt(translate("输入充值卡密"), translate("兑换充值卡"), {
+      inputType: "password", inputPattern: /^\s*[a-f0-9]{32}\s*$/i,
+      inputErrorMessage: translate("请输入有效的充值卡密"),
+      confirmButtonText: translate("兑换"), cancelButtonText: translate("取消"),
+      beforeClose: async (action, instance, done) => {
+        if (instance.confirmButtonLoading) return;
+        if (action !== "confirm") { done(); return; }
+        instance.confirmButtonLoading = true;
+        try {
+          await http({ method: "POST", url: "/api/multiTenant/user/redeemCard", data: { code: instance.inputValue.trim() } });
+          done();
+        } catch (error) {
+          ElMessage.error(error instanceof Error ? error.message : translate("兑换失败，请重试"));
+        } finally { instance.confirmButtonLoading = false; }
+      },
+    }).catch(() => null);
+    if (result) {
+      ElMessage.success(translate("充值卡已兑换"));
+      await refreshBalance();
+    }
+    return;
+  }
   if (command !== "logout" || loggingOut.value) return;
   loggingOut.value = true;
   try {
@@ -144,7 +168,7 @@ onBeforeUnmount(() => {
       .accountName { min-width: 0; overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
       .accountBalance { display: flex; align-items: baseline; gap: 6px; min-width: 0; color: var(--el-text-color-secondary); font-size: 12px; font-variant-numeric: tabular-nums; span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
     }
-    .accountChevron, .moreIcon { flex-shrink: 0; color: var(--el-text-color-secondary); }
+    .accountChevron { flex-shrink: 0; color: var(--el-text-color-secondary); }
     .moreLabel { color: var(--el-text-color-regular); font-size: 14px; }
     &:hover { background: var(--el-fill-color-light); }
     &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }

@@ -4041,5 +4041,11 @@
   "插件服务请求参数过长": "Os parâmetros da solicitação ao serviço de plugins são longos demais",
   "插件服务端口必须是 0–65535 之间的整数": "A porta do serviço de plugins deve ser um inteiro entre 0 e 65535",
   "插件服务公网地址必须是不含路径和凭据的 HTTP 或 HTTPS 根地址": "O endereço público do serviço de plugins deve ser uma URL raiz HTTP ou HTTPS, sem caminho nem credenciais",
-  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": "Em implantações HTTPS, configure LUMO_PLUGIN_SERVER_URL e um proxy reverso para o serviço de plugins"
+  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": "Em implantações HTTPS, configure LUMO_PLUGIN_SERVER_URL e um proxy reverso para o serviço de plugins",
+  "推荐码（选填）": "Código de indicação (opcional)",
+  "推荐码无效": "Código de indicação inválido",
+  "签发推荐码失败": "Não foi possível emitir o código de indicação",
+  "签发推荐码": "Emitir código de indicação",
+  "签发充值卡": "Emitir cartão de recarga",
+  "此代码仅显示一次，请复制保存。": "Este código é exibido apenas uma vez. Copie e guarde-o."
 }

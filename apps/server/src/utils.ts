@@ -1,4 +1,5 @@
 import * as assets from "@/utils/assets";
+import * as characters from "@/utils/characters";
 import * as browser from "@/utils/browser";
 import * as singleAgent from "@/utils/singleAgent";
 import * as desktop from "@/utils/desktop";
@@ -39,9 +40,11 @@ import * as network from "@/utils/network";
 import * as channel from "@/utils/channel";
 import * as multiTenant from "@/utils/multiTenant";
 import * as pluginServer from "@/utils/pluginServer";
+import * as showcase from "@/utils/showcase";
 
 export default {
   assets,
+  characters,
   browser,
   singleAgent,
   desktop,
@@ -84,4 +87,5 @@ export default {
   channel,
   multiTenant,
   pluginServer,
+  showcase,
 };

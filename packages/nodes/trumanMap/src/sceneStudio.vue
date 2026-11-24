@@ -1667,7 +1667,7 @@ const pastedScript = ref("");
 async function previsFromScript(text: string) {
   const full = text.trim();
   if (!full || locked.value) return;
-  await coverScript(full, 1);
+  await coverScript(full, 1, true);
   if (!disposed && editorPanel.value !== "life" && props.modelValue.cameras?.length) openInspector("life");
 }
 async function previsFromUpstream() {
@@ -1690,7 +1690,7 @@ function firstScene(script: string) {
   const real = scenes.filter(block => extractSpeakers(block).length >= 1 || matchSetTemplate(block));
   return { scene: real[0] ?? scenes[0] ?? script, count: Math.max(1, real.length) };
 }
-async function coverScript(script?: string, pace?: number) {
+async function coverScript(script?: string, pace?: number, allowVisualCoverage = false) {
   if (cameraLocked.value) return;
   let sceneNote = "";
   notice.value = "";
@@ -1704,10 +1704,10 @@ async function coverScript(script?: string, pace?: number) {
     if (disposed || !props.modelValue.objects.length) return;
     await nextTick();
   }
-  addShotCoverage(script, pace);
+  addShotCoverage(script, pace, allowVisualCoverage);
   if (template || sceneNote) notice.value = [template ? `按剧本搭了${template.name}` : "", notice.value, sceneNote].filter(Boolean).join("；");
 }
-function addShotCoverage(script?: string, pace?: number) {
+function addShotCoverage(script?: string, pace?: number, allowVisualCoverage = false) {
   if (cameraLocked.value) return;
   try {
     // 演绎还没跑过一帧时先排好期，分镜按整段走位取样才准。
@@ -1723,7 +1723,9 @@ function addShotCoverage(script?: string, pace?: number) {
     }
     const mood = script ? moodFromHeading(script) : undefined;
     if (mood) { base = { ...base, ...moodPatch(base, mood, true) }; castNote = [castNote, `按场次标题换成${mood.name}`].filter(Boolean).join("；"); viewport?.markWorldTimeJump(); }
-    const { cameras: all, created: raw } = applySceneCoverage(base, { view: editorFraming(), subjectIds, duration: filmDuration.value, script, pace, createId: () => crypto.randomUUID() });
+    // 剧本预演允许无对白和独白场景，先按画面排机位，同时保留后续演绎使用的原文。
+    const coverageScript = allowVisualCoverage && script && (subjectIds.length < 2 || extractSpeakers(script).length < 2) ? undefined : script;
+    const { cameras: all, created: raw } = applySceneCoverage(base, { view: editorFraming(), subjectIds, duration: filmDuration.value, script: coverageScript, pace, createId: () => crypto.randomUUID() });
     // 中景、近景、过肩被墙、柱子、别的人挡住时，沿视线把机位推到遮挡物前面（全景沿用当前视角，不动）。
     const subjects = [...new Set([...subjectIds, ...raw.flatMap(camera => camera.track?.objectId ? [camera.track.objectId] : [])])];
     // 过肩机位排除两个人（前景肩膀本来就要入画）；其他机位只排除自己拍的那个人，别的主体挡脸也算遮挡。

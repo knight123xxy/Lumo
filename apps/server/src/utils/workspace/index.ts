@@ -37,6 +37,24 @@ export async function getWorkspaceRoot(req: Request) {
   return root;
 }
 
+// ACT: 新建项目只创建一层文件夹，名称去掉路径分隔符；重名时追加序号，不覆盖已有目录。
+export async function createWorkspace(req: Request, name: string) {
+  const root = await getWorkspaceRoot(req);
+  const base = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/^[. ]+|[. ]+$/g, "").slice(0, 100) || "未命名项目";
+  for (let index = 1; index <= 999; index++) {
+    const folder = index === 1 ? base : `${base} ${index}`;
+    const path = resolve(root, folder);
+    if (relative(root, path) !== folder) throw Object.assign(new Error("项目名称无效"), { status: 400 });
+    try {
+      await mkdir(path, { mode: 0o700 });
+      return { directory: await realpath(path), name: folder };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    }
+  }
+  throw Object.assign(new Error("同名项目过多，请更换名称"), { status: 409 });
+}
+
 export function isLocalWorkspaceRequest(req: Request) {
   const origin = req.get("origin");
   const localOrigin = `${req.protocol}://${req.get("host")}`;

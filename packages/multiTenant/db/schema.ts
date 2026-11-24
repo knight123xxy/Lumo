@@ -1,5 +1,7 @@
 import { bigint, boolean, index as mysqlIndex, int, json, mysqlEnum, mysqlTable, primaryKey as mysqlPrimaryKey, varchar } from "drizzle-orm/mysql-core";
 import { index as sqliteIndex, integer, primaryKey as sqlitePrimaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type { ReferralCodeRecord } from "./referral";
+import type { RechargeCard } from "./rechargeCard";
 
 export const sqliteAdmin = sqliteTable("multiTenantAdmin", {
   id: integer("id").primaryKey(),
@@ -168,6 +170,8 @@ export type AdminDatabase = {
   initializeModelRouting(): Promise<void>;
   writeModelRouting(configuration: Record<string, unknown>, expectedRevision: number): Promise<boolean>;
   initializeBilling(): Promise<void>;
+  createRechargeCard(card: RechargeCard): Promise<void>;
+  getRechargeCard(codeHash: string): Promise<RechargeCard | undefined>;
   getWallets(userId: string): Promise<WalletRecord[]>;
   getBillingRecord(requestId: string): Promise<BillingRecord | undefined>;
   listBillingRecords(userId: string, limit: number): Promise<BillingRecord[]>;
@@ -180,7 +184,8 @@ export type AdminDatabase = {
   updateAdmin(values: AdminUpdate): Promise<void>;
   getUser(userNameKey: string): Promise<UserRecord | undefined>;
   getUserById(id: string): Promise<UserRecord | undefined>;
-  createUser(user: Pick<UserRecord, "id" | "userName" | "userNameKey" | "passwordHash" | "createdAt">): Promise<void>;
+  createReferralCode(code: ReferralCodeRecord): Promise<boolean>;
+  createUser(user: Pick<UserRecord, "id" | "userName" | "userNameKey" | "passwordHash" | "createdAt">, referralCodeHash?: string): Promise<boolean>;
   updateUser(id: string, values: UserUpdate, expectedAuthVersion?: number): Promise<void>;
   completeUserLogin(id: string, expectedAuthVersion: number, at: number): Promise<boolean>;
   listUsers(options: ListUserOptions): Promise<{ items: ManagedUser[]; total: number }>;

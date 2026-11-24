@@ -16,7 +16,7 @@ const runtimes = new WeakMap<Application, Runtime>();
 const userRoutes = new Set(["register", "login", "session", "logout", "host"].map(name => `/api/multitenant/user/${name}`));
 const controlRoutes = new Set(["status", "setup", "login", "logout", "state", "enabled", "registration", "hostsession"].map(name => `/api/multitenant/${name}`));
 const userReadRoutes = new Set(["/api/ai/models", "/api/ai/media/models", "/api/multitenant/user/balance", "/api/nodes/get", "/api/nodes/files", "/api/ext/list", "/api/ext/read", "/api/tools/get"]);
-const modelWriteRoutes = new Set(["/api/ai/generate", "/api/ai/media/price", "/api/ai/media/generate", "/api/ai/media/tasks/status", "/api/ai/media/tasks/cancel"]);
+const modelWriteRoutes = new Set(["/api/ai/filmprice", "/api/ai/generate", "/api/ai/media/price", "/api/ai/media/generate", "/api/ai/media/tasks/status", "/api/ai/media/tasks/cancel"]);
 const communityReads = new Set(["getAdvertisements", "getExploreProjects", "getExploreProject", "getExploreProcess", "getExploreDownload", "getSponsorList"]
   .map(name => `/api/channel/community/${name.toLowerCase()}`));
 const platformPrefixes = ["/api/providers", "/api/plugins", "/api/mcp/servers", "/api/channel/account", "/api/channel/model", "/api/channel/provider", "/api/channel/subaccounts", "/api/channel/user", "/api/channel/wallet", "/api/channel/plugin"];
@@ -150,7 +150,7 @@ export async function multiTenantAccess(req: Request, res: Response, next: NextF
   const path = accessPath(req);
   if (path === null) return next();
   const publicWeb = res.locals.multiTenantWeb === true;
-  const managementRoute = controlRoutes.has(path)
+  const managementRoute = controlRoutes.has(path) || path === "/api/multitenant/referrals/issue"
     || ["/api/multitenant/users", "/api/multitenant/sourcemapping", "/api/multitenant/models", "/api/multitenant/providers", "/api/multitenant/billing"].some(prefix => path === prefix || path.startsWith(`${prefix}/`));
   const desktopRoute = path === "/api/desktop" || path.startsWith("/api/desktop/");
   if (userRoutes.has(path) && (publicWeb || path === "/api/multitenant/user/session")) return next();
@@ -172,6 +172,6 @@ export async function multiTenantAccess(req: Request, res: Response, next: NextF
   const pluginServiceRoute = req.method === "POST" && ["/api/pluginserver/connect", "/api/pluginserver/message"].includes(path)
     || req.method === "GET" && path === "/api/pluginserver/events";
   if (fileRoute || settingsRoute || pluginServiceRoute || req.method === "GET" && userReadRoutes.has(path)
-    || req.method === "POST" && modelWriteRoutes.has(path) || communityReads.has(path) && ["GET", "POST"].includes(req.method)) return runWithIdentity(user, next);
+    || req.method === "POST" && (modelWriteRoutes.has(path) || path === "/api/multitenant/user/redeemcard") || communityReads.has(path) && ["GET", "POST"].includes(req.method)) return runWithIdentity(user, next);
   throw Object.assign(new Error("当前账号尚未开放此功能"), { status: 403 });
 }

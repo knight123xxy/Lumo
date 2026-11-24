@@ -407,9 +407,31 @@ const mentionSource: MentionCanvasSource = {
   },
 };
 
-defineExpose({ canvasId, canvasReady, canvasListReady, getCanvasContext, readDocumentNode, readDocumentNodes, focusDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, resolveDocumentNodeFile, performFileAction, flushSave, cancelSave,
+defineExpose({ canvasId, canvasReady, canvasListReady, activateCanvas, getCanvasContext, readDocumentNode, readDocumentNodes, focusDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, resolveDocumentNodeFile, performFileAction, flushSave, cancelSave,
+  addGenerationNode: (kind: "image" | "video") => activeInstance.value?.addGenerationNode(kind),
   addNodeAtPointer: () => activeInstance.value?.addNodeAtPointer(),
   openNodeSearch: () => activeInstance.value?.openNodeSearch(),
+  addShotVideoNode: (...args: Parameters<CanvasInstance["addShotVideoNode"]>) => {
+    if (!activeInstance.value) throw new Error("画布尚未就绪");
+    return activeInstance.value.addShotVideoNode(...args);
+  },
+  addTemplateVideo: (...args: Parameters<CanvasInstance["addTemplateVideo"]>) => {
+    if (!activeInstance.value) throw new Error("画布尚未就绪");
+    return activeInstance.value.addTemplateVideo(...args);
+  },
+  get selectedVideoOutput() {
+    const selected = activeInstance.value?.getMentionNodes().filter(node => node.selected);
+    if (selected?.length !== 1) return;
+    const data = selected[0]?.data;
+    const video = data?.outputs?.video;
+    if (video?.dataType !== "VIDEO" || typeof video.value?.url !== "string" || !video.value.url) return;
+    return { path: video.value.url, mimeType: typeof video.value.mimeType === "string" ? video.value.mimeType : "video/mp4",
+      name: typeof data.label === "string" && data.label.trim() ? data.label.trim() : "画布视频" };
+  },
+  get selectedTextNode() {
+    const selected = activeInstance.value?.getMentionNodes().filter(node => node.selected);
+    return selected?.length === 1 && selected[0]?.type === "remote-textNode" ? selected[0] : undefined;
+  },
   mentionSource,
   get saveBusy() { return fileActionBusy || [...instances.values()].some(panel => panel.saveBusy); },
 });

@@ -53,6 +53,7 @@
                     <messageMarkdown v-if="!(part.collapsed ?? true)" :content="part.content" :streaming="!!item.streaming" :directory="directory" />
                   </chat-reasoning>
                   <toolMessage v-else-if="part.type === 'tool' && !isBrowserTool(part.tool)" v-model:collapsed="part.collapsed" :tool="part.tool" :directory="directory" @copy="emit('copy', $event)" />
+                  <assistantMessage v-else-if="item.role === 'assistant' && part.type === 'text' && part.content" :content="part.content" :streaming="!!item.streaming" :directory="directory" />
                   <messageMarkdown v-else-if="part.type === 'text' && part.content" :content="part.content" :streaming="!!item.streaming" :directory="directory" />
                 </template>
                 <attachmentList v-if="item.attachments?.length" :attachments="item.attachments" :directory="directory" />
@@ -98,6 +99,7 @@ import attachmentList from "../attachmentList.vue";
 import mentionContent from "../mentionContent.vue";
 import { mentionPlainText } from "../mentionText";
 import toolMessage from "../toolMessage.vue";
+import assistantMessage from "./assistantMessage.vue";
 import type { AgentMessage } from "../types";
 import "tdesign-vue-next/es/style/index.css";
 import "@tdesign-vue-next/chat/es/style/index.css";

@@ -64,6 +64,12 @@ const sessionFile = computed(() => selectedConversation.value?.file);
 const workspaceStore = useWorkspaceStore();
 let projectDirectory = workspaceStore.project?.directory;
 const history = ref<AgentHistory[]>([]);
+watch([sessionFile, () => workspaceStore.project?.directory], ([file, directory]) => {
+  workspaceStore.activeAgentSession = file && directory ? { directory, file } : null;
+});
+function notifyHistoryChange() {
+  if (projectDirectory) workspaceStore.agentHistoryChange = { directory: projectDirectory };
+}
 const loading = ref(false);
 const branchingId = ref<string>();
 const historyLoading = ref(false);
@@ -173,6 +179,7 @@ function setSessionFile(item: OpenConversation, file: string) {
   if (item.parentFile) return;
   if (!history.value.some(entry => entry.file === file)) {
     history.value.unshift({ file, name: item.name, modified: new Date().toISOString(), messageCount: 0 });
+    notifyHistoryChange();
   }
 }
 
@@ -203,6 +210,7 @@ async function newConversation(source?: { file?: string; message: AgentMessage }
     const session = data.data;
     history.value.unshift({ file: session.file, name: session.name, modified: new Date().toISOString(), messageCount: session.messages.length });
     showConversation(session).initialModel = initialModel;
+    notifyHistoryChange();
     initialized.value = true;
   } catch (error) {
     if (currentRequest === requestId) ElMessage.error(axios.isAxiosError(error)
@@ -295,6 +303,7 @@ async function renameConversation(file: string, value: string) {
     if (item) item.name = data.data.name;
     const opened = conversations.value.find(item => item.file === file);
     if (opened) opened.name = data.data.name;
+    notifyHistoryChange();
   } catch (error) {
     if (currentRequest === requestId) ElMessage.error(axios.isAxiosError(error)
       ? error.response?.data?.message || "重命名对话失败"
@@ -356,13 +365,21 @@ watch(() => workspaceStore.project?.directory, directory => {
   branchingId.value = undefined;
   historyLoading.value = false;
   showConversation(null);
-  if (visible.value && directory) void loadHistory(true);
+  if (visible.value && directory) void loadHistory(!workspaceStore.pendingAgentSession);
 }, { immediate: true, flush: "sync" });
 watch(visible, active => {
-  if (active && !initialized.value) void loadHistory(true);
+  // 从首页对话列表跳转时保留目标会话，不先打开最新一条。
+  if (active && !initialized.value) void loadHistory(!workspaceStore.pendingAgentSession);
+});
+// 首页侧栏选中某条对话后，面板就绪时切到该会话一次。
+watch([visible, loading, historyLoading, () => workspaceStore.project?.directory, () => workspaceStore.pendingAgentSession], ([active, busy, reading, directory, pending]) => {
+  if (!active || busy || reading || !pending || pending.directory !== directory) return;
+  workspaceStore.pendingAgentSession = null;
+  void selectConversation(pending.file);
 });
 window.addEventListener("pagehide", pageHide);
 onBeforeUnmount(() => {
+  workspaceStore.activeAgentSession = null;
   requestId++;
   stopProject();
   window.removeEventListener("pagehide", pageHide);

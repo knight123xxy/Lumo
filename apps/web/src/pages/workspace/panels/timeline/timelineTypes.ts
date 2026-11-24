@@ -1,8 +1,8 @@
 // 时间线剪辑的数据模型（产品层字段对齐 265 §三）。
 // 时间单位统一用秒（浮点），显示层负责格式化为 HH:MM:SS.mmm。
 
-export type TrackType = "video" | "audio" | "subtitle" | "text";
-export type ClipKind = "video" | "audio" | "image" | "text";
+export type TrackType = "video" | "audio" | "subtitle" | "text" | "effect";
+export type ClipKind = "video" | "audio" | "image" | "text" | "effect";
 export type AssetKind = "video" | "audio" | "image" | "srt";
 
 export type FilterPreset = "none" | "warm" | "cold" | "mono";
@@ -26,6 +26,7 @@ export interface TimelineClip {
   id: string;
   kind: ClipKind;
   source: string; // 工作区相对路径；text 片段为空
+  sourceInfo?: StockCredit;
   sourceDuration: number; // 源素材时长，text 片段与 timelineDuration 一致
   inPoint: number; // 源裁剪起点（秒）
   outPoint: number; // 源裁剪终点（秒）
@@ -49,6 +50,27 @@ export interface TimelineTrack {
   clips: TimelineClip[];
 }
 
+export interface StockSourceInfo {
+  searchTerm: string;
+  assetId: string | null;
+  sourcePage: string;
+  creator: string;
+  rendition: { width: number; height: number };
+}
+
+export interface StockMaterial {
+  provider: "pexels" | "pixabay";
+  id: string;
+  duration: number;
+  previewUrl?: string | null;
+  sourceInfo: StockSourceInfo;
+  importId: string;
+}
+
+export interface StockCredit extends StockSourceInfo {
+  provider: StockMaterial["provider"];
+}
+
 export interface AssetItem {
   id: string;
   name: string;
@@ -56,6 +78,7 @@ export interface AssetItem {
   kind: AssetKind;
   mimeType: string;
   size: number;
+  sourceInfo?: StockCredit;
   duration?: number;
   width?: number;
   height?: number;
@@ -88,6 +111,7 @@ export const trackDefaults: Record<TrackType, { name: string; hidden: boolean; m
   video: { name: "视频轨 V1", hidden: false, muted: false },
   audio: { name: "音频轨 A1", hidden: false, muted: false },
   subtitle: { name: "字幕轨 S1", hidden: false, muted: false },
+  effect: { name: "动效轨", hidden: false, muted: true },
   text: { name: "文字轨 T1", hidden: false, muted: false },
 };
 

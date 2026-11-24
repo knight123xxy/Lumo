@@ -107,6 +107,7 @@
       <nodeSearch ref="nodeSearchRef" :disabled="!active || settingsVisible || !canvasId || !project?.directory" />
     </vue-flow>
     <el-dialog v-if="currentUser?.role !== 'user'" :modelValue="!!(assetSelection || assetPick)" class="referenceAssetDialog" title="全局素材库" width="min(1200px, 88vw)" alignCenter appendToBody destroyOnClose @update:modelValue="finishAssetSelection(); finishAssetPick()">
+      <characterReferencePicker v-if="(assetSelection?.target.type === 'remote-videoGenerationNode' || assetPick?.target.type === 'remote-videoGenerationNode' && assetPick.kind === 'image')" :disabled="assetSelecting" @select="selectAsset" />
       <assetLibrary :modelValue="!!(assetSelection || assetPick)" expanded :canSelect="canSelectAsset" :selecting="assetSelecting" @select="selectAsset" />
     </el-dialog>
     <teleport to="body">
@@ -169,6 +170,7 @@ import canvasControls from "./components/canvasControls.vue";
 import canvasEmpty from "./components/canvasEmpty.vue";
 import canvasViewportHint from "./components/canvasViewportHint.vue";
 import assetLibrary from "./components/assetLibrary.vue";
+import characterReferencePicker from "./components/characterReferencePicker.vue";
 import groupNode from "./components/groupNode.vue";
 import selectionToolbar from "./components/selectionToolbar.vue";
 import nodeSearch from "./components/nodeSearch.vue";
@@ -473,7 +475,50 @@ provide("nodePersistence", () => {
     },
   };
 });
-defineExpose({ canvasId, canvasReady, getCanvasContext, addNodeAtPointer, readDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, prepareCanvasDelete, flushSave: flushCanvasSave, cancelSave: cancelCanvasSave,
+async function addShotVideoNode(directory: string, canvasPath: string, nodeId: string) {
+  const type = "remote-videoGenerationNode";
+  if (!availableNodes.value.some(item => item.type === type)) throw new Error(translate("请先启用视频生成节点"));
+  const signal = canvasController.signal;
+  const { label, outputs } = await readDocumentNode(directory, canvasPath, nodeId);
+  signal.throwIfAborted();
+  if (canvasId.value !== canvasPath) throw new Error(translate("画布已切换，请重试"));
+  const source = flow.findNode(nodeId);
+  const text = outputs.find(output => output.id === "text")?.text;
+  if (!source || typeof text !== "string" || !text.trim()) throw new Error(translate("请先填写分镜正文"));
+  const prompt = text.trim();
+  const id = crypto.randomUUID();
+  const right = Math.max(...flow.getNodes.value.map(node => node.computedPosition.x + (node.dimensions.width || 400)));
+  await canvasHistory.batch(async () => {
+    flow.removeSelectedElements();
+    addNodes({ id, type, position: { x: right + 80, y: source.computedPosition.y },
+      data: { label: `${label} · ${translate("视频生成")}`, prompt,
+        promptModel: prompt.split("\n").map(line => [{ type: "Write", text: line }]) } });
+    await nextTick();
+    const target = flow.findNode(id);
+    if (target && !signal.aborted) flow.addSelectedNodes([target]);
+  });
+  await flushCanvasSave();
+  if (!signal.aborted) await flow.fitView({ nodes: [id], padding: 0.25, maxZoom: 1, duration: 200 });
+}
+
+async function addTemplateVideo(directory: string, canvasPath: string, video: { path: string; name: string; mimeType: string }) {
+  if (project.value?.directory !== directory || canvasId.value !== canvasPath || !canvasReady.value) throw new Error(translate("画布已切换，请重试"));
+  const type = "remote-videoNode";
+  if (!availableNodes.value.some(item => item.type === type)) throw new Error(translate("请先启用视频节点"));
+  const position = pastePosition();
+  if (!position) throw new Error(translate("画布尚未就绪"));
+  const id = crypto.randomUUID();
+  await canvasHistory.batch(async () => {
+    flow.removeSelectedElements();
+    addNodes({ id, type, position, data: { label: video.name, outputs: { video: { dataType: "VIDEO", value: { url: video.path, mimeType: video.mimeType } } } } });
+    await nextTick();
+    const node = flow.findNode(id);
+    if (node) flow.addSelectedNodes([node]);
+  });
+  await flushCanvasSave();
+}
+
+defineExpose({ canvasId, canvasReady, getCanvasContext, addNodeAtPointer, addGenerationNode, addShotVideoNode, addTemplateVideo, readDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, prepareCanvasDelete, flushSave: flushCanvasSave, cancelSave: cancelCanvasSave,
   openNodeSearch: () => nodeSearchRef.value?.open(),
   getCanvases: (signal?: AbortSignal) => {
     if (!canvasMenuRef.value) throw new Error("画布菜单尚未就绪");
@@ -710,6 +755,17 @@ function createEmptyNode(type: string) {
   if (!rect) return;
   const center = screenToFlowCoordinate({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
   void nodeMenuRef.value?.addNode(type, { x: center.x - 200, y: center.y - 160 });
+}
+
+async function addGenerationNode(kind: "image" | "video") {
+  if (!props.active || !canvasReady.value) return false;
+  const type = kind === "image" ? "remote-imageGenerationNode" : "remote-videoGenerationNode";
+  if (!availableNodes.value.some(node => node.type === type)) throw new Error(translate("请先启用对应的生成节点"));
+  const position = pastePosition();
+  if (!position || !nodeMenuRef.value) return false;
+  await nodeMenuRef.value.addNode(type, position);
+  await flushCanvasSave();
+  return true;
 }
 
 function addNodeAtPointer() {
@@ -1444,6 +1500,7 @@ const defaultEdgeOptions = markRaw({
 
 :global(.referenceAssetDialog .el-dialog__body) {
   display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;

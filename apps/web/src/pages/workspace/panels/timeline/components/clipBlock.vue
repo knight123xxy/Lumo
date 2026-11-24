@@ -46,7 +46,7 @@ let startTimelineStart = 0;
 
 const kindClass = computed(() => `kind-${props.clip.kind}`);
 const label = computed(() => {
-  if (props.clip.kind === "text") return props.clip.text || translate("文字");
+  if (props.clip.kind === "text" || props.clip.kind === "effect") return props.clip.text || translate("文字");
   return props.clip.source.split("/").at(-1) ?? translate("素材");
 });
 const clipStyle = computed(() => ({

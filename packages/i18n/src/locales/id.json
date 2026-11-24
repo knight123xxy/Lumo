@@ -4041,5 +4041,11 @@
   "插件服务请求参数过长": "Parameter permintaan layanan plugin terlalu panjang",
   "插件服务端口必须是 0–65535 之间的整数": "Port layanan plugin harus berupa bilangan bulat antara 0 dan 65535",
   "插件服务公网地址必须是不含路径和凭据的 HTTP 或 HTTPS 根地址": "URL publik layanan plugin harus berupa URL akar HTTP atau HTTPS tanpa jalur dan kredensial",
-  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": "Untuk penerapan HTTPS, konfigurasikan LUMO_PLUGIN_SERVER_URL dan proksi balik layanan plugin"
+  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": "Untuk penerapan HTTPS, konfigurasikan LUMO_PLUGIN_SERVER_URL dan proksi balik layanan plugin",
+  "推荐码（选填）": "Kode referensi (opsional)",
+  "推荐码无效": "Kode referensi tidak valid",
+  "签发推荐码失败": "Gagal menerbitkan kode referensi",
+  "签发推荐码": "Terbitkan kode referensi",
+  "签发充值卡": "Terbitkan kartu isi ulang",
+  "此代码仅显示一次，请复制保存。": "Kode ini hanya ditampilkan sekali. Salin dan simpan."
 }

@@ -25,7 +25,9 @@
             <icon-refresh :size="17" />
           </el-button>
         </el-tooltip>
-        <el-button class="exportButton" type="primary" size="small" :disabled="!duration" @click="exportVisible = true">
+        <el-button size="small" :disabled="!timeline.ready.value || busy" @click="templateVisible = true">{{ translate('整集模板') }}</el-button>
+        <el-button size="small" :disabled="!timeline.ready.value || busy" @click="automaticFilmVisible = true">{{ translate('一键成片') }}</el-button>
+        <el-button class="exportButton" type="primary" size="small" :disabled="!duration || busy" @click="exportVisible = true">
           <icon-download :size="15" />
           {{ translate("导出") }}
         </el-button>
@@ -36,9 +38,19 @@
       <div class="leftPane">
         <div class="leftTabs" role="tablist" :aria-label="translate('剪辑面板')">
           <button class="leftTab" :class="{ active: leftTab === 'assets' }" type="button" role="tab" @click="leftTab = 'assets'">{{ translate("素材") }}</button>
+          <button class="leftTab" :class="{ active: leftTab === 'effects' }" type="button" role="tab" @click="leftTab = 'effects'">{{ translate('效果') }}</button>
           <button class="leftTab" :class="{ active: leftTab === 'styles' }" type="button" role="tab" @click="leftTab = 'styles'">{{ translate("风格") }}</button>
         </div>
         <assetLibrary v-show="leftTab === 'assets'" ref="assetLibraryRef" class="assetPane" :assets="assets" :busy="busy" @import-files="onImportFiles" @add-clip="onAddAsset" />
+        <form v-show="leftTab === 'effects'" class="effectForm assetPane" @submit.prevent="addLowerThird">
+          <el-select v-model="effectId" :aria-label="translate('标题条样式')" :disabled="busy">
+            <el-option :label="translate('线条标题条')" value="lt-kicker-name" />
+            <el-option :label="translate('色块标题条')" value="lt-bold-block" />
+          </el-select>
+          <el-input v-model="effectKicker" :aria-label="translate('栏目')" :placeholder="translate('栏目')" :maxlength="32" :disabled="busy" />
+          <el-input v-model="effectName" :aria-label="translate('标题')" :placeholder="translate('标题')" :maxlength="64" :disabled="busy" />
+          <el-button nativeType="submit" type="primary" :loading="busy" :disabled="!timeline.ready.value || !effectKicker.trim() || !effectName.trim()">{{ translate('添加到动效轨') }}</el-button>
+        </form>
         <stylePanel v-show="leftTab === 'styles'" class="assetPane" :currentStyle="project.style" @apply-style="onApplyStyle" />
       </div>
 
@@ -47,6 +59,8 @@
           class="previewPane"
           :directory="directory"
           :clip="previewClip"
+          :effects="previewEffects"
+          :aspect="project.width / project.height"
           :playhead="playhead"
           :playing="playing"
           @update-playhead="setPlayhead"
@@ -126,7 +140,7 @@
       <el-button v-else class="propertyToggle" text size="small" :aria-label="translate('显示属性面板')" @click="propertyVisible = true"><icon-chevron-left :size="16" /></el-button>
     </div>
 
-    <div v-if="!hasContent" class="emptyOverlay">
+    <div v-if="!hasContent && leftTab !== 'effects'" class="emptyOverlay">
       <div class="emptyCard">
         <p class="emptyTitle">{{ translate("导入素材开始剪辑") }}</p>
         <p class="emptyTip">{{ translate("上传视频、音频、图片或字幕，拖到时间线即可编排。") }}</p>
@@ -134,13 +148,15 @@
       </div>
     </div>
 
-    <exportDialog v-model="exportVisible" :directory="directory" :project="project" :duration="duration" />
+    <templateDialog v-model="templateVisible" :directory="directory" :assets="assets" :busy="busy" :importFiles="timeline.importFiles" @generated="onTemplateGenerated" />
+    <automaticFilmDialog v-model="automaticFilmVisible" :directory="directory" :assets="assets" :busy="busy" :importFiles="timeline.importFiles" :createFilm="timeline.createAutomaticFilm" :currentStyle="project.style" @generated="onFilmGenerated" />
+    <exportDialog v-model="exportVisible" :directory="directory" :project="project" :duration="duration" :automaticFilm="isAutomaticFilm" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onScopeDispose, ref } from "vue";
-import { ElButton, ElInput, ElMessage, ElTooltip } from "element-plus";
+import { computed, onMounted, onScopeDispose, ref, watch } from "vue";
+import { ElButton, ElInput, ElMessage, ElOption, ElSelect, ElTooltip } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
 import {
   IconArrowBackUp,
@@ -170,11 +186,14 @@ import trackRow from "./components/trackRow.vue";
 import timelineRuler from "./components/timelineRuler.vue";
 import propertyPanel from "./components/propertyPanel.vue";
 import exportDialog from "./components/exportDialog.vue";
+import automaticFilmDialog from "./components/automaticFilmDialog.vue";
+import templateDialog from "./components/templateDialog.vue";
 import stylePanel from "./components/stylePanel.vue";
 import { type SilenceEditMode } from "./timelineSilence";
 import type { AssetItem, ProjectStyle, TrackType } from "./timelineTypes";
 
-const props = defineProps<{ directory: string }>();
+const props = defineProps<{ directory: string; openAutomaticFilm?: boolean }>();
+const emit = defineEmits<{ automaticFilmOpened: [] }>();
 
 const workspaceStore = useWorkspaceStore();
 const timeline = useTimeline(props.directory);
@@ -195,7 +214,26 @@ const {
 
 const propertyVisible = ref(true);
 const exportVisible = ref(false);
-const leftTab = ref<"assets" | "styles">("assets");
+const automaticFilmVisible = ref(false);
+const templateVisible = ref(false);
+const isAutomaticFilm = ref(false);
+watch([() => props.openAutomaticFilm, timeline.ready], ([open, ready]) => {
+  if (!open || !ready) return;
+  automaticFilmVisible.value = true;
+  emit("automaticFilmOpened");
+}, { immediate: true });
+
+function onTemplateGenerated(video: { path: string; name: string; mimeType: string }) {
+  void timeline.appendCanvasVideo(video)
+    .then(() => ElMessage.success(translate("模板成片已加入时间线")))
+    .catch(error => ElMessage.error(error instanceof Error ? error.message : translate("加入时间线失败")));
+}
+
+function onFilmGenerated() {
+  isAutomaticFilm.value = true;
+  exportVisible.value = true;
+}
+const leftTab = ref<"assets" | "styles" | "effects">("assets");
 const assetLibraryRef = ref<InstanceType<typeof assetLibrary>>();
 const timelineScrollRef = ref<HTMLElement>();
 const timelineInnerRef = ref<HTMLElement>();
@@ -212,6 +250,17 @@ const previewClip = computed<PreviewClip | null>(() => {
   if (!clip) return null;
   return { id: clip.id, source: clip.source, inPoint: clip.inPoint, timelineStart: clip.timelineStart, speed: clip.speed };
 });
+
+const previewEffects = computed(() => tracks.value.filter(track => track.type === "effect" && !track.hidden)
+  .flatMap(track => track.clips).filter(clip => playhead.value >= clip.timelineStart && playhead.value < clip.timelineStart + clip.timelineDuration));
+const effectId = ref<"lt-kicker-name" | "lt-bold-block">("lt-kicker-name");
+const effectKicker = ref("");
+const effectName = ref("");
+async function addLowerThird() {
+  if (!effectKicker.value.trim() || !effectName.value.trim()) return;
+  try { await timeline.addLowerThird(effectId.value, effectKicker.value.trim(), effectName.value.trim()); }
+  catch (error) { ElMessage.error(error instanceof Error ? error.message : translate("动效生成失败")); }
+}
 
 function onImportFiles(files: File[]) {
   void timeline.importFiles(files).catch(error => ElMessage.error(error instanceof Error ? error.message : translate("导入失败")));
@@ -260,14 +309,12 @@ function seek(time: number) {
 }
 
 function onDrop(event: DragEvent) {
-  const id = event.dataTransfer?.getData(timelineAssetMime);
-  if (!id) return;
-  const asset = assets.value.find(item => item.id === id);
-  if (!asset) return;
   const rect = timelineInnerRef.value?.getBoundingClientRect();
   if (!rect) return;
-  const time = Math.max(0, (event.clientX - rect.left + (timelineScrollRef.value?.scrollLeft ?? 0) - trackGutter) / pixelsPerSecond);
-  timeline.addClip(asset, asset.kind === "audio" ? "audio" : "video", time);
+  const time = Math.max(0, (event.clientX - rect.left - trackGutter) / pixelsPerSecond);
+  const id = event.dataTransfer?.getData(timelineAssetMime);
+  const asset = id ? assets.value.find(item => item.id === id) : undefined;
+  if (asset) timeline.addClip(asset, asset.kind === "audio" ? "audio" : "video", time);
 }
 
 function editText(clipId: string) {
@@ -356,16 +403,19 @@ function handleKeydown(event: KeyboardEvent) {
 onMounted(() => { void timeline.load(); });
 onScopeDispose(() => timeline.dispose());
 
-defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready });
+defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanvasVideo: timeline.appendCanvasVideo, getTemplateTimeline: () => timeline });
 </script>
 
 <style scoped lang="scss">
+.effectForm { display: grid; align-content: start; gap: 8px; padding: 10px; }
 .timelinePanel {
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
+  padding-top: 52px;
   overflow: hidden;
   background: var(--el-bg-color);
 

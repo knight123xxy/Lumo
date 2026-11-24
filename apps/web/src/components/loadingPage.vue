@@ -59,6 +59,20 @@ watch([() => props.active, reducedMotion], ([active, reducedMotion]) => {
   }
 }, { immediate: true });
 
+// 项目导航等待描边完成。后台窗口或渲染器漏发 animationend 时仍要继续。
+watch([visible, drawn, filling], ([shown, outlined, fill], _, onCleanup) => {
+  if (!shown || outlined && !fill) return;
+  const timeout = setTimeout(() => {
+    if (!outlined) {
+      drawn.value = true;
+      if (!props.active) filling.value = true;
+    } else if (!props.active) {
+      visible.value = false;
+    }
+  }, 1600);
+  onCleanup(() => clearTimeout(timeout));
+});
+
 function finishDrawing(event: AnimationEvent) {
   if (event.target !== logoElement.value?.querySelector("path:last-of-type")) return;
   drawn.value = true;

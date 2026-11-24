@@ -65,6 +65,18 @@ export async function readOwnBalance(req: Request) {
   return modelGateway.readBalance(user.id);
 }
 
+export async function issueRechargeCard(req: Request, amount: string) {
+  await authorize(req);
+  return modelGateway.issueCard(amount);
+}
+
+export async function redeemRechargeCard(req: Request, code: string) {
+  assertAppRequest(req);
+  const user = requestIdentity(req);
+  if (user?.role !== "user") throw Object.assign(new Error("请使用普通账号兑换充值卡"), { status: 403 });
+  return modelGateway.redeemCard(user.id, code);
+}
+
 // 托管充值：Lumo 内支付成功后由服务端调用，调大该用户算力汇子账号 remain_quota。
 // ACT: 支付网关尚不存在，此方法当前仅对超管开放；接入真实支付后由支付回调持服务端凭据调用，不能在用户端凭自报金额充值。
 export async function rechargeUserSubAccount(req: Request, userId: string, quota: number) {

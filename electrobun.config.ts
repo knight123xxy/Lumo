@@ -27,6 +27,7 @@ export default {
     copy: {
       "build/desktop/ffmpeg/ffmpegWorker.js": "bun/ffmpegWorker.js",
       "build/desktop/sandbox/sandboxProcess.js": "bun/sandboxProcess.js",
+      "apps/server/src/utils/showcase/renderCards.mjs": "bun/renderCards.mjs",
       "build/desktop/node_modules": "bun/node_modules",
       "build/desktop/photon": "bun/node_modules/@silvia-odwyer/photon-node",
       ...(process.platform === "win32" ? {

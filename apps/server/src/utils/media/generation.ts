@@ -4,6 +4,7 @@ import { join, relative } from "node:path";
 import { createHash } from "node:crypto";
 import type { Provider, ProviderTaskData } from "@lumo/providers";
 import type { GeneratedMedia, MediaGenerationRequest, MediaModel, MediaReference } from "@lumo/tools-scaffold/runtime";
+import { ideamineProviderSource } from "@/utils/media/builtin/builtinProviderSources";
 import conf from "@/utils/conf";
 import { getAccountProvider } from "@/utils/ai/provider";
 import { getMediaProvider, listMediaProviders, loadMediaProviderSource } from "@/utils/media/provider";
@@ -58,16 +59,6 @@ function requireGenerationMode(task?: MediaGenerationTask) {
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function insufficientQuota(): never {
-  throw Object.assign(new Error("算力余额不足，请先充值后再生成"), { status: 402, code: "INSUFFICIENT_QUOTA" });
-}
-
-// 托管模式：按当前用户反查子账号 key 与余额。超管/独立模式无 userId 时返回 undefined，沿用平台全局配置。
-async function hostedAccount(userId: string | undefined, signal?: AbortSignal) {
-  if (!userId) return undefined;
-  return hosting.getUserSubAccount(userId, signal);
 }
 
 function imageOptions(value: unknown, pattern: RegExp) {
@@ -213,22 +204,28 @@ async function prepareRequest<T>(directory: string | undefined, mediaType: "imag
 }
 
 async function configuredProvider(request: MediaGenerationRequest, mediaType: "image" | "video" | "audio", signal?: AbortSignal, directory?: string,
-  saveTaskData?: (data: ProviderTaskData) => Promise<void>, resume = false, modelRouteCipher?: string, hostedKey?: string) {
+  saveTaskData?: (data: ProviderTaskData) => Promise<void>, resume = false, modelRouteCipher?: string, ownerUserId?: string) {
   if (modelGateway.enabled() || modelRouteCipher) {
     const { route, upstream } = await modelGateway.resolve(mediaType, request.providerId, request.modelId, modelRouteCipher, request);
-    // 托管模式：算力汇媒体上游改用当前用户子账号 key 作 Bearer，而非平台全局 key。
-    const config = hostedKey !== undefined && route.providerId === hostedMediaProviderId
-      ? { ...upstream.config, apiKey: hostedKey } : upstream.config;
+    let config = upstream.config;
+    if (ownerUserId && route.providerId === hostedMediaProviderId) {
+      const trustedUrl = typeof config.apiUrl === "string" && config.apiUrl.trim() ? config.apiUrl.trim().replace(/\/+$/, "") : "https://api.ideamine.cn/v1";
+      if (upstream.source !== ideamineProviderSource || trustedUrl !== "https://api.ideamine.cn/v1") {
+        throw Object.assign(new Error("算力汇托管路由须使用内置适配器及官方地址"), { status: 503 });
+      }
+      const hosted = await hosting.getUserSubAccount(ownerUserId, signal);
+      if (!resume && hosted.remainingQuota <= 0) throw Object.assign(new Error("算力汇上游额度不足，请联系管理员"), { status: 503 });
+      config = { ...config, apiUrl: trustedUrl, apiKey: hosted.key };
+    }
     const provider = await loadMediaProviderSource(upstream.source, config, signal, undefined, directory, saveTaskData, upstream.cloud);
-    return { provider, request: { ...request, providerId: provider.id, modelId: upstream.upstreamModelId } };
+    return { provider, request: { ...request, providerId: provider.id, modelId: upstream.upstreamModelId }, usesBuiltinIdeamine: upstream.source === ideamineProviderSource };
   }
   const info = await getMediaProvider(request.providerId);
   if (!resume && !info.models.some(model => model.id === request.modelId && model.type === mediaType)) invalid("所选媒体模型不存在或类型不匹配，请重新选择");
   const configurations = record(conf.get("settings", {}).mediaProviderConfigs);
   const base = record(configurations[info.id]);
-  const config = hostedKey !== undefined && info.id === hostedMediaProviderId ? { ...base, apiKey: hostedKey } : base;
-  const provider = await loadMediaProviderSource(info.source, config, signal, undefined, directory, saveTaskData);
-  return { provider, request };
+  const provider = await loadMediaProviderSource(info.source, base, signal, undefined, directory, saveTaskData);
+  return { provider, request, usesBuiltinIdeamine: info.source === ideamineProviderSource };
 }
 
 async function preparePriceRequest(directory: string | undefined, mediaType: "image" | "video" | "audio", request: MediaGenerationRequest, signal?: AbortSignal) {
@@ -291,9 +288,6 @@ async function executeMedia(
   signal?.throwIfAborted();
   if (!request.prompt.trim()) invalid("请输入生成提示词");
   const modelRouteCipher = task?.modelRouteCipher;
-  // 托管模式：反查当前用户子账号 key 与余额；新提交余额归零即拦截，恢复任务不重复拦截（上游已消费）。
-  const hosted = await hostedAccount(task?.ownerUserId, signal);
-  if (task?.resume !== true && hosted && hosted.remainingQuota <= 0) insufficientQuota();
   const directory = await realpath(cwd);
   const outputDirectory = request.outputDirectory ?? "assets/generated";
   await resolveWorkspacePath(directory, outputDirectory, true);
@@ -316,7 +310,7 @@ async function executeMedia(
   }
   let finish = () => {};
   const resumeAssets = async () => {
-    const { provider } = await configuredProvider(request, mediaType, signal, directory, data => task!.save({ providerData: data }), true, modelRouteCipher, hosted?.key);
+    const { provider } = await configuredProvider(request, mediaType, signal, directory, data => task!.save({ providerData: data }), true, modelRouteCipher, task?.ownerUserId);
     if (!checkpoint?.providerData || !provider.resumeTask) invalid("该任务没有可恢复的供应商凭据，不能重新提交生成");
     requireGenerationMode(task);
     finish();
@@ -332,13 +326,17 @@ async function executeMedia(
     if (task?.resume) {
       assets = checkpoint?.assets ?? await resumeAssets();
     } else {
-      const { provider, request: upstreamRequest } = await configuredProvider(request, mediaType, signal, directory,
-        task ? data => task.save({ providerData: data }) : undefined, false, modelRouteCipher, hosted?.key);
+      const { provider, request: upstreamRequest, usesBuiltinIdeamine } = await configuredProvider(request, mediaType, signal, directory,
+        task ? data => task.save({ providerData: data }) : undefined, false, modelRouteCipher, task?.ownerUserId);
       const generate = mediaType === "image" ? provider.generateImage : mediaType === "video" ? provider.generateVideo : provider.generateAudio;
       if (typeof generate !== "function") invalid(t`此供应商不支持${translateMessage({ image: "图片", video: "视频", audio: "音频" }[mediaType])}生成`);
       const rules = Array.isArray(provider.rules) ? provider.rules : [];
       if (provider.id !== "lumo" && rules.some(rule => rule.field === "apiKey")
         && (typeof provider.config.apiKey !== "string" || !provider.config.apiKey.trim())) invalid("请先在媒体模型设置中配置供应商 API Key");
+      if (mediaType === "video" && usesBuiltinIdeamine && (upstreamRequest.images?.length || upstreamRequest.videos?.length
+        || upstreamRequest.audios?.length || upstreamRequest.firstFrame || upstreamRequest.lastFrame)) {
+        invalid("当前算力汇视频适配器尚未接通本地参考素材，请选择支持参考素材的模型");
+      }
       const { type, ...parameters } = await prepareRequest(directory, mediaType, upstreamRequest, readReference, signal);
       signal?.throwIfAborted();
       requireGenerationMode(task);

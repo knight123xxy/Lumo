@@ -2,6 +2,7 @@
   <article class="usersPage">
     <header class="pageHeading">
       <h1>{{ translate("用户管理") }}</h1>
+      <el-button :disabled="mutationBusy" @click="openIssue()">{{ translate("签发充值卡") }}</el-button>
     </header>
     <div class="usersToolbar">
       <el-form class="searchForm" labelPosition="top" :disabled="mutationBusy" @submit.prevent="submitSearch">
@@ -37,9 +38,10 @@
         <el-table-column :label="translate('最近登录')" minWidth="170">
           <template #default="{ row }"><span class="timeText">{{ formatTime(row.lastLoginAt) }}</span></template>
         </el-table-column>
-        <el-table-column :label="translate('操作')" width="230" align="right">
+        <el-table-column :label="translate('操作')" minWidth="340" align="right">
           <template #default="{ row }">
             <div class="rowActions">
+              <el-button link type="primary" :disabled="row.disabled || mutationBusy || listLoading" @click="openIssue(row as UserItem)">{{ translate("签发推荐码") }}</el-button>
               <el-button link type="primary" :disabled="mutationBusy || listLoading" @click="openBalance(row as UserItem)">{{ translate("余额") }}</el-button>
               <el-button link type="primary" :disabled="mutationBusy || listLoading" @click="openPassword(row as UserItem)">{{ translate("重置密码") }}</el-button>
               <el-button link :type="row.disabled ? 'primary' : 'danger'" :loading="stateTargetId === row.id" :disabled="mutationBusy || listLoading" @click="changeState(row as UserItem)">{{ row.disabled ? translate("启用") : translate("禁用") }}</el-button>
@@ -73,6 +75,28 @@
       <template #footer>
         <el-button :disabled="formSaving" @click="formVisible = false">{{ translate("取消") }}</el-button>
         <el-button type="primary" nativeType="submit" form="adminUserForm" :loading="formSaving" :disabled="formSaving">{{ formTarget ? translate("保存") : translate("创建") }}</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="issueVisible" :title="issueTitle" width="min(480px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose :closeOnClickModal="false" :closeOnPressEscape="!issueSaving" :showClose="!issueSaving" @closed="!issueVisible && clearIssue()">
+      <div class="formContent">
+        <strong v-if="issueTarget">{{ issueTarget.userName }}</strong>
+        <el-form v-if="!issueTarget && !issuedCode" id="adminIssueForm" labelPosition="top" :disabled="issueSaving" @submit.prevent="issueCode">
+          <el-form-item :label="`${translate('金额')} (CNY)`" for="adminIssueAmount" required>
+            <el-input id="adminIssueAmount" v-model="issueAmount" inputmode="decimal" autocomplete="off" :maxlength="20" />
+          </el-form-item>
+        </el-form>
+        <template v-if="issuedCode">
+          <el-alert :title="translate('此代码仅显示一次，请复制保存。')" type="info" :closable="false" />
+          <el-input :modelValue="issuedCode" :aria-label="issueTitle" readonly @focus="($event.target as HTMLInputElement).select()" />
+          <strong v-if="issuedAmount">{{ issuedAmount }} CNY</strong>
+        </template>
+        <el-alert v-if="issueError" :title="issueError" type="error" :closable="false" showIcon />
+      </div>
+      <template #footer>
+        <el-button :disabled="issueSaving" @click="issueVisible = false">{{ issuedCode ? translate("关闭") : translate("取消") }}</el-button>
+        <el-button v-if="!issuedCode && issueTarget" type="primary" :loading="issueSaving" @click="issueCode">{{ issueTitle }}</el-button>
+        <el-button v-else-if="!issuedCode" type="primary" nativeType="submit" form="adminIssueForm" :loading="issueSaving">{{ issueTitle }}</el-button>
       </template>
     </el-dialog>
 
@@ -199,7 +223,15 @@ const creditAmountInput = ref<InputInstance>();
 const releaseTargetId = ref<string | null>(null);
 const releaseError = ref("");
 const balanceSaving = computed(() => creditSaving.value || releaseTargetId.value !== null);
-const mutationBusy = computed(() => props.saving || formSaving.value || stateTargetId.value !== null || balanceSaving.value || balanceLoading.value);
+const issueVisible = ref(false);
+const issueTarget = shallowRef<Pick<UserItem, "id" | "userName"> | null>(null);
+const issueAmount = ref("");
+const issuedCode = ref("");
+const issuedAmount = ref("");
+const issueError = ref("");
+const issueSaving = ref(false);
+const issueTitle = computed(() => issueTarget.value ? translate("签发推荐码") : translate("签发充值卡"));
+const mutationBusy = computed(() => props.saving || formSaving.value || stateTargetId.value !== null || balanceSaving.value || balanceLoading.value || issueSaving.value);
 const userNameInput = ref<InputInstance>();
 const passwordInput = ref<InputInstance>();
 const confirmationInput = ref<InputInstance>();
@@ -211,6 +243,7 @@ let mutationRequest: AbortController | undefined;
 let balanceRequest: AbortController | undefined;
 let creditRequest: AbortController | undefined;
 let releaseRequest: AbortController | undefined;
+let issueRequest: AbortController | undefined;
 let closeReleasePrompt: (() => void) | undefined;
 const releaseReasons = new Map<string, string>();
 let confirmingState = false;
@@ -235,6 +268,48 @@ function formatTime(value: number) {
 function errorMessage(cause: unknown, fallback: string) {
   if ((cause as { status?: number } | null)?.status === 401) emit("sessionExpired");
   return cause instanceof Error ? cause.message : fallback;
+}
+
+function clearIssue() {
+  issueTarget.value = null;
+  issueAmount.value = "";
+  issuedCode.value = "";
+  issuedAmount.value = "";
+  issueError.value = "";
+}
+
+function openIssue(user?: UserItem) {
+  if (mutationBusy.value || formVisible.value || balanceVisible.value || user?.disabled) return;
+  clearIssue();
+  if (user) issueTarget.value = { id: user.id, userName: user.userName };
+  issueVisible.value = true;
+}
+
+async function issueCode() {
+  if (!issueVisible.value || mutationBusy.value || issuedCode.value) return;
+  const userId = issueTarget.value?.id;
+  const amount = issueAmount.value.trim();
+  if (!userId && !billingCreditSchema.shape.amount.safeParse(amount).success) {
+    issueError.value = translate("金额须大于 0，最多 6 位小数且不超过 1000000000");
+    return;
+  }
+  const request = new AbortController();
+  issueRequest = request;
+  issueSaving.value = true;
+  issueError.value = "";
+  try {
+    const result = await props.request<{ code: string; amount?: string }>({
+      method: "POST", url: userId ? "/api/multiTenant/referrals/issue" : "/api/multiTenant/billing/issueCard",
+      data: userId ? { userId } : { amount }, signal: request.signal,
+    });
+    if (disposed || request.signal.aborted) return;
+    issuedCode.value = result.code;
+    issuedAmount.value = result.amount ?? "";
+  } catch (cause) {
+    if (!disposed && !request.signal.aborted) issueError.value = errorMessage(cause, translate("操作失败，请重试"));
+  } finally {
+    if (issueRequest === request) { issueRequest = undefined; issueSaving.value = false; }
+  }
 }
 
 function transactionStatus(value: BillingTransaction["status"]) {
@@ -520,6 +595,8 @@ onBeforeUnmount(() => {
   balanceRequest?.abort();
   creditRequest?.abort();
   releaseRequest?.abort();
+  issueRequest?.abort();
+  clearIssue();
   closeReleasePrompt?.();
   if (confirmingState) ElMessageBox.close();
   formPassword.value = "";
@@ -536,6 +613,12 @@ onBeforeUnmount(() => {
   color: var(--el-text-color-primary);
 
   .pageHeading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
     h1 { margin: 0; font-size: 26px; font-weight: 600; line-height: 1.4; letter-spacing: -0.02em; }
   }
   .usersToolbar {

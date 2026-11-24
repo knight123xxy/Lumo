@@ -19,6 +19,8 @@ await rm(resolve(outputDirectory, "pluginSdk"), { recursive: true, force: true }
 await $`${process.execPath} build src/index.ts --target=bun --minify --external @silvia-odwyer/photon-node --external @firecrawl/anydoc --external @firecrawl/anydoc-wasm --external just-bash --define ${`process.env.appVersion:${JSON.stringify(config.app.version)}`} --outdir ${outputDirectory}`.cwd(resolve(projectDir, "apps/server"));
 await $`${process.execPath} build packages/ffmpeg/src/ffmpegWorker.ts --target=bun --minify --outdir ${outputDirectory}`.cwd(projectDir);
 await $`${process.execPath} build packages/tools/sandbox/src/sandboxProcess.ts --target=bun --minify --external just-bash --outdir ${outputDirectory}`.cwd(projectDir);
+// ACT: 模板渲染脚本以独立 Node 进程运行（Bun 的 WebSocket 不能连接 Chrome DevTools），需随构建复制。
+await cp(resolve(projectDir, "apps/server/src/utils/showcase/renderCards.mjs"), resolve(outputDirectory, "renderCards.mjs"));
 const photonOutput = resolve(projectDir, "build/server/node_modules/@silvia-odwyer/photon-node");
 await rm(photonOutput, { recursive: true, force: true });
 await cp(photonDirectory, photonOutput, { recursive: true });

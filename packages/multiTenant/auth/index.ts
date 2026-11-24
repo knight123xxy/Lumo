@@ -9,6 +9,7 @@ export const adminAccountSchema = z.string().trim().transform(value => value.nor
   .pipe(z.string().min(1).max(64).regex(/^[^\s\u0000-\u001f\u007f]+$/))
   .refine(value => value.toLowerCase().length <= 64);
 export const passwordSchema = z.string().min(8).max(128);
+export const referralCodeSchema = z.string().max(128).trim().regex(/^(?:[0-9a-f]{32})?$/i, "推荐码无效").transform(value => value.toLowerCase());
 export const userIdSchema = z.uuid();
 export const userListSchema = z.object({
   search: z.string().trim().max(64).transform(value => accountKey(value)).pipe(z.string().max(64)),
@@ -52,7 +53,7 @@ export function createMultiTenant(dataDirectory: string) {
     await db.createWebSession({ tokenHash: digest(token), userId: user.id, role: user.role, expiresAt: Date.now() + 8 * 60 * 60 * 1000, authVersion });
     return { token, user };
   }
-  async function addUser(db: AdminDatabase, account: string, password: string, selfRegistration = false) {
+  async function addUser(db: AdminDatabase, account: string, password: string, selfRegistration = false, referralCodeHash?: string) {
     const admin = await db.getAdmin();
     if (!admin) fail("请先设置超级管理员账号", 409);
     await db.initialize();
@@ -61,11 +62,13 @@ export function createMultiTenant(dataDirectory: string) {
     const passwordHash = await Bun.password.hash(password, { algorithm: "argon2id" });
     const user = { id: randomUUID(), userName: account, userNameKey, passwordHash, createdAt: Date.now() };
     if (selfRegistration && !await db.getRegistrationEnabled()) fail("当前已关闭注册，请联系管理员创建账号", 403);
-    try { await db.createUser(user); }
+    let created: boolean;
+    try { created = await db.createUser(user, referralCodeHash); }
     catch (error) {
       if (await db.getUser(userNameKey)) fail("账号已存在，请使用其他账号", 409);
       throw error;
     }
+    if (!created) fail("推荐码无效", 400);
     return user;
   }
   return {
@@ -149,14 +152,29 @@ export function createMultiTenant(dataDirectory: string) {
         adminSessionHash = undefined;
       });
     },
-    register(userName: string, password: string) {
+    async issueReferralCode(id: string) {
+      const referrerUserId = userIdSchema.parse(id);
+      const db = await getDatabase();
+      if (!db) fail("账号不存在", 404);
+      await db.initialize();
+      const referrer = await db.getUserById(referrerUserId);
+      if (!referrer) fail("账号不存在", 404);
+      if (referrer.disabled) fail("账号已禁用", 403);
+      const code = randomBytes(16).toString("hex");
+      if (!await db.createReferralCode({ codeHash: digest(code), referrerUserId, createdAt: Date.now() })) {
+        fail("签发推荐码失败", 409);
+      }
+      return { code };
+    },
+    register(userName: string, password: string, referralCode?: string) {
       const account = adminAccountSchema.parse(userName);
       passwordSchema.parse(password);
+      const code = referralCodeSchema.optional().parse(referralCode);
       return serial(async () => {
         const db = await getDatabase();
         if (!db) fail("请先设置超级管理员账号", 409);
         if (!await db.getRegistrationEnabled()) fail("当前已关闭注册，请联系管理员创建账号", 403);
-        const user = await addUser(db, account, password, true);
+        const user = await addUser(db, account, password, true, code ? digest(code) : undefined);
         if (!await db.completeUserLogin(user.id, 0, Date.now())) fail("账号状态已变更，请重新登录", 401);
         return createWebSession(db, { id: user.id, userName: user.userName, role: "user" });
       });

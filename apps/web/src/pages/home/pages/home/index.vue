@@ -33,13 +33,34 @@
         <p v-if="!workspaceDirectory" class="workspaceHint" role="status">请先选择一个空文件夹作为工作目录，画布和素材会保存在这里。</p>
       </div>
     </section>
+    <nav class="quickActions" :aria-label="translate('创作入口')">
+      <button v-for="action in quickActions" :key="action.id" class="quickAction" type="button" :disabled="disabled" @click="emit('enter', action.id)">
+        <span class="quickIcon"><component :is="action.icon" :size="20" aria-hidden="true" /></span>
+        <strong>{{ translate(action.label) }}</strong>
+        <span class="quickDetail">{{ translate(action.detail) }}</span>
+      </button>
+    </nav>
+    <section class="previewSection" aria-labelledby="homeTemplatesTitle">
+      <div class="sectionHeader">
+        <h2 id="homeTemplatesTitle">{{ translate('整集模板') }}</h2>
+        <button class="moreButton" type="button" @click="emit('showSection', 'skills')">{{ translate('全部模板') }}<icon-chevron-right :size="16" aria-hidden="true" /></button>
+      </div>
+      <div class="templateRow">
+        <button v-for="(pipeline, index) in templates" :key="pipeline.slug" class="templateCard" type="button" :title="pipeline.summary" @click="emit('showSection', 'skills')">
+          <span class="templateCover" :class="`tone${index % 5}`">
+            <component :is="categoryIcons[pipeline.category] ?? IconMovie" :size="26" aria-hidden="true" />
+            <em>{{ pipeline.category }}</em>
+          </span>
+          <strong class="templateName">{{ pipeline.name }}</strong>
+          <span class="templateStages">{{ pipeline.stages.map(stage => stage.name).join(' › ') }}</span>
+        </button>
+      </div>
+    </section>
     <section class="previewSection" aria-labelledby="homeProjectsTitle">
       <div class="sectionHeader">
-        <h2 id="homeProjectsTitle">项目</h2>
-        <button class="moreButton" type="button" @click="emit('showSection', 'projects')">更多<icon-chevron-right :size="16" aria-hidden="true" /></button>
+        <h2 id="homeProjectsTitle">{{ translate('最近项目') }}</h2>
       </div>
       <div class="previewGrid">
-        <projectLaunchCard :disabled="disabled" :loading="loading" @create="emit('create')" />
         <projectCard v-for="project in recentProjects" :key="project.directory" :project="project" :disabled="disabled" @select="emit('open', project)" />
       </div>
     </section>
@@ -58,11 +79,11 @@
 
 <script setup lang="ts">
 import { locale, translate } from "@lumo/i18n/vue";
-import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch, type Component } from "vue";
 import { ElMessage, type InputInstance } from "element-plus";
 import { getReadableFileMimeType, readableFileAccept } from "@lumo/server/documentFormats";
 import type { ExplorePage, ExploreProject } from "@lumo/server/channel";
-import { IconArrowUp, IconFolder, IconPaperclip } from "@tabler/icons-vue";
+import { IconArrowUp, IconCamera, IconCube, IconDeviceDesktop, IconFolder, IconMicrophone, IconMovie, IconPhoto, IconPaperclip, IconSparkles, IconSpeakerphone, IconStack2, IconVector, IconWand } from "@tabler/icons-vue";
 import modelPopover from "@/components/modelPopover.vue";
 import attachmentList from "@/components/agent/attachmentList.vue";
 import { createPastedTextFile, readTextAttachment } from "@/components/agent/textAttachments";
@@ -72,15 +93,30 @@ import { useWorkspaceStore, type Project } from "@/stores/workspace";
 import http from "@/lib/http";
 import workspacePicker from "@/pages/home/workspacePicker.vue";
 import projectCard from "../projects/projectCard.vue";
-import projectLaunchCard from "../projects/projectLaunchCard.vue";
 import exploreCard from "../explore/exploreCard.vue";
 import exploreDetail from "../explore/exploreDetail.vue";
+import { pipelineCatalog } from "../skills/pipelineCatalog";
+
+const quickActions = [
+  { id: "image", label: "图片生成", detail: "角色与场景", icon: IconPhoto },
+  { id: "video", label: "视频生成", detail: "文生与图生视频", icon: IconVector },
+  { id: "timeline", label: "智能剪辑", detail: "多轨时间线", icon: IconMovie },
+  { id: "automaticFilm", label: "一键成片", detail: "主题直出", icon: IconWand },
+  { id: "previs", label: "白模预演", detail: "单场剧本", icon: IconCube },
+  { id: "drama", label: "短剧工作流", detail: "剧本分镜", icon: IconSparkles },
+] as const;
+const templates = pipelineCatalog.slice(0, 5);
+const categoryIcons: Record<string, Component> = {
+  生成类: IconWand, 动画类: IconMovie, 定制类: IconSpeakerphone,
+  录屏类: IconDeviceDesktop, 混合类: IconStack2, 电影类: IconCamera, 口播类: IconMicrophone,
+};
 
 const props = defineProps<{ disabled: boolean; loading: boolean }>();
 const emit = defineEmits<{
   // 新建项目卡片不传请求，由外壳选择文件夹新建或打开。
   create: [request?: { directory: string; prompt: string; attachments: AgentAttachment[]; model: string; reasoningEffort: string }];
   open: [project: Project];
+  enter: [destination: "image" | "video" | "timeline" | "drama" | "previs" | "automaticFilm"];
   showSection: [section: string];
 }>();
 const workspaceStore = useWorkspaceStore();
@@ -290,8 +326,107 @@ async function restoreAttachment(index: number) {
   max-width: 1040px;
   margin: clamp(32px, 6vh, 64px) auto 0;
 
+  .quickActions {
+    display: flex;
+    gap: clamp(16px, 4vw, 56px);
+    justify-content: center;
+    margin: 2px 0 38px;
+  }
+
+  .quickAction {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    min-width: 84px;
+    padding: 12px 10px;
+    flex-shrink: 0;
+    color: var(--el-text-color-primary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+
+    .quickIcon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      color: var(--el-color-primary);
+      background: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
+      border-radius: 12px;
+    }
+
+    strong { font-size: 13px; font-weight: 500; white-space: nowrap; }
+    .quickDetail { color: var(--el-text-color-secondary); font-size: 11px; white-space: nowrap; }
+
+    &:hover:not(:disabled) { background: var(--el-bg-color-overlay); border-color: var(--el-border-color-light); }
+    &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
+    &:disabled { opacity: .55; cursor: default; }
+  }
+
+  .templateRow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+
+    @media (max-width: 900px) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 640px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .templateCard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 0 12px;
+    overflow: hidden;
+    text-align: start;
+    color: var(--el-text-color-primary);
+    background: var(--el-bg-color-overlay);
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 12px;
+    cursor: pointer;
+
+    .templateCover {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: 96px;
+      color: #fff;
+
+      em {
+        position: absolute;
+        inset-block-end: 6px;
+        inset-inline-end: 8px;
+        font-size: 10px;
+        font-style: normal;
+        opacity: .82;
+      }
+
+      &.tone0 { background: linear-gradient(135deg, #3b4a6b, #6f7ea3); }
+      &.tone1 { background: linear-gradient(135deg, #4a3b5f, #8a6fa3); }
+      &.tone2 { background: linear-gradient(135deg, #2f4f4a, #5f9a8f); }
+      &.tone3 { background: linear-gradient(135deg, #5b3d33, #a37a5f); }
+      &.tone4 { background: linear-gradient(135deg, #2d3f52, #5f8aa3); }
+    }
+
+    .templateName { padding: 0 12px; font-size: 13px; font-weight: 500; }
+
+    .templateStages {
+      padding: 0 12px;
+      overflow: hidden;
+      color: var(--el-text-color-secondary);
+      font-size: 11px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    &:hover { border-color: var(--el-color-primary); }
+    &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
+  }
+
   .creationPanel {
-    margin-bottom: 56px;
+    margin-bottom: 20px;
 
     .brand {
       display: flex;
@@ -311,7 +446,7 @@ async function restoreAttachment(index: number) {
 
       h1 {
         margin: 0;
-        font-size: clamp(22px, 3vw, 34px);
+        font-size: clamp(20px, 2.3vw, 26px);
         font-weight: 500;
         line-height: 1.3;
         letter-spacing: -0.5px;

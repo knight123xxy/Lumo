@@ -22,6 +22,9 @@
             <el-form-item v-if="mode === 'register'" :label="translate('确认密码')" for="userPasswordConfirm" :error="confirmationError" required>
               <el-input id="userPasswordConfirm" ref="confirmationInput" v-model="passwordConfirm" type="password" showPassword autocomplete="new-password" aria-required="true" :minlength="8" :maxlength="128" />
             </el-form-item>
+            <el-form-item v-if="mode === 'register'" :label="translate('推荐码（选填）')" for="userReferralCode">
+              <el-input id="userReferralCode" v-model="referralCode" autocomplete="off" :maxlength="128" />
+            </el-form-item>
             <el-alert v-if="requestError" class="requestError" :title="requestError" type="error" :closable="false" showIcon />
             <el-button class="submitButton" type="primary" nativeType="submit" :loading="busy" :disabled="busy">{{ mode === "login" ? translate("登录") : translate("注册") }}</el-button>
           </el-form>
@@ -58,6 +61,7 @@ const mode = ref<"login" | "register">("login");
 const userName = ref("");
 const password = ref("");
 const passwordConfirm = ref("");
+const referralCode = ref("");
 const busy = ref(false);
 const userNameError = ref("");
 const passwordError = ref("");
@@ -68,7 +72,7 @@ const passwordInput = ref<InputInstance>();
 const confirmationInput = ref<InputInstance>();
 const controller = new AbortController();
 
-watch([userName, password, passwordConfirm], () => {
+watch([userName, password, passwordConfirm, referralCode], () => {
   userNameError.value = "";
   passwordError.value = "";
   confirmationError.value = "";
@@ -80,6 +84,7 @@ async function switchMode() {
   mode.value = mode.value === "login" ? "register" : "login";
   password.value = "";
   passwordConfirm.value = "";
+  referralCode.value = "";
   userNameError.value = "";
   passwordError.value = "";
   confirmationError.value = "";
@@ -112,14 +117,21 @@ async function submit() {
     confirmationInput.value?.focus();
     return;
   }
+  const code = mode.value === "register" ? referralCode.value.trim() : "";
+  if (code && !/^[0-9a-f]{32}$/i.test(code)) {
+    requestError.value = translate("推荐码无效");
+    return;
+  }
   busy.value = true;
   requestError.value = "";
   try {
     const result = await props.request<{ user: UserIdentity }>({
-      method: "POST", url: `/api/multiTenant/user/${mode.value}`, data: { userName: name, password: password.value }, signal: controller.signal,
+      method: "POST", url: `/api/multiTenant/user/${mode.value}`,
+      data: { userName: name, password: password.value, ...(code ? { referralCode: code } : {}) }, signal: controller.signal,
     });
     password.value = "";
     passwordConfirm.value = "";
+    referralCode.value = "";
     emit("authenticated", result.user);
   } catch (cause) {
     if (!controller.signal.aborted) requestError.value = cause instanceof Error ? cause.message : translate("账号操作失败，请重试");

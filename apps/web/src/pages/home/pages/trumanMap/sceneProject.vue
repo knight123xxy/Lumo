@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { markRaw, onMounted, provide, shallowRef, watch } from "vue";
+import { markRaw, onMounted, onScopeDispose, provide, shallowRef, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { VueFlow, useVueFlow, type Node, type NodeTypesObject } from "@vue-flow/core";
 import type { NodePersistenceContext, NodeProjectContext } from "@lumo/nodes-scaffold/nodeDocument";
@@ -23,10 +23,13 @@ import assetLibrary from "@/pages/workspace/panels/canvas/components/assetLibrar
 type ProjectFile = { lumoCanvas: true; nodes: Node[]; edges: unknown[]; viewport: { x: number; y: number; zoom: number } };
 
 // request：首页“生成预演”新建的场景，打开后设好画幅，把描述作为第一条消息发给内置 Agent。
-const props = defineProps<{ directory: string; request?: { prompt: string; model: string; reasoningEffort: string; format: string } }>();
+const props = defineProps<{ directory: string; request?: { prompt: string; model: string; reasoningEffort: string; format: string }; script?: string; projectPath?: string }>();
+const script = props.script;
+const lifetime = new AbortController();
+onScopeDispose(() => lifetime.abort());
 const emit = defineEmits<{ close: [] }>();
 // 项目文件沿用画布格式，场景数据由插件写在同一目录的 assets/节点ID/ 下；同一文件夹也能作为普通项目打开。
-const projectPath = "白模预演.json";
+const projectPath = props.projectPath ?? "白模预演.json";
 const nodeName = "trumanMap";
 const nodeType = `remote-${nodeName}`;
 const flowId = `trumanMap-${crypto.randomUUID()}`;
@@ -118,7 +121,7 @@ watch(() => flow.findNode(nodeId.value)?.data, (data, previous) => {
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get<{ data: { name: string; url: string; enabled?: boolean }[] }>("/api/nodes/get", { headers: { "Cache-Control": "no-cache", "x-lumo-workspace": "1" } });
+    const { data } = await axios.get<{ data: { name: string; url: string; enabled?: boolean }[] }>("/api/nodes/get", { signal: lifetime.signal, headers: { "Cache-Control": "no-cache", "x-lumo-workspace": "1" } });
     const plugin = data.data.find(item => item.name === nodeName && item.enabled !== false && item.url === `/api/nodes/files?name=${nodeName}`);
     if (!plugin) throw new Error("远程节点未加载，请确认插件已安装并启用");
     // 不支持独立项目的旧版插件挂上去不会打开编辑器，只会一直等：先查声明；页面里缓存的可能是更新前的脚本，重新拉一次最新安装的再判断。
@@ -137,7 +140,8 @@ onMounted(async () => {
     }
     const node = saved?.lumoCanvas === true && Array.isArray(saved.nodes) ? saved.nodes.find(item => item?.type === nodeType && typeof item.id === "string") : undefined;
     if (!node) throw new Error("该文件夹里的“白模预演.json”不是白模预演场景，请换一个文件夹");
-    workspaceStore.addScene(listing.directory);
+    lifetime.signal.throwIfAborted();
+    if (!props.projectPath) workspaceStore.addScene(listing.directory);
     files = target;
     directory = listing.directory;
     project = saved;
@@ -149,20 +153,37 @@ onMounted(async () => {
     emit("close");
     return;
   }
-  if (props.request) sendRequest(props.request).catch(showError);
+  try {
+    if (script) {
+      await waitForTool("editorPrevisScript");
+      const result = await callEditor("editorPrevisScript", { script }) as { jobId?: string; shots?: unknown[] };
+      const preview = result.jobId ? await callEditor("editorWait", { jobId: result.jobId }) as typeof result : result;
+      if (preview.jobId) throw new Error("预演仍在生成，请稍后检查时间线并保存");
+      await callEditor("editorSave", {});
+      if (!preview.shots?.length) ElMessage.warning("当前场景未排出镜头，可在预演里补充对白或手动分镜");
+    } else if (props.request) await sendRequest(props.request);
+  } catch (error) {
+    if (!lifetime.signal.aborted) showError(error);
+  }
 });
 
-// 通过插件注册的节点函数操作编辑器（自动打开编辑器、等视口就绪），和画布总 Agent 调用的是同一入口。
-async function sendRequest(request: NonNullable<typeof props.request>) {
+function callEditor(name: string, args: Record<string, unknown>) {
+  return getNodeTools().call({ nodeId: nodeId.value, name: `node:${name}`, args }, lifetime.signal);
+}
+
+async function waitForTool(name: string) {
   const tools = getNodeTools();
-  const call = (name: string, args: Record<string, unknown>) => tools.call({ nodeId: nodeId.value, name: `node:${name}`, args });
-  // ACT: 节点函数在节点组件 setup 时注册，挂载时机由 Vue Flow 决定，这里轮询最多 10 秒。
-  for (let tries = 0; !tools.list([nodeId.value], ["node:editorAgentChat"]).next().value; tries++) {
-    if (tries >= 200) throw new Error("TrumanMap 插件版本过旧，不支持自动发送描述，请更新插件后重试");
+  for (let tries = 0; !tools.list([nodeId.value], [`node:${name}`]).next().value; tries++) {
+    lifetime.signal.throwIfAborted();
+    if (tries >= 200) throw new Error("TrumanMap 插件未就绪，请确认插件已更新并启用");
     await new Promise(resolve => setTimeout(resolve, 50));
   }
-  await call("editorCameras", { action: "format", format: request.format });
-  await call("editorAgentChat", { message: request.prompt, ...(request.model ? { model: request.model } : {}), ...(request.reasoningEffort ? { thinking: request.reasoningEffort } : {}) });
+}
+
+async function sendRequest(request: NonNullable<typeof props.request>) {
+  await waitForTool("editorAgentChat");
+  await callEditor("editorCameras", { action: "format", format: request.format });
+  await callEditor("editorAgentChat", { message: request.prompt, ...(request.model ? { model: request.model } : {}), ...(request.reasoningEffort ? { thinking: request.reasoningEffort } : {}) });
 }
 </script>
 

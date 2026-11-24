@@ -1,3 +1,4 @@
+import { mysqlRechargeCard } from "./rechargeCard";
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { and, asc, count, desc, eq, getTableColumns, sql } from "drizzle-orm";
@@ -5,6 +6,7 @@ import { mysqlSchema, varchar } from "drizzle-orm/mysql-core";
 import { mysqlAdmin, mysqlBillingLedger, mysqlModelRouting, mysqlSettings, mysqlSourceMapping, mysqlUser, mysqlWallet, mysqlWebSession } from "./schema";
 import type { AdminDatabase, WalletRecord } from "./schema";
 import type { DataSource } from "./index";
+import { mysqlReferralBinding, mysqlReferralCode } from "./referral";
 import { maxWalletMicros, validateWalletAmount, walletBalanceOverflow, walletSettlementExceeded, walletStateConflict } from "./billing";
 
 const informationColumns = mysqlSchema("information_schema").table("COLUMNS", {
@@ -86,8 +88,15 @@ export function connectMysql(config: Extract<DataSource, { provider: "mysql" }>[
         CHECK (reservedMicros >= 0 AND reservedMicros <= 9007199254740991),
         CHECK (amountMicros >= 0 AND amountMicros <= 9007199254740991)
       ) ENGINE=InnoDB`);
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS multiTenantRechargeCard (
+        codeHash VARCHAR(64) PRIMARY KEY,
+        requestId VARCHAR(36) NOT NULL UNIQUE,
+        amountMicros BIGINT NOT NULL CHECK (amountMicros BETWEEN 1 AND 9007199254740991)
+      ) ENGINE=InnoDB`);
       await requireBillingEngine();
     },
+    async createRechargeCard(card) { await db.insert(mysqlRechargeCard).values(card); },
+    async getRechargeCard(codeHash) { return (await db.select().from(mysqlRechargeCard).where(eq(mysqlRechargeCard.codeHash, codeHash)).limit(1))[0]; },
     async getWallets(userId) {
       try {
         const wallets = await db.select().from(mysqlWallet).where(eq(mysqlWallet.userId, userId)).orderBy(asc(mysqlWallet.currency));
@@ -397,8 +406,49 @@ export function connectMysql(config: Extract<DataSource, { provider: "mysql" }>[
     async getUserById(id) {
       return (await db.select().from(mysqlUser).where(eq(mysqlUser.id, id)).limit(1))[0];
     },
-    async createUser(user) {
-      await db.insert(mysqlUser).values({ ...user, settings: {}, settingsRevision: 0 });
+    async createReferralCode(code) {
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS multiTenantReferralCode (
+        codeHash VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+        referrerUserId VARCHAR(36) NOT NULL,
+        createdAt BIGINT NOT NULL
+      ) ENGINE=InnoDB`);
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS multiTenantReferralBinding (
+        userId VARCHAR(36) PRIMARY KEY,
+        codeHash VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+        createdAt BIGINT NOT NULL,
+        FOREIGN KEY (codeHash) REFERENCES multiTenantReferralCode (codeHash)
+      ) ENGINE=InnoDB`);
+      try {
+        await db.insert(mysqlReferralCode).values(code);
+        return true;
+      } catch (error) {
+        if (errorCode(error) === "ER_DUP_ENTRY") return false;
+        throw error;
+      }
+    },
+    async createUser(user, referralCodeHash) {
+      const values = { ...user, settings: {}, settingsRevision: 0 };
+      if (!referralCodeHash) {
+        await db.insert(mysqlUser).values(values);
+        return true;
+      }
+      return db.transaction(async tx => {
+        const tables = await tx.select({ engine: informationTables.engine, tableName: informationTables.tableName }).from(informationTables).where(and(
+          eq(informationTables.tableSchema, config.database),
+          sql`${informationTables.tableName} IN (${"multiTenantUser"}, ${"multiTenantReferralCode"}, ${"multiTenantReferralBinding"})`,
+        ));
+        if (!tables.some(table => table.tableName.toLowerCase() === "multitenantreferralcode")) return false;
+        if (tables.length !== 3 || tables.some(table => table.engine?.toLowerCase() !== "innodb")) {
+          throw Object.assign(new Error("多租户数据源访问失败，请检查配置与数据库状态"), { status: 503 });
+        }
+        const [valid] = await tx.select({ codeHash: mysqlReferralCode.codeHash }).from(mysqlReferralCode)
+          .innerJoin(mysqlUser, eq(mysqlReferralCode.referrerUserId, mysqlUser.id))
+          .where(and(eq(mysqlReferralCode.codeHash, referralCodeHash), eq(mysqlUser.disabled, false))).limit(1).for("share");
+        if (!valid) return false;
+        await tx.insert(mysqlUser).values(values);
+        await tx.insert(mysqlReferralBinding).values({ userId: user.id, codeHash: referralCodeHash, createdAt: user.createdAt });
+        return true;
+      });
     },
     async updateUser(id, values, expectedAuthVersion) {
       await db.update(mysqlUser).set(values).where(and(eq(mysqlUser.id, id),

@@ -19,7 +19,7 @@ export { requestIdentity } from "./runtime";
 export { currentIdentity } from "./context";
 export { modelGateway, requireDirectModelAccess } from "./gateway";
 export { userSettings } from "./settings";
-export { getModelRouting, getAvailableModels, saveModelRouting, configureModelCloud, getModelProviders, saveModelProviders, inspectModelProvider, getUserBilling, creditUserBalance, releaseUserReservation, readOwnBalance, rechargeUserSubAccount } from "./management";
+export { getModelRouting, getAvailableModels, saveModelRouting, configureModelCloud, getModelProviders, saveModelProviders, inspectModelProvider, getUserBilling, creditUserBalance, releaseUserReservation, readOwnBalance, rechargeUserSubAccount, issueRechargeCard, redeemRechargeCard } from "./management";
 
 const control = createMultiTenant(dirname(conf.path));
 const sourceMapping = createSourceMapping(dirname(conf.path));
@@ -163,9 +163,9 @@ export async function userSession(req: Request) {
   return { user, publicWeb, enabled: isEnabled(), host, registrationEnabled: await accessControl(() => control.getRegistrationEnabled()) };
 }
 
-export async function registerUser(req: Request, res: Response, userName: string, password: string) {
+export async function registerUser(req: Request, res: Response, userName: string, password: string, referralCode?: string) {
   assertUserRequest(req);
-  const result = await accessControl(() => control.register(userName, password));
+  const result = await accessControl(() => control.register(userName, password, referralCode));
   try {
     // 静默建算力汇子账号（name=lumo-<uid>）；失败不阻断注册，后续按 name 反查补齐（S2 对账）。
     await hosting.createSubAccount(result.user.id);
@@ -219,6 +219,11 @@ export async function listUsers(req: Request, query: ListUserOptions) {
 export async function createUser(req: Request, userName: string, password: string) {
   await authorize(req);
   return accessControl(() => control.createUser(userName, password));
+}
+
+export async function issueReferralCode(req: Request, userId: string) {
+  await authorize(req);
+  return accessControl(() => control.issueReferralCode(userId));
 }
 
 export async function setUserDisabled(req: Request, id: string, disabled: boolean) {

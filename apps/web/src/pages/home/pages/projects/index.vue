@@ -1,6 +1,7 @@
 <template>
   <section class="projectList" aria-labelledby="projectListTitle">
-    <h2 id="projectListTitle" class="projectListTitle">项目</h2>
+    <h2 id="projectListTitle" class="projectListTitle">{{ translate('工作区') }}</h2>
+    <el-segmented v-model="filter" class="projectFilters" :options="filters" :aria-label="translate('项目分类')" />
     <div class="projectItems">
       <projectLaunchCard :disabled="disabled" :loading="loading" @create="emit('create')" />
       <projectCard v-for="project in sortedProjects" :key="project.directory" :project="project" :disabled="disabled" :actionsLoading="exportingDirectory === project.directory" @select="emit('open', project)">
@@ -11,6 +12,7 @@
         </template>
       </projectCard>
     </div>
+    <div v-if="$slots.chats" class="projectChats"><slot name="chats" /></div>
   </section>
 </template>
 
@@ -31,7 +33,19 @@ const emit = defineEmits<{ create: []; open: [project: Project] }>();
 const workspaceStore = useWorkspaceStore();
 const pageLifetime = new AbortController();
 const exportingDirectory = ref("");
-const sortedProjects = computed(() => [...workspaceStore.projectList].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt));
+const filter = ref<"all" | "drama" | "aiCreation" | "videoEditing" | "exported">("all");
+const filters = computed(() => [
+  { label: translate("全部"), value: "all" },
+  { label: translate("短剧"), value: "drama" },
+  { label: translate("AI创作"), value: "aiCreation" },
+  { label: translate("视频剪辑"), value: "videoEditing" },
+  { label: translate("已导出"), value: "exported" },
+]);
+const sortedProjects = computed(() => workspaceStore.projectList.filter(project => {
+  if (filter.value === "all") return true;
+  if (filter.value === "exported") return project.status === "exported";
+  return (project.category ?? (project.mode === "edit" ? "videoEditing" : "aiCreation")) === filter.value;
+}).sort((left, right) => right.lastOpenedAt - left.lastOpenedAt));
 
 onUnmounted(() => pageLifetime.abort());
 
@@ -76,6 +90,8 @@ async function renameProject(project: Project) {
     font-weight: 600;
     line-height: 1.5;
   }
+
+  .projectChats { margin-top: 24px; }
 
   .projectItems {
     display: grid;

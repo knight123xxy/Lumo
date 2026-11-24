@@ -4041,5 +4041,11 @@
   "插件服务请求参数过长": "Masyadong mahaba ang mga parameter ng kahilingan sa serbisyo ng plugin",
   "插件服务端口必须是 0–65535 之间的整数": "Dapat buong bilang mula 0 hanggang 65535 ang port ng serbisyo ng plugin",
   "插件服务公网地址必须是不含路径和凭据的 HTTP 或 HTTPS 根地址": "Dapat root URL na HTTP o HTTPS na walang path o kredensyal ang pampublikong URL ng serbisyo ng plugin",
-  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": "Para sa HTTPS deployment, i-configure ang LUMO_PLUGIN_SERVER_URL at reverse proxy ng serbisyo ng plugin"
+  "HTTPS 部署请配置 LUMO_PLUGIN_SERVER_URL 与插件服务反向代理": "Para sa HTTPS deployment, i-configure ang LUMO_PLUGIN_SERVER_URL at reverse proxy ng serbisyo ng plugin",
+  "推荐码（选填）": "Referral code (opsyonal)",
+  "推荐码无效": "Hindi wasto ang referral code",
+  "签发推荐码失败": "Hindi makapagbigay ng referral code",
+  "签发推荐码": "Magbigay ng referral code",
+  "签发充值卡": "Mag-isyu ng recharge card",
+  "此代码仅显示一次，请复制保存。": "Isang beses lang ipinapakita ang code na ito. Kopyahin at itago ito."
 }

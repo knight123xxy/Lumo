@@ -1,7 +1,11 @@
 import { computed, ref, shallowRef } from "vue";
+import axios from "axios";
 import { createBrowserFfmpeg, type BrowserFfmpegFactory } from "@lumo/ffmpeg/browser";
 import { isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@lumo/asr";
 import { translate } from "@lumo/i18n/vue";
+import { useNodeAi } from "@lumo/nodes-scaffold/nodeAi";
+import http from "@/lib/http";
+import { buildAutomaticFilm, type AutomaticFilmInput } from "./automaticFilm";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import {
   applySpeed,
@@ -23,11 +27,16 @@ import type { AssetItem, ClipFilter, ClipCrop, ProjectStyle, TimelineClip, Timel
 
 type Selection = { trackId: string; clipId: string };
 
+function snapshot<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data)) as T;
+}
+
 // 剪贴板跨工作区保留，符合「复制 → 切项目 → 粘贴」的常规预期。
 let clipboardClip: TimelineClip | undefined;
 
 export function useTimeline(directory: string) {
   const files = useWorkspaceFiles(directory);
+  const ai = useNodeAi();
   const project = ref<TimelineProject>(createEmptyProject());
   const loaded = ref(false);
   const ready = ref(false);
@@ -41,6 +50,7 @@ export function useTimeline(directory: string) {
   const future = shallowRef<TimelineProject[]>([]);
   const ffmpeg = shallowRef<BrowserFfmpegFactory>();
   const lifetime = new AbortController();
+  let timelineReadError = "";
 
   const tracks = computed(() => project.value.tracks);
   const assets = computed(() => project.value.assets);
@@ -61,7 +71,7 @@ export function useTimeline(directory: string) {
   }
 
   function commit() {
-    past.value = [...past.value, structuredClone(project.value)];
+    past.value = [...past.value, snapshot(project.value)];
     if (past.value.length > 100) past.value = past.value.slice(-100);
     future.value = [];
   }
@@ -73,21 +83,110 @@ export function useTimeline(directory: string) {
     return created;
   }
 
-  async function load() {
+  async function load(strict = false) {
     try {
-      const data = await files.readJson<TimelineProject>(timelineProjectFile);
+      const data = await files.readJson<TimelineProject>(timelineProjectFile, lifetime.signal);
       if (data && Array.isArray(data.tracks)) project.value = normalizeProject(data);
-    } catch {
-      // 没有工程文件时从空工程开始。
-    } finally {
-      loaded.value = true;
-      ready.value = true;
+      else throw new Error(translate("剪辑工程格式不正确"));
+    } catch (error) {
+      // 首页成片会直接保存草稿，只有文件不存在时才允许从空工程开始。
+      if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+        if (strict) throw error;
+        timelineReadError = error instanceof Error ? error.message : translate("读取剪辑工程失败");
+      }
     }
+    loaded.value = true;
+    ready.value = true;
   }
 
   async function flushSave() {
     if (!loaded.value) return;
+    if (timelineReadError) throw new Error(timelineReadError);
     await files.writeJson(timelineProjectFile, project.value);
+  }
+
+  async function appendCanvasVideo(video: { path: string; name: string; mimeType: string }) {
+    if (!ready.value || busy.value) throw new Error(translate("剪辑工程正在处理，请稍后重试"));
+    if (timelineReadError) throw new Error(timelineReadError);
+    busy.value = true;
+    try {
+      const media = await probeMedia(await getFfmpeg(), video.path, lifetime.signal);
+      const stream = media.streams.find(item => item.codec_type === "video" && !item.disposition?.attached_pic);
+      const seconds = Number(media.format.duration ?? stream?.duration);
+      if (!stream || !Number.isFinite(seconds) || seconds <= 0) throw new Error(translate("无法读取画布视频的时长"));
+      for (const folder of ["assets", "assets/timeline"]) {
+        await files.mkdir(folder).catch(error => {
+          if (!axios.isAxiosError(error) || error.response?.data?.data?.code !== "EEXIST") throw error;
+        });
+      }
+      const suffix = video.path.match(/\.[a-z\d]{1,8}$/i)?.[0] ?? ".mp4";
+      const path = `assets/timeline/${uid("asset")}${suffix}`;
+      lifetime.signal.throwIfAborted();
+      // 剪辑保留独立副本，画布替换或删除节点输出时，已剪片段仍然可用。
+      await files.copy(video.path, path);
+      lifetime.signal.throwIfAborted();
+      const next = snapshot(project.value);
+      const start = computeDuration(next);
+      // 仅空时间线跟随首段视频的画幅，已有剪辑保留原工程尺寸。
+      if (!next.tracks.some(track => track.clips.length) && stream.width && stream.height) {
+        next.width = stream.width;
+        next.height = stream.height;
+      }
+      let track = next.tracks.find(item => item.type === "video" && !item.hidden);
+      if (!track) {
+        track = createTrack("video");
+        next.tracks.push(track);
+      }
+      const clip = createClip({ kind: "video", source: path, sourceDuration: seconds, timelineStart: start, timelineDuration: seconds });
+      track.clips.push(clip);
+      next.assets.push({ id: uid("asset"), path, name: video.name, mimeType: video.mimeType, kind: "video", size: Number(media.format.size) || 0,
+        duration: seconds, width: stream.width, height: stream.height });
+      await files.writeJson(timelineProjectFile, next);
+      commit();
+      project.value = next;
+      selection.value = { trackId: track.id, clipId: clip.id };
+      playing.value = false;
+      playhead.value = start;
+    } finally {
+      busy.value = false;
+    }
+  }
+
+  async function createAutomaticFilm(input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void) {
+    if (!ready.value || busy.value) throw new Error(translate("剪辑工程正在处理，请稍后重试"));
+    if (timelineReadError) throw new Error(timelineReadError);
+    busy.value = true;
+    const combined = AbortSignal.any([signal, lifetime.signal]);
+    try {
+      const unavailable = project.value.tracks.find(track => ["video", "audio", "subtitle"].includes(track.type) && (track.hidden || track.type === "audio" && track.muted));
+      if (unavailable) throw new Error(translate("请先显示视频和字幕轨，并取消音频轨静音"));
+      const draft = await buildAutomaticFilm(input, directory, ai, await getFfmpeg(), combined, progress);
+      combined.throwIfAborted();
+      const next = snapshot(project.value);
+      const start = computeDuration(next);
+      for (const [type, clips] of [["video", draft.video], ["audio", draft.audio], ["subtitle", draft.subtitles]] as const) {
+        let track = next.tracks.find(item => item.type === type);
+        if (track && (track.hidden || (type === "audio" && track.muted))) {
+          throw new Error(translate("请先显示视频和字幕轨，并取消音频轨静音"));
+        }
+        if (!track) {
+          track = createTrack(type);
+          next.tracks.push(track);
+        }
+        track.clips.push(...clips.map(clip => ({ ...clip, timelineStart: clip.timelineStart + start })));
+      }
+      next.assets.push(...draft.assets);
+      if (draft.style) next.style = draft.style;
+      await files.writeJson(timelineProjectFile, next);
+      commit();
+      project.value = next;
+      playing.value = false;
+      selection.value = null;
+      playhead.value = start;
+      return draft;
+    } finally {
+      busy.value = false;
+    }
   }
 
   // ---------- 素材库 ----------
@@ -131,12 +230,19 @@ export function useTimeline(directory: string) {
     return asset;
   }
 
-  async function importFiles(fileList: File[]) {
+  async function importFiles(fileList: File[], allowedKinds?: readonly AssetItem["kind"][]) {
+    if (allowedKinds && fileList.some(file => !allowedKinds.includes(classifyFile(file)))) {
+      throw new Error(translate("暂不支持这种文件格式"));
+    }
     const added: AssetItem[] = [];
     busy.value = true;
     try {
-      for (const file of fileList) added.push(await importFile(file));
-      project.value.assets = [...project.value.assets, ...added];
+      for (const file of fileList) {
+        const asset = await importFile(file);
+        project.value.assets.push(asset);
+        added.push(asset);
+        await flushSave();
+      }
     } finally {
       busy.value = false;
     }
@@ -177,9 +283,36 @@ export function useTimeline(directory: string) {
     const kind = asset.kind === "audio" ? "audio" : (asset.kind === "image" ? "image" : "video");
     const sourceDuration = asset.duration ?? (kind === "image" ? 3 : 1);
     const clip = createClip({ kind, source: asset.path, sourceDuration, timelineStart, timelineDuration: sourceDuration });
+    if (asset.sourceInfo) clip.sourceInfo = snapshot(asset.sourceInfo);
     track.clips.push(clip);
     if (!project.value.assets.some(item => item.path === asset.path)) project.value.assets.push(asset);
     selection.value = { trackId: track.id, clipId: clip.id };
+  }
+
+  async function addLowerThird(effectId: "lt-kicker-name" | "lt-bold-block", kicker: string, name: string) {
+    if (!ready.value || busy.value) return;
+    if (timelineReadError) throw new Error(timelineReadError);
+    const start = playhead.value;
+    busy.value = true;
+    try {
+      const result = await http<{ output: string; seconds: number }>({ method: "POST", url: "/api/effect/render", timeout: 360000,
+        signal: lifetime.signal, data: { directory, effectId, kicker, name } });
+      lifetime.signal.throwIfAborted();
+      const next = snapshot(project.value);
+      let track = next.tracks.find(item => item.type === "effect" && !item.hidden);
+      if (!track) {
+        track = createTrack("effect");
+        next.tracks.unshift(track);
+      }
+      const clip = createClip({ kind: "effect", source: result.output, timelineStart: start, timelineDuration: result.seconds, sourceDuration: result.seconds, text: name });
+      track.clips.push(clip);
+      await files.writeJson(timelineProjectFile, next);
+      commit();
+      project.value = next;
+      playing.value = false;
+      playhead.value = start;
+      selection.value = { trackId: track.id, clipId: clip.id };
+    } finally { busy.value = false; }
   }
 
   function addTextClip(trackType: TrackType, timelineStart = playhead.value) {
@@ -217,7 +350,7 @@ export function useTimeline(directory: string) {
   }
 
   function copySelected() {
-    if (selectedClip.value) clipboardClip = structuredClone(selectedClip.value);
+    if (selectedClip.value) clipboardClip = snapshot(selectedClip.value);
   }
 
   function pasteSelected() {
@@ -345,7 +478,7 @@ export function useTimeline(directory: string) {
   function undo() {
     const previous = past.value.at(-1);
     if (!previous) return;
-    future.value = [structuredClone(project.value), ...future.value];
+    future.value = [snapshot(project.value), ...future.value];
     project.value = previous;
     past.value = past.value.slice(0, -1);
     selection.value = null;
@@ -354,7 +487,7 @@ export function useTimeline(directory: string) {
   function redo() {
     const next = future.value[0];
     if (!next) return;
-    past.value = [...past.value, structuredClone(project.value)];
+    past.value = [...past.value, snapshot(project.value)];
     project.value = next;
     future.value = future.value.slice(1);
     selection.value = null;
@@ -460,7 +593,10 @@ export function useTimeline(directory: string) {
     load,
     flushSave,
     importFiles,
+    appendCanvasVideo,
+    createAutomaticFilm,
     addClip,
+    addLowerThird,
     addTextClip,
     removeClip,
     removeSelected,
@@ -495,6 +631,7 @@ export function useTimeline(directory: string) {
 }
 
 function trackTypeForClip(kind: TimelineClip["kind"]): TrackType {
+  if (kind === "effect") return "effect";
   if (kind === "audio") return "audio";
   if (kind === "text") return "subtitle";
   return "video";

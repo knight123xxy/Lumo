@@ -1,4 +1,10 @@
 <template>
+  <div class="workspaceLayout">
+    <aside class="workspaceSidebar" :inert="workspaceStore.projectLoadingVisible || switchingProject">
+      <workspaceTree :disabled="switchingProject" @openProject="openSidebarProject" @openChat="openSidebarProject">
+        <template #actions><router-link to="/home">{{ translate('首页') }}</router-link></template>
+      </workspaceTree>
+    </aside>
   <main class="workspacePage" :inert="workspaceStore.projectLoadingVisible" :style="{ '--agentWidth': `${agentVisible ? agentWidth : 0}px` }">
     <canvasPanel
       :key="workspaceStore.project?.directory"
@@ -30,7 +36,9 @@
         v-if="activePanel === 'timeline'"
         :key="workspaceStore.project?.directory"
         :ref="setTimelinePanel"
-        :directory="workspaceStore.project?.directory ?? ''" />
+        :directory="workspaceStore.project?.directory ?? ''"
+        :openAutomaticFilm="openAutomaticFilm"
+        @automaticFilmOpened="consumeAutomaticFilm" />
     </keep-alive>
     <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
     <div class="workspaceTools">
@@ -45,6 +53,20 @@
       <div class="bottomTools">
         <el-card v-if="activePanel === 'canvas'" class="toolMenu" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
           <div class="toolMenuContent" role="toolbar" aria-label="画布工具">
+            <el-button :disabled="!canvasPanelRef?.canvasListReady" @click="dramaVisible = true">{{ translate('短剧工作流') }}</el-button>
+            <el-button :disabled="!canvasPanelRef?.canvasReady" :loading="openingTemplate" @click="openCanvasTemplate">{{ translate('整集模板') }}</el-button>
+            <el-button :disabled="!canvasPanelRef?.canvasListReady" @click="marketingVisible = true">{{ translate('营销脚本') }}</el-button>
+            <el-button :disabled="!canvasPanelRef?.canvasListReady" @click="canvasFilmVisible = true">{{ translate('一键成片') }}</el-button>
+            <el-button v-if="!selectedDramaScene" :disabled="!!previs || !canvasPanelRef?.canvasListReady" @click="previsInputVisible = true">{{ translate('白模预演') }}</el-button>
+            <el-button v-if="selectedDramaScene" :disabled="openingPrevis || !!previs || settingsVisible" :loading="openingPrevis" @click="openScenePrevis">
+              {{ translate('白模预演') }}
+            </el-button>
+            <el-button v-if="selectedDramaShot" :disabled="preparingShot || settingsVisible || !canvasPanelRef?.canvasReady" :loading="preparingShot" @click="prepareShotVideo">
+              {{ translate('转为视频生成节点') }}
+            </el-button>
+            <el-button v-if="canvasPanelRef?.selectedVideoOutput" :loading="sendingVideo" :disabled="sendingVideo || settingsVisible" @click="sendVideoToTimeline">
+              {{ translate('发送到剪辑') }}
+            </el-button>
             <el-tooltip content="添加节点" placement="top" :showArrow="false" :hideAfter="0" :enterable="false" :triggerKeys="[]">
               <el-button class="toolButton addNodeButton" :disabled="!canvasPanelRef?.canvasReady || settingsVisible" aria-label="添加节点" aria-haspopup="menu" @click="canvasPanelRef?.addNodeAtPointer()">
                 <icon-plus :size="18" aria-hidden="true" />
@@ -118,6 +140,30 @@
       </div>
     </div>
     <floatingAgent v-model="agentVisible" :inert="workspaceStore.projectLoadingVisible" @resize="agentWidth = $event" />
+    <sceneProject v-if="previs" :directory="previs.directory" :projectPath="previs.path" :script="previs.script" @close="previs = undefined" />
+    <el-dialog v-model="dramaVisible" :title="translate('短剧工作流')" width="min(620px, calc(100vw - 32px))"
+      :closeOnClickModal="!dramaBusy" :closeOnPressEscape="!dramaBusy" :showClose="!dramaBusy">
+      <dramaDraft v-if="dramaVisible && workspaceStore.project" :key="workspaceStore.project.directory" v-model:script="dramaScript"
+        :directory="workspaceStore.project.directory" @busy="dramaBusy = $event" @saved="openWorkspaceDramaDraft" />
+    </el-dialog>
+    <el-dialog v-model="marketingVisible" :title="translate('营销脚本')" width="min(620px, calc(100vw - 32px))"
+      :closeOnClickModal="!marketingBusy" :closeOnPressEscape="!marketingBusy" :showClose="!marketingBusy">
+      <marketingDraft v-if="marketingVisible && workspaceStore.project" :key="workspaceStore.project.directory"
+        :directory="workspaceStore.project.directory" @busy="marketingBusy = $event" @saved="openWorkspaceMarketingDraft" />
+    </el-dialog>
+    <el-dialog v-model="previsInputVisible" :title="translate('白模预演')" width="min(620px, calc(100vw - 32px))">
+      <el-input v-model="previsScript" type="textarea" :rows="6" :maxlength="6000" :aria-label="translate('单场剧本')" />
+      <template #footer>
+        <el-button type="primary" :disabled="!previsScript.trim()" @click="openStandaloneWorkspacePrevis">{{ translate('生成白模预演') }}</el-button>
+      </template>
+    </el-dialog>
+    <el-dialog v-model="canvasFilmVisible" :title="translate('一键成片')" width="min(620px, calc(100vw - 32px))"
+      :closeOnClickModal="!canvasFilmBusy" :closeOnPressEscape="!canvasFilmBusy" :showClose="!canvasFilmBusy">
+      <filmDraft v-if="canvasFilmVisible && workspaceStore.project" :key="workspaceStore.project.directory" v-model:topic="canvasFilmTopic"
+        :directory="workspaceStore.project.directory" :existingTimeline="timelinePanelRef?.getTemplateTimeline()" @busy="canvasFilmBusy = $event" @generated="openCanvasFilmDraft" />
+    </el-dialog>
+    <templateDialog v-if="canvasTemplate" :modelValue="true" canvas :directory="canvasTemplate.directory" :assets="canvasTemplate.timeline.assets.value"
+      :busy="canvasTemplate.timeline.busy.value" :importFiles="canvasTemplate.timeline.importFiles" :saveVideo="saveCanvasTemplateVideo" @update:modelValue="closeCanvasTemplate" />
     <settings ref="settingsDialog" v-model="settingsVisible" />
     <el-dialog v-model="contactVisible" :title="contactInfo.title" width="min(360px, calc(100vw - 32px))" alignCenter appendToBody>
       <div class="contactContent">
@@ -134,32 +180,50 @@
       </div>
     </el-dialog>
   </main>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { translate } from "@lumo/i18n/vue";
 import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
-import { onBeforeRouteLeave } from "vue-router";
+import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import axios from "axios";
+import workspaceTree from "@/pages/home/components/workspaceTree.vue";
+import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
 import modelLoginGuide from "@/components/modelLoginGuide.vue";
 import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
-import { useWorkspaceStore } from "@/stores/workspace";
+import { useWorkspaceStore, type Project } from "@/stores/workspace";
 import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
 import { useProviderBalances } from "@/lib/providerBilling";
 import canvasPanel from "./panels/canvas/canvasHost.vue";
+import { isScriptDraftPath } from "@/pages/home/pages/agentWorkspace/scriptBreakdown";
+import filmDraft from "@/pages/home/pages/agentWorkspace/filmDraft.vue";
+import dramaDraft from "@/pages/home/pages/agentWorkspace/dramaDraft.vue";
+import marketingDraft from "@/pages/home/pages/agentWorkspace/marketingDraft.vue";
 import type { DocumentNodeOptions } from "./panels/canvas/canvasFiles";
 import workspaceMenu from "./components/workspaceMenu.vue";
 import floatingAgent from "./components/floatingAgent.vue";
+import templateDialog from "./panels/timeline/components/templateDialog.vue";
+import { useTimeline } from "./panels/timeline/useTimeline";
 
 const documentPanel = defineAsyncComponent(() => import("./panels/document/index.vue"));
 const timelinePanel = defineAsyncComponent(() => import("./panels/timeline/index.vue"));
 
-const activePanel = ref<"canvas" | "document" | "timeline">("canvas");
+const route = useRoute();
+const router = useRouter();
+const openAutomaticFilm = ref(route.query.automaticFilm === "1");
+const activePanel = ref<"canvas" | "document" | "timeline">(openAutomaticFilm.value || route.query.panel === "timeline" ? "timeline" : "canvas");
+function consumeAutomaticFilm() {
+  openAutomaticFilm.value = false;
+  const query = { ...route.query };
+  delete query.automaticFilm;
+  void router.replace({ query });
+}
 const selectedTool = ref<"move" | "hand">("move");
 const sideButtonEvents = ["mousedown", "mouseup", "auxclick"] as const;
 // 鼠标侧键会直接触发原生历史导航，需在 DOM 事件阶段拦截，避免生成中的工作区被误关闭。
@@ -167,7 +231,7 @@ function preventSideButtonNavigation(event: MouseEvent) {
   if (event.button === 3 || event.button === 4) event.preventDefault();
 }
 onMounted(() => {
-  anonymousData.track("workspace.canvas");
+  anonymousData.track(activePanel.value === "timeline" ? "workspace.timeline" : "workspace.canvas");
   for (const eventName of sideButtonEvents) window.addEventListener(eventName, preventSideButtonNavigation, true);
 });
 onScopeDispose(() => {
@@ -180,7 +244,10 @@ const panelOptions = [
   { label: "剪辑", value: "timeline", icon: IconMovie },
   { label: "文档", value: "document", icon: IconFileText },
 ];
-const agentVisible = ref(true);
+const agentVisible = ref(!openAutomaticFilm.value && route.query.agent !== "0");
+watch(() => route.query.agent, value => {
+  if (value === "1") agentVisible.value = true;
+});
 const agentWidth = ref(0);
 const settingsVisible = ref(false);
 const settingsDialog = ref<InstanceType<typeof settings>>();
@@ -209,6 +276,208 @@ function showContact(type: "community" | "business") {
   contactVisible.value = true;
 }
 const canvasPanelRef = ref<InstanceType<typeof canvasPanel>>();
+const marketingVisible = ref(false);
+const marketingBusy = ref(false);
+
+async function openWorkspaceMarketingDraft(directory: string, path: string) {
+  const panel = canvasPanelRef.value;
+  if (!panel || workspaceStore.project?.directory !== directory) return;
+  try {
+    await panel.activateCanvas(path);
+    marketingVisible.value = false;
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("打开营销脚本失败"));
+  }
+}
+
+const canvasFilmVisible = ref(route.query.film === "1");
+const canvasFilmTopic = ref("");
+const canvasFilmBusy = ref(false);
+const previsInputVisible = ref(route.query.previs === "1");
+watch(previsInputVisible, visible => {
+  if (visible || route.query.previs !== "1") return;
+  const query = { ...route.query };
+  delete query.previs;
+  void router.replace({ query });
+});
+const previsScript = ref("");
+
+function openStandaloneWorkspacePrevis() {
+  const directory = workspaceStore.project?.directory;
+  const script = previsScript.value.trim();
+  if (!directory || !script || previs.value) return;
+  previs.value = { directory, path: `白模预演-${crypto.randomUUID()}.json`, script };
+  previsInputVisible.value = false;
+}
+
+async function openCanvasFilmDraft(directory: string) {
+  if (workspaceStore.project?.directory !== directory) return;
+  canvasFilmVisible.value = false;
+  await switchPanel("timeline");
+}
+watch(canvasFilmVisible, visible => {
+  if (visible || route.query.film !== "1") return;
+  const query = { ...route.query };
+  delete query.film;
+  void router.replace({ query });
+});
+
+const dramaVisible = ref(route.query.drama === "1");
+const dramaScript = ref("");
+const dramaBusy = ref(false);
+
+async function openWorkspaceDramaDraft(directory: string, path: string) {
+  if (workspaceStore.project?.directory !== directory) return;
+  workspaceStore.updateProjectMetadata(directory, { category: "drama" });
+  try {
+    await canvasPanelRef.value?.activateCanvas(path);
+    dramaVisible.value = false;
+    dramaScript.value = "";
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("打开分镜草稿失败"));
+  }
+}
+
+watch(dramaVisible, visible => {
+  if (visible || route.query.drama !== "1") return;
+  const query = { ...route.query };
+  delete query.drama;
+  void router.replace({ query });
+});
+const openingTemplate = ref(false);
+const canvasTemplate = shallowRef<{ directory: string; canvasPath: string; timeline: ReturnType<typeof useTimeline>; ownsTimeline: boolean }>();
+
+function closeCanvasTemplate() {
+  if (canvasTemplate.value?.ownsTimeline) canvasTemplate.value.timeline.dispose();
+  canvasTemplate.value = undefined;
+}
+onScopeDispose(closeCanvasTemplate);
+
+async function openCanvasTemplate() {
+  const directory = workspaceStore.project?.directory;
+  const panel = canvasPanelRef.value;
+  if (!directory || !panel?.canvasReady || canvasTemplate.value || openingTemplate.value) return;
+  const canvasPath = panel.canvasId;
+  openingTemplate.value = true;
+  const existingTimeline = timelinePanelRef.value?.getTemplateTimeline();
+  const timeline = existingTimeline ?? useTimeline(directory);
+  try {
+    if (existingTimeline) {
+      await waitForControlValue(() => timeline.ready.value || undefined, controlLifetime.signal);
+    } else {
+      await timeline.load(true);
+    }
+    if (!controlLifetime.signal.aborted && workspaceStore.project?.directory === directory && canvasPanelRef.value?.canvasId === canvasPath) {
+      canvasTemplate.value = { directory, canvasPath, timeline, ownsTimeline: !existingTimeline };
+    }
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("读取剪辑工程失败"));
+  } finally {
+    if (!existingTimeline && canvasTemplate.value?.timeline !== timeline) timeline.dispose();
+    openingTemplate.value = false;
+  }
+}
+
+provide("openWorkspaceTemplate", async () => {
+  try {
+    if (!await switchPanel("canvas")) return;
+    await waitForControlValue(() => canvasPanelRef.value?.canvasReady || undefined, AbortSignal.any([controlLifetime.signal, AbortSignal.timeout(10000)]));
+    await openCanvasTemplate();
+  } catch (error) {
+    if (!controlLifetime.signal.aborted) ElMessage.error(error instanceof Error ? error.message : translate("画布尚未就绪"));
+  }
+});
+
+async function saveCanvasTemplateVideo(video: { path: string; name: string; mimeType: string }) {
+  const target = canvasTemplate.value;
+  const panel = canvasPanelRef.value;
+  if (!target || !panel) throw new Error(translate("画布尚未就绪"));
+  await panel.addTemplateVideo(target.directory, target.canvasPath, video);
+}
+
+const sceneProject = defineAsyncComponent(() => import("@/pages/home/pages/trumanMap/sceneProject.vue"));
+const previs = shallowRef<{ directory: string; path: string; script: string }>();
+const openingPrevis = ref(false);
+const selectedDramaScene = computed(() => {
+  const panel = canvasPanelRef.value;
+  const node = panel?.selectedTextNode;
+  return isScriptDraftPath(panel?.canvasId) && node && (node.data?.scriptBreakdownKind === "scene" ||
+    (node.data?.scriptBreakdownKind === undefined && /^场景(?: \d+)?$/.test(node.data?.label ?? ""))) ? node : undefined;
+});
+
+const preparingShot = ref(false);
+const selectedDramaShot = computed(() => {
+  const panel = canvasPanelRef.value;
+  const node = panel?.selectedTextNode;
+  return isScriptDraftPath(panel?.canvasId) && node && /^分镜(?: \d+)?$/.test(node.data?.label ?? "") ? node : undefined;
+});
+
+async function prepareShotVideo() {
+  const panel = canvasPanelRef.value;
+  const directory = workspaceStore.project?.directory;
+  const node = selectedDramaShot.value;
+  if (!panel?.canvasReady || !directory || !node || preparingShot.value) return;
+  preparingShot.value = true;
+  try {
+    await panel.addShotVideoNode(directory, panel.canvasId, node.id);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("创建视频生成节点失败"));
+  } finally {
+    preparingShot.value = false;
+  }
+}
+
+async function openScenePrevis() {
+  const directory = workspaceStore.project?.directory;
+  const panel = canvasPanelRef.value;
+  const node = selectedDramaScene.value;
+  if (!directory || !panel || !node || openingPrevis.value || previs.value) return;
+  const canvasPath = panel.canvasId;
+  openingPrevis.value = true;
+  try {
+    const scene = await panel.readDocumentNode(directory, canvasPath, node.id);
+    const script = scene.outputs.find(output => output.id === "text")?.text.trim();
+    if (!script || script.length > 20000) throw new Error(translate("场景正文须为 1 至 20000 字"));
+    if (workspaceStore.project?.directory !== directory || panel.canvasId !== canvasPath) return;
+    previs.value = { directory, path: `白模预演-${crypto.randomUUID()}.json`, script };
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("打开白模预演失败"));
+  } finally {
+    openingPrevis.value = false;
+  }
+}
+watch(() => canvasPanelRef.value?.canvasListReady, async ready => {
+  const path = route.query.scriptDraft;
+  if (!ready || !(isScriptDraftPath(path) || typeof path === "string" && /^营销脚本-[0-9a-f-]{36}\.json$/.test(path))) return;
+  try { await canvasPanelRef.value?.activateCanvas(path); }
+  catch (error) { ElMessage.error(error instanceof Error ? error.message : translate("打开分镜草稿失败")); }
+}, { flush: "post" });
+let openingGeneration = false;
+watch([() => route.query.generation, () => canvasPanelRef.value?.canvasReady], async ([kind, ready]) => {
+  if ((kind !== "image" && kind !== "video") || !ready || activePanel.value !== "canvas" || openingGeneration) return;
+  openingGeneration = true;
+  try {
+    if (!await canvasPanelRef.value?.addGenerationNode(kind)) return;
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("创建生成节点失败"));
+  } finally {
+    if (route.query.generation === kind) {
+      const query = { ...route.query };
+      delete query.generation;
+      await router.replace({ query });
+    }
+    openingGeneration = false;
+  }
+}, { flush: "post" });
+watch([() => route.query.template, () => canvasPanelRef.value?.canvasReady], async ([template, ready]) => {
+  if (template !== "1" || !ready || activePanel.value !== "canvas") return;
+  await openCanvasTemplate();
+  if (canvasTemplate.value && route.query.template === "1") {
+    const query = { ...route.query };
+    delete query.template;
+    await router.replace({ query });
+  }
+}, { flush: "post" });
 watch(() => canvasPanelRef.value?.canvasListReady, ready => {
   workspaceStore.projectLoading = !ready;
 }, { immediate: true });
@@ -295,6 +564,35 @@ async function flushSave() {
   await canvasPanelRef.value?.flushSave();
 }
 
+const switchingProject = ref(false);
+async function openSidebarProject(project: Project, file?: string) {
+  if (switchingProject.value) return;
+  switchingProject.value = true;
+  try {
+    if (workspaceStore.project?.directory !== project.directory) {
+      if (canvasPanelRef.value?.saveBusy || sendingVideo.value || openingTemplate.value || canvasTemplate.value || canvasFilmBusy.value || dramaBusy.value || marketingBusy.value || previs.value) {
+        throw new Error(translate("项目正在处理，请稍后再切换"));
+      }
+      await flushSave();
+      const signal = controlLifetime.signal;
+      const mode = project.mode ?? ((await useWorkspaceFiles(project.directory).list("", signal)).entries.some(entry => entry.type === "file" && entry.name === "timeline.json") ? "edit" : "canvas");
+      await workspaceStore.openProject(project.directory, project.directory, signal, mode);
+      const panel = workspaceStore.project?.mode === "edit" ? "timeline" : "canvas";
+      activePanel.value = panel;
+      await router.replace({ query: { panel } });
+    }
+    const directory = workspaceStore.project?.directory;
+    if (directory && file) {
+      workspaceStore.pendingAgentSession = { directory, file };
+      agentVisible.value = true;
+    }
+  } catch (error) {
+    if (!controlLifetime.signal.aborted) ElMessage.error(error instanceof Error ? error.message : translate("无法打开项目，请重试"));
+  } finally {
+    switchingProject.value = false;
+  }
+}
+
 onBeforeRouteLeave(async () => {
   if (canvasPanelRef.value?.saveBusy) {
     ElMessage.warning("画布操作尚未完成，请稍后退出");
@@ -325,6 +623,27 @@ onBeforeRouteLeave(async () => {
     return leave;
   }
 });
+
+const sendingVideo = ref(false);
+
+async function sendVideoToTimeline() {
+  const video = canvasPanelRef.value?.selectedVideoOutput;
+  const directory = workspaceStore.project?.directory;
+  if (!video || !directory || sendingVideo.value) return;
+  sendingVideo.value = true;
+  try {
+    if (!await switchPanel("timeline")) return;
+    const signal = AbortSignal.any([controlLifetime.signal, AbortSignal.timeout(20000)]);
+    const timeline = await waitForControlValue(() => timelinePanelRef.value?.ready ? timelinePanelRef.value : undefined, signal);
+    if (workspaceStore.project?.directory !== directory) throw new Error(translate("工作目录已切换"));
+    await timeline.appendCanvasVideo(video);
+    ElMessage.success(translate("视频已追加到时间线"));
+  } catch (error) {
+    if (!controlLifetime.signal.aborted) ElMessage.error(error instanceof Error ? error.message : translate("发送到剪辑失败"));
+  } finally {
+    sendingVideo.value = false;
+  }
+}
 
 async function switchPanel(value: string | number | boolean) {
   if (value !== "canvas" && value !== "document" && value !== "timeline") return false;
@@ -390,6 +709,19 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
 </script>
 
 <style scoped lang="scss">
+.workspaceLayout {
+  display: flex;
+  height: 100dvh;
+  .workspaceSidebar {
+    flex: 0 0 clamp(144px, 17vw, 240px);
+    min-width: 0;
+    padding: 12px 8px;
+    overflow: auto;
+    border-inline-end: 1px solid var(--el-border-color-lighter);
+    background: var(--el-bg-color);
+  }
+  .workspacePage { flex: 1; min-width: 0; }
+}
 .workspacePage {
   position: relative;
   width: 100%;

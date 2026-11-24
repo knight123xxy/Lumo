@@ -12,7 +12,8 @@
         @play="$emit('updatePlaying', true)"
         @pause="$emit('updatePlaying', false)"
         @ended="$emit('updatePlaying', false)" />
-      <div v-else class="previewEmpty">{{ translate("导入视频片段后在此预览") }}</div>
+      <effectPreview v-for="effect in effects" :key="effect.id" :clip="effect" :directory="directory" :playhead="playhead" :playing="playing" :previewSpeed="previewSpeed" :zoom="zoom" :aspect="aspect" />
+      <div v-if="!currentClip && !effects.length" class="previewEmpty">{{ translate("导入视频片段后在此预览") }}</div>
     </div>
     <div class="previewControls">
       <el-button class="controlButton" text size="small" :aria-label="playing ? translate('暂停') : translate('播放')" @click="togglePlay">
@@ -36,6 +37,8 @@ import { ElButton, ElSegmented } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
 import { IconPlayerPause, IconPlayerPlay, IconZoomIn, IconZoomOut } from "@tabler/icons-vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
+import effectPreview from "./effectPreview.vue";
+import type { TimelineClip } from "../timelineTypes";
 import { formatTime } from "../timelineModel";
 
 export interface PreviewClip {
@@ -49,6 +52,8 @@ export interface PreviewClip {
 const props = defineProps<{
   directory: string;
   clip: PreviewClip | null;
+  effects: TimelineClip[];
+  aspect: number;
   playhead: number;
   playing: boolean;
 }>();
@@ -128,6 +133,7 @@ function togglePlay() {
 
   .previewStage {
     position: relative;
+    container-type: size;
     flex: 1;
     min-height: 0;
     display: flex;

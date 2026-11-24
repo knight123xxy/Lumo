@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { openDatabase } from "@lumo/multi-tenant-db";
 import type { AdminDatabase, BillingRecord, WalletRecord } from "@lumo/multi-tenant-db";
@@ -147,6 +147,32 @@ export function createBilling(dataDirectory: string) {
         status: record.status, currency: record.currency,
         amount: amount(record.status === "reserved" ? record.reservedMicros : record.amountMicros),
       };
+    },
+    async issueCard(value: string) {
+      const input = billingCreditSchema.parse({ userId: randomUUID(), requestId: randomUUID(), currency: "CNY", amount: value });
+      const amountMicros = safeMicros(micros(input.amount));
+      const db = await initialize();
+      const code = randomBytes(16).toString("hex");
+      await db.createRechargeCard({ codeHash: createHash("sha256").update(code).digest("hex"), requestId: input.requestId, amountMicros });
+      return { code, amount: amount(amountMicros), currency: "CNY" as const };
+    },
+    async redeemCard(userId: string, code: string) {
+      z.uuid().parse(userId);
+      const db = await initialize();
+      const codeHash = createHash("sha256").update(code.trim().toLowerCase()).digest("hex");
+      const card = await db.getRechargeCard(codeHash);
+      if (!card) fail("充值卡密无效", 404);
+      const user = await db.getUserById(userId);
+      if (!user || user.disabled) fail("账号不可用", 403);
+      // ACT: 固定卡片流水 ID，钱包增加与唯一凭证记录由现有 creditWallet 事务原子提交。
+      const requestHash = createHash("sha256").update(`rechargeCard:${card.requestId}`).digest("hex");
+      const result = await db.creditWallet({ requestId: card.requestId, userId, currency: "CNY", amountMicros: card.amountMicros,
+        requestHash, details: { label: "卡密充值" }, createdAt: Date.now() });
+      if (result === "duplicate") {
+        const previous = await db.getBillingRecord(card.requestId);
+        if (!previous || previous.kind !== "credit" || previous.userId !== userId || previous.requestHash !== requestHash) fail("充值卡密已兑换", 409);
+      }
+      return read(userId);
     },
     async credit(input: BillingCredit): Promise<BillingSnapshot> {
       const value = billingCreditSchema.parse(input);

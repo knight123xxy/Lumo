@@ -352,7 +352,8 @@
     "apps/web/src/components/settings/panels/deviceLink/index.vue",
     "apps/web/src/components/mobileConnect.vue",
     "apps/web/src/pages/home/workspacePicker.vue",
-    "apps/web/src/pages/home/pages/trumanMap/sceneProject.vue"
+    "apps/web/src/pages/home/pages/trumanMap/sceneProject.vue",
+    "packages/multiTenant/adminWeb/pages/users.vue"
   ],
   "读取失败，请重试": [
     "apps/web/src/components/settings/panels/personalization/index.vue"
@@ -13286,5 +13287,24 @@
   ],
   "请填写第 {0} 组分辨率": [
     "packages/providerWeb/modelEditorDialog.vue"
+  ],
+  "推荐码（选填）": [
+    "packages/multiTenant/userWeb/index.vue"
+  ],
+  "推荐码无效": [
+    "packages/multiTenant/userWeb/index.vue",
+    "packages/multiTenant/auth/index.ts"
+  ],
+  "签发推荐码失败": [
+    "packages/multiTenant/auth/index.ts"
+  ],
+  "签发推荐码": [
+    "packages/multiTenant/adminWeb/pages/users.vue"
+  ],
+  "签发充值卡": [
+    "packages/multiTenant/adminWeb/pages/users.vue"
+  ],
+  "此代码仅显示一次，请复制保存。": [
+    "packages/multiTenant/adminWeb/pages/users.vue"
   ]
 }

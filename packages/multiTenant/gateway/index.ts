@@ -360,6 +360,8 @@ export function createModelGateway<Upstreams extends ModelMap, Catalogs extends 
       return { value: result.value, billing: settlement };
     },
     readBalance(userId: string) { return billingAccess(() => billing.read(userId)); },
+    issueCard(amount: string) { return billingAccess(() => billing.issueCard(amount)); },
+    redeemCard(userId: string, code: string) { return billingAccess(() => billing.redeemCard(userId, code)); },
     credit(input: BillingCredit) { return billingAccess(() => billing.credit(input)); },
     async releaseReservation(userId: string, requestId: string, metadata: BillingReleaseMetadata) {
       const previous = await billingAccess(() => billing.getCharge(requestId, userId));

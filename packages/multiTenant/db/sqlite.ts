@@ -1,8 +1,10 @@
+import { sqliteRechargeCard } from "./rechargeCard";
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { and, asc, count, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { sqliteAdmin, sqliteBillingLedger, sqliteModelRouting, sqliteSettings, sqliteSourceMapping, sqliteUser, sqliteWallet, sqliteWebSession } from "./schema";
 import type { AdminDatabase } from "./schema";
+import { sqliteReferralBinding, sqliteReferralCode } from "./referral";
 import { maxWalletMicros, validateWalletAmount, walletBalanceOverflow, walletSettlementExceeded, walletStateConflict } from "./billing";
 
 export function connectSqlite(file: string): AdminDatabase {
@@ -113,9 +115,16 @@ export function connectSqlite(file: string): AdminDatabase {
         "createdAt" INTEGER NOT NULL,
         "updatedAt" INTEGER NOT NULL
       )`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS "multiTenantRechargeCard" (
+        "codeHash" TEXT PRIMARY KEY NOT NULL,
+        "requestId" TEXT NOT NULL UNIQUE,
+        "amountMicros" INTEGER NOT NULL CHECK ("amountMicros" BETWEEN 1 AND 9007199254740991)
+      )`);
       db.run(sql`CREATE INDEX IF NOT EXISTS "multiTenantBillingLedgerUserCreatedAt"
         ON "multiTenantBillingLedger" ("userId", "createdAt")`);
     },
+    async createRechargeCard(card) { db.insert(sqliteRechargeCard).values(card).run(); },
+    async getRechargeCard(codeHash) { return db.select().from(sqliteRechargeCard).where(eq(sqliteRechargeCard.codeHash, codeHash)).get(); },
     async getWallets(userId) {
       try { return db.select().from(sqliteWallet).where(eq(sqliteWallet.userId, userId)).all(); }
       catch (error) {
@@ -309,8 +318,42 @@ export function connectSqlite(file: string): AdminDatabase {
     async getUserById(id) {
       return db.select().from(sqliteUser).where(eq(sqliteUser.id, id)).get();
     },
-    async createUser(user) {
-      db.insert(sqliteUser).values({ ...user, settings: {}, settingsRevision: 0 }).run();
+    async createReferralCode(code) {
+      db.run(sql`CREATE TABLE IF NOT EXISTS "multiTenantReferralCode" (
+        "codeHash" TEXT PRIMARY KEY NOT NULL,
+        "referrerUserId" TEXT NOT NULL,
+        "createdAt" INTEGER NOT NULL
+      )`);
+      db.run(sql`CREATE TABLE IF NOT EXISTS "multiTenantReferralBinding" (
+        "userId" TEXT PRIMARY KEY NOT NULL,
+        "codeHash" TEXT NOT NULL REFERENCES "multiTenantReferralCode" ("codeHash"),
+        "createdAt" INTEGER NOT NULL
+      )`);
+      return !!db.insert(sqliteReferralCode).values(code).onConflictDoNothing({ target: sqliteReferralCode.codeHash })
+        .returning({ codeHash: sqliteReferralCode.codeHash }).get();
+    },
+    async createUser(user, referralCodeHash) {
+      const values = { ...user, settings: {}, settingsRevision: 0 };
+      if (!referralCodeHash) {
+        db.insert(sqliteUser).values(values).run();
+        return true;
+      }
+      return client.transaction(() => {
+        let valid;
+        try {
+          valid = db.select({ codeHash: sqliteReferralCode.codeHash }).from(sqliteReferralCode)
+            .innerJoin(sqliteUser, eq(sqliteReferralCode.referrerUserId, sqliteUser.id))
+            .where(and(eq(sqliteReferralCode.codeHash, referralCodeHash), eq(sqliteUser.disabled, false))).get();
+        } catch (error) {
+          const failure = error as { message?: string; cause?: { message?: string } };
+          if ((failure.cause?.message ?? failure.message) === "no such table: multiTenantReferralCode") return false;
+          throw error;
+        }
+        if (!valid) return false;
+        db.insert(sqliteUser).values(values).run();
+        db.insert(sqliteReferralBinding).values({ userId: user.id, codeHash: referralCodeHash, createdAt: user.createdAt }).run();
+        return true;
+      }).immediate();
     },
     async updateUser(id, values, expectedAuthVersion) {
       db.update(sqliteUser).set(values).where(and(eq(sqliteUser.id, id),

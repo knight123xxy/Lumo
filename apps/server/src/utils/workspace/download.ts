@@ -79,8 +79,8 @@ function requestFile(url: URL, signal: AbortSignal, accept: string) {
   });
 }
 
-export async function downloadPublicFile(value: string, options: { signal: AbortSignal; maxBytes: number; label: string; httpsOnly?: boolean; accept?: string }) {
-  const { signal, maxBytes, label, httpsOnly = false, accept = "*/*" } = options;
+export async function downloadPublicFile(value: string, options: { signal: AbortSignal; maxBytes: number; label: string; httpsOnly?: boolean; accept?: string; allowRedirects?: boolean }) {
+  const { signal, maxBytes, label, httpsOnly = false, accept = "*/*", allowRedirects = true } = options;
   let url = remoteAddress(value, httpsOnly);
   for (let redirects = 0; redirects <= 5; redirects++) {
     signal.throwIfAborted();
@@ -88,6 +88,7 @@ export async function downloadPublicFile(value: string, options: { signal: Abort
     if ([301, 302, 303, 307, 308].includes(response.statusCode ?? 0)) {
       const location = response.headers.location;
       response.destroy();
+      if (!allowRedirects) invalid("此下载不允许重定向", 502);
       if (!location || redirects === 5) invalid("下载重定向无效或超过 5 次，请使用文件直接地址", 502);
       url = remoteAddress(new URL(location, url).href, httpsOnly);
       continue;

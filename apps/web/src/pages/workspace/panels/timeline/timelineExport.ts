@@ -1,7 +1,9 @@
 import { createBrowserFfmpeg } from "@lumo/ffmpeg/browser";
 import { translate } from "@lumo/i18n/vue";
-import { runCommand } from "./timelineMedia";
-import type { TimelineClip, TimelineProject, TimelineTrack } from "./timelineTypes";
+import useWorkspaceFiles from "@/lib/workspaceFiles";
+import { uid } from "./timelineModel";
+import { probeMedia, runCommand } from "./timelineMedia";
+import type { StockCredit, TimelineClip, TimelineProject, TimelineTrack } from "./timelineTypes";
 
 export interface ExportOptions {
   directory: string;
@@ -11,11 +13,14 @@ export interface ExportOptions {
   videoBitrate: string; // 例如 "8M"
   onProgress?: (percent: number) => void;
   signal?: AbortSignal;
+  embedSubtitles?: boolean;
+  normalizeAudio?: boolean;
 }
 
 interface InputSpec {
   clip: TimelineClip;
   kind: "video" | "image" | "audio";
+  transparent?: boolean;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -49,6 +54,12 @@ function trackVisible(track: TimelineTrack) {
   return !track.hidden;
 }
 
+function subtitleTime(seconds: number) {
+  const milliseconds = Math.max(0, Math.round(seconds * 1000));
+  const fields = [Math.floor(milliseconds / 3600000), Math.floor(milliseconds / 60000) % 60, Math.floor(milliseconds / 1000) % 60];
+  return `${fields.map(value => String(value).padStart(2, "0")).join(":")},${String(milliseconds % 1000).padStart(3, "0")}`;
+}
+
 function projectDuration(project: TimelineProject) {
   let end = 0;
   for (const track of project.tracks) {
@@ -74,15 +85,26 @@ export async function exportTimeline(project: TimelineProject, options: ExportOp
   if (!videoClips.length) throw new Error(translate("请先在视频轨添加至少一个片段"));
 
   const factory = await createBrowserFfmpeg(directory, signal);
+  const audioSources = new Set<string>();
+  if (includeVideoAudio) {
+    for (const source of new Set(videoClips.filter(clip => clip.kind === "video").map(clip => clip.source))) {
+      const media = await probeMedia(factory, source, signal);
+      if (media.streams.some(stream => stream.codec_type === "audio")) audioSources.add(source);
+    }
+  }
   const command = factory();
 
   // 依次添加输入：先视频轨片段，再音频轨片段。
   const inputs: InputSpec[] = [];
   for (const clip of videoClips) inputs.push({ clip, kind: clip.kind === "image" ? "image" : "video" });
+  for (const track of project.tracks.filter(track => track.type === "effect" && trackVisible(track))) {
+    for (const clip of track.clips) inputs.push({ clip, kind: "video", transparent: true });
+  }
   for (const clip of audioClips) inputs.push({ clip, kind: "audio" });
   for (const input of inputs) {
     const clip = input.clip;
     command.input(clip.source);
+    if (input.transparent) command.inputOptions(["-c:v", "libvpx-vp9"]);
     if (input.kind === "image") {
       command.inputOptions(["-loop", "1", "-framerate", String(fps), "-t", String(clip.timelineDuration)]);
     } else {
@@ -115,7 +137,8 @@ export async function exportTimeline(project: TimelineProject, options: ExportOp
       if (clip.filter.preset === "warm") filters.push("colorbalance=rs=.15:gs=.05:bs=-.15");
       else if (clip.filter.preset === "cold") filters.push("colorbalance=rs=-.15:gs=-.05:bs=.15");
       else if (clip.filter.preset === "mono") filters.push("hue=s=0");
-      filters.push(`scale=${width}:${height}:force_original_aspect_ratio=decrease`, `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`, "setsar=1", "format=yuv420p");
+      filters.push(`scale=${width}:${height}:force_original_aspect_ratio=decrease`, `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2${input.transparent ? ":color=black@0" : ""}`, "setsar=1", input.transparent ? "format=yuva420p" : "format=yuv420p");
+      if (input.transparent) filters.push(`trim=duration=${(clip.outPoint - clip.inPoint).toFixed(4)}`);
       filters.push(`setpts=${speedShift}+${clip.timelineStart.toFixed(4)}/TB`);
       graph.push(`[${index}:v]${filters.join(",")}[${label}]`);
       videoLabels.push(label);
@@ -140,14 +163,14 @@ export async function exportTimeline(project: TimelineProject, options: ExportOp
   let background = "bg0";
   for (let index = 0; index < videoLabels.length; index++) {
     const next = `bg${index + 1}`;
-    graph.push(`[${background}][${videoLabels[index]}]overlay=0:0[${next}]`);
+    graph.push(`[${background}][${videoLabels[index]}]overlay=0:0:eof_action=pass:repeatlast=0[${next}]`);
     background = next;
   }
 
   // 视频片段的原始音频（若有）。
   if (includeVideoAudio) {
     inputs.forEach((input, index) => {
-      if (input.kind !== "video") return;
+      if (input.transparent || input.kind !== "video" || !audioSources.has(input.clip.source)) return;
       const clip = input.clip;
       const trim = clip.outPoint - clip.inPoint;
       const filters = [
@@ -162,10 +185,11 @@ export async function exportTimeline(project: TimelineProject, options: ExportOp
     });
   }
 
-  // 字幕 / 文字烧录进画面。
-  let videoLabel = background;
+  // ACT: 可切换字幕使用 MP4 字幕轨，系统 FFmpeg 无 drawtext 也能导出。
+  const embeddedClips = options.embedSubtitles ? subtitleClips.filter(clip => clip.text.trim()) : [];
   const burnIns: string[] = [];
-  for (const clip of subtitleClips) {
+  let videoLabel = background;
+  for (const clip of options.embedSubtitles ? [] : subtitleClips) {
     burnIns.push(`drawtext=text='${escapeDrawtext(clip.text)}':fontsize=48:fontcolor=white:borderw=2:bordercolor=black:x=(w-text_w)/2:y=h-th-72:enable='between(t,${clip.timelineStart.toFixed(3)},${(clip.timelineStart + clip.timelineDuration).toFixed(3)})'`);
   }
   for (const clip of textClips) {
@@ -183,13 +207,48 @@ export async function exportTimeline(project: TimelineProject, options: ExportOp
     graph.push(`[${audioLabels.join("][")}]amix=inputs=${audioLabels.length}:duration=longest:normalize=0[aout]`);
     audioLabel = "aout";
   }
+  if (audioLabel && options.normalizeAudio) {
+    graph.push(`[${audioLabel}]loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000[normalizedAudio]`);
+    audioLabel = "normalizedAudio";
+  }
 
-  command.complexFilter(graph.join(";"));
-  command.output(outputPath);
-  command.map(`[${videoLabel}]`);
-  if (audioLabel) command.map(`[${audioLabel}]`);
-  command.videoCodec("libx264").videoBitrate(videoBitrate).format("mp4");
-  if (audioLabel) command.audioCodec("aac").audioBitrate(192);
-  command.duration(duration).outputOptions(["-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]);
-  await runCommand(command, signal, onProgress);
+  const files = useWorkspaceFiles(directory);
+  let subtitlePath: string | undefined;
+  try {
+    if (embeddedClips.length) {
+      const srt = [...embeddedClips].sort((left, right) => left.timelineStart - right.timelineStart).map((clip, index) => {
+        const text = clip.text.replace(/\r/g, "").split("\n").filter(line => line.trim()).join("\n");
+        return `${index + 1}\n${subtitleTime(clip.timelineStart)} --> ${subtitleTime(clip.timelineStart + clip.timelineDuration)}\n${text}\n`;
+      }).join("\n");
+      const path = `exports/${uid("subtitles")}.srt`;
+      await files.write(path, srt, true);
+      subtitlePath = path;
+      command.input(path).inputFormat("srt");
+    }
+    command.complexFilter(graph.join(";"));
+    command.output(outputPath);
+    command.map(`[${videoLabel}]`);
+    if (audioLabel) command.map(`[${audioLabel}]`);
+    if (subtitlePath) command.outputOptions(["-map", `${inputs.length}:s:0`, "-c:s", "mov_text", "-disposition:s:0", "default"]);
+    command.videoCodec("libx264").format("mp4");
+    if (audioLabel) command.audioCodec("aac").audioBitrate(192);
+    command.duration(duration).outputOptions(["-b:v", videoBitrate, "-preset", "fast", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]);
+    await runCommand(command, signal, onProgress);
+    const output = await probeMedia(factory, outputPath, signal);
+    const video = output.streams.find(stream => stream.codec_type === "video" && !stream.disposition?.attached_pic);
+    const seconds = Number(output.format.duration);
+    if (!video || video.width !== width || video.height !== height || !Number.isFinite(seconds) || Math.abs(seconds - duration) > 0.25
+      || (audioLabel && !output.streams.some(stream => stream.codec_type === "audio"))
+      || (subtitlePath && !output.streams.some(stream => stream.codec_type === "subtitle"))) {
+      throw new Error(translate("导出文件未通过检查，请核对分辨率、时长、音轨和字幕设置"));
+    }
+  } finally {
+    if (subtitlePath) await files.remove(subtitlePath).catch(() => {});
+  }
+  const credits = new Map<string, StockCredit>();
+  for (const { clip } of inputs) {
+    const credit = clip.sourceInfo ?? project.assets.find(asset => asset.path === clip.source)?.sourceInfo;
+    if (credit) credits.set(`${credit.provider}:${credit.assetId ?? credit.sourcePage}`, credit);
+  }
+  return [...credits.values()];
 }
