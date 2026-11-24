@@ -43,10 +43,10 @@
         </div>
         <assetLibrary v-show="leftTab === 'assets'" ref="assetLibraryRef" class="assetPane" :assets="assets" :busy="busy" @import-files="onImportFiles" @add-clip="onAddAsset" />
         <form v-show="leftTab === 'effects'" class="effectForm assetPane" @submit.prevent="addLowerThird">
-          <el-select v-model="effectId" :aria-label="translate('标题条样式')" :disabled="busy">
-            <el-option :label="translate('线条标题条')" value="lt-kicker-name" />
-            <el-option :label="translate('色块标题条')" value="lt-bold-block" />
+          <el-select v-model="effectId" :aria-label="translate('效果样式')" :disabled="busy">
+            <el-option v-for="effect in effects" :key="effect.id" :label="effect.name" :value="effect.id" />
           </el-select>
+          <p v-if="activeEffect" class="effectSummary">{{ activeEffect.summary }}</p>
           <el-input v-model="effectKicker" :aria-label="translate('栏目')" :placeholder="translate('栏目')" :maxlength="32" :disabled="busy" />
           <el-input v-model="effectName" :aria-label="translate('标题')" :placeholder="translate('标题')" :maxlength="64" :disabled="busy" />
           <el-button nativeType="submit" type="primary" :loading="busy" :disabled="!timeline.ready.value || !effectKicker.trim() || !effectName.trim()">{{ translate('添加到动效轨') }}</el-button>
@@ -158,6 +158,7 @@
 import { computed, onMounted, onScopeDispose, ref, watch } from "vue";
 import { ElButton, ElInput, ElMessage, ElOption, ElSelect, ElTooltip } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
+import http from "@/lib/http";
 import {
   IconArrowBackUp,
   IconArrowForwardUp,
@@ -253,9 +254,21 @@ const previewClip = computed<PreviewClip | null>(() => {
 
 const previewEffects = computed(() => tracks.value.filter(track => track.type === "effect" && !track.hidden)
   .flatMap(track => track.clips).filter(clip => playhead.value >= clip.timelineStart && playhead.value < clip.timelineStart + clip.timelineDuration));
-const effectId = ref<"lt-kicker-name" | "lt-bold-block">("lt-kicker-name");
+type EffectOption = { id: string; name: string; category: string; summary: string; seconds: number };
+const effects = ref<EffectOption[]>([]);
+const effectId = ref("lt-kicker-name");
+const activeEffect = computed(() => effects.value.find(effect => effect.id === effectId.value));
 const effectKicker = ref("");
 const effectName = ref("");
+
+async function loadEffects() {
+  try {
+    const list = await http<EffectOption[]>({ method: "GET", url: "/api/effect/render" });
+    effects.value = list;
+    if (list.length && !list.some(effect => effect.id === effectId.value)) effectId.value = list[0]!.id;
+  } catch { /* 目录读不到时保留默认两项，添加仍可用 */ }
+}
+
 async function addLowerThird() {
   if (!effectKicker.value.trim() || !effectName.value.trim()) return;
   try { await timeline.addLowerThird(effectId.value, effectKicker.value.trim(), effectName.value.trim()); }
@@ -400,7 +413,7 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-onMounted(() => { void timeline.load(); });
+onMounted(() => { void timeline.load(); void loadEffects(); });
 onScopeDispose(() => timeline.dispose());
 
 defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanvasVideo: timeline.appendCanvasVideo, getTemplateTimeline: () => timeline });
@@ -408,6 +421,7 @@ defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanva
 
 <style scoped lang="scss">
 .effectForm { display: grid; align-content: start; gap: 8px; padding: 10px; }
+.effectSummary { margin: 0; color: var(--el-text-color-secondary); font-size: 12px; line-height: 1.6; }
 .timelinePanel {
   position: relative;
   display: flex;

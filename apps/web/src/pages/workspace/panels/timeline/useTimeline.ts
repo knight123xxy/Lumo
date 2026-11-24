@@ -289,7 +289,7 @@ export function useTimeline(directory: string) {
     selection.value = { trackId: track.id, clipId: clip.id };
   }
 
-  async function addLowerThird(effectId: "lt-kicker-name" | "lt-bold-block", kicker: string, name: string) {
+  async function addLowerThird(effectId: string, kicker: string, name: string) {
     if (!ready.value || busy.value) return;
     if (timelineReadError) throw new Error(timelineReadError);
     const start = playhead.value;

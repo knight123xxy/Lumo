@@ -4,7 +4,12 @@ import { existsSync, mkdtemp, mkdir, readFile, rm, writeFile } from "@lumo/file"
 import { tmpdir } from "node:os";
 import { lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 import { beatSeconds, buildTemplateMusic } from "./templateMusic";
-import { lowerThird, lowerThirdHtml, type LowerThirdEffectId } from "./lowerThird";
+import type { LowerThirdEffectId } from "./lowerThird";
+import { effects, findEffect, type EffectParams } from "./effects";
+
+// 动效目录对外暴露，路由用它生成可选项并校验 effectId。
+export { effects };
+export type { EffectDefinition, EffectParams } from "./effects";
 
 // ACT: 多套竖屏模板共用同一渲染管线，模板只决定镜头顺序与文案槽位；素材段可缺省，缺省时自动缩短总时长。
 export type TemplateSlots = {
@@ -209,18 +214,20 @@ export async function renderTemplate(workspace: string, outputPath: string, slot
   }
 }
 
-export async function renderLowerThird(workspace: string, text: { kicker: string; name: string }, signal: AbortSignal, effectId: LowerThirdEffectId = "lt-kicker-name") {
+export async function renderEffect(workspace: string, input: EffectParams & { effectId: string }, signal: AbortSignal) {
   signal.throwIfAborted();
+  const effect = findEffect(input.effectId);
+  if (!effect) throw Object.assign(new Error("效果不存在"), { status: 400 });
   const script = scriptPath();
-  const output = `assets/effects/lowerThird${crypto.randomUUID().replaceAll("-", "")}.webm`;
+  const output = `assets/effects/${effect.id}${crypto.randomUUID().replaceAll("-", "")}.webm`;
   const work = await mkdtemp(join(tmpdir(), "lumo-effect-"));
   try {
     const htmlPath = join(work, "effect.html");
     const jobPath = join(work, "job.json");
     const out = join(work, "effect.webm");
-    await writeFile(htmlPath, lowerThirdHtml(text, effectId));
+    await writeFile(htmlPath, effect.html({ kicker: input.kicker, name: input.name }));
     // No settle time: the exit animates after the hold.
-    await writeFile(jobPath, JSON.stringify({ htmlPath, out, ...lowerThird, transparent: true }));
+    await writeFile(jobPath, JSON.stringify({ htmlPath, out, seconds: effect.seconds, width: effect.width, height: effect.height, fps, transparent: true }));
     signal.throwIfAborted();
     await run("node", [script, "--input", jobPath], signal);
     const bytes = await readFile(out, { signal });
@@ -235,8 +242,12 @@ export async function renderLowerThird(workspace: string, text: { kicker: string
       signal.throwIfAborted();
       await writeWorkspaceFile(checked.path, bytes, true);
     } finally { release(); }
-    return { output, ...lowerThird };
+    return { output, seconds: effect.seconds, width: effect.width, height: effect.height, effectId: effect.id };
   } finally {
     await rm(work, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+export async function renderLowerThird(workspace: string, text: { kicker: string; name: string }, signal: AbortSignal, effectId: LowerThirdEffectId = "lt-kicker-name") {
+  return renderEffect(workspace, { effectId, ...text }, signal);
 }
