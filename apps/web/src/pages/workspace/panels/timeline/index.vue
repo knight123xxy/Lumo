@@ -140,6 +140,7 @@
         @update-fade="onUpdateFade"
         @update-filter="timeline.setFilter(selectedClip!.id, $event)"
         @update-crop="timeline.setCrop(selectedClip!.id, $event)"
+        @send-to-canvas="sendSelectedToCanvas()"
         @update-text="timeline.setText(selectedClip!.id, $event)"
         @update-range="onUpdateRange"
         @remove-clip="timeline.removeClip($event)"
@@ -204,7 +205,7 @@ import { type SilenceEditMode } from "./timelineSilence";
 import type { AssetItem, ProjectStyle, TrackType } from "./timelineTypes";
 
 const props = defineProps<{ directory: string; openAutomaticFilm?: boolean }>();
-const emit = defineEmits<{ automaticFilmOpened: [] }>();
+const emit = defineEmits<{ automaticFilmOpened: []; sendToCanvas: [] }>();
 
 const workspaceStore = useWorkspaceStore();
 const router = useRouter();
@@ -427,7 +428,18 @@ function handleKeydown(event: KeyboardEvent) {
 onMounted(() => { void timeline.load(); void loadEffects(); });
 onScopeDispose(() => timeline.dispose());
 
-defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanvasVideo: timeline.appendCanvasVideo, getTemplateTimeline: () => timeline });
+// 剪辑→画布：把选中的视频片段交给画布建节点，不切换面板。
+function getSelectedVideo() {
+  const clip = selectedClip.value;
+  if (!clip || clip.kind !== "video" || !clip.source) return null;
+  const name = clip.source.split("/").pop() || clip.source;
+  const mimeType = /\.webm$/i.test(name) ? "video/webm" : "video/mp4";
+  return { path: clip.source, name, mimeType };
+}
+function sendSelectedToCanvas() {
+  emit("sendToCanvas");
+}
+defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanvasVideo: timeline.appendCanvasVideo, getTemplateTimeline: () => timeline, getSelectedVideo });
 </script>
 
 <style scoped lang="scss">

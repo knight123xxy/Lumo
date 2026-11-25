@@ -33,7 +33,8 @@
         :ref="setTimelinePanel"
         :directory="workspaceStore.project?.directory ?? ''"
         :openAutomaticFilm="openAutomaticFilm"
-        @automaticFilmOpened="consumeAutomaticFilm" />
+        @automaticFilmOpened="consumeAutomaticFilm"
+        @send-to-canvas="sendClipToCanvas" />
     </keep-alive>
     <button v-if="activePanel === 'canvas'" class="workspaceBack" type="button" :aria-label="translate('返回首页')" :title="translate('返回首页')" @click="router.push('/home')">
       <icon-arrow-left :size="17" aria-hidden="true" />
@@ -619,6 +620,23 @@ onBeforeRouteLeave(async () => {
 });
 
 const sendingVideo = ref(false);
+
+// 剪辑→画布：选中片段直接在画布上生成视频节点，不切换面板。
+async function sendClipToCanvas() {
+  const directory = workspaceStore.project?.directory;
+  const canvas = canvasPanelRef.value;
+  const timeline = timelinePanelRef.value;
+  if (!directory || !canvas || !timeline) return;
+  const video = timeline.getSelectedVideo();
+  if (!video) return;
+  try {
+    if (!canvas.canvasId || !canvas.canvasReady) throw new Error(translate("画布尚未就绪"));
+    await canvas.addTemplateVideo(directory, canvas.canvasId, video);
+    ElMessage.success(translate("片段已作为视频节点添加到画布"));
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("发送到画布失败"));
+  }
+}
 
 async function sendVideoToTimeline() {
   const video = canvasPanelRef.value?.selectedVideoOutput;

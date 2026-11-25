@@ -5,6 +5,10 @@
     <div v-else class="propertyBody">
       <div class="propertySection">
         <div class="sectionTitle">{{ clipLabel }}</div>
+        <el-button v-if="clip.kind === 'video'" class="sendToCanvas" size="small" :disabled="busy" @click="emit('sendToCanvas')">
+          <icon-layout-sidebar-right :size="14" aria-hidden="true" />
+          {{ translate('发送到画布') }}
+        </el-button>
         <template v-if="clip.kind !== 'text'">
           <div class="field">
             <label>{{ translate("变速") }}</label>
@@ -88,10 +92,12 @@
 import { computed, reactive, watch } from "vue";
 import { ElButton, ElInput, ElInputNumber, ElOption, ElSelect, ElSlider, ElSwitch } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
+import { IconLayoutSidebarRight } from "@tabler/icons-vue";
 import type { ClipFilter, ClipCrop, TimelineClip } from "../timelineTypes";
 
 const props = defineProps<{ clip: TimelineClip | null; busy: boolean }>();
 const emit = defineEmits<{
+  sendToCanvas: [];
   updateSpeed: [speed: number];
   updateVolume: [volume: number];
   updateFade: [fadeIn: number, fadeOut: number];
