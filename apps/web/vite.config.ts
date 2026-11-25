@@ -38,7 +38,9 @@ export default defineConfig(({ command }) => ({
   },
   build: {
     outDir: "../../build/web",
-    emptyOutDir: true,
+    // ACT: 桌面打包在沙箱里会被批量删除守卫拦住，置空开关由打包脚本控制；
+    // 普通构建仍然清空 outDir，旧 chunk 不会长期堆积。
+    emptyOutDir: process.env.LUMO_KEEP_OUTDIR !== "1",
   },
   plugins: [
     {

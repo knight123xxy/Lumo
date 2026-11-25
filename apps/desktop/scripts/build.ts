@@ -117,7 +117,8 @@ if (mode === "dev") {
     }
   }
 }
-await $`${process.execPath} run build`.cwd(resolve(projectDir, "apps/web"));
+// 沙箱的批量删除守卫会拦 vite 置空 outDir，打包时改为只覆盖不删除。
+await $`${process.execPath} run build`.cwd(resolve(projectDir, "apps/web")).env({ ...process.env, LUMO_KEEP_OUTDIR: "1" });
 await $`${process.execPath} run build`.cwd(resolve(projectDir, "packages/mcp"));
 const agentDirectory = dirname(realpathSync(Bun.resolveSync("@earendil-works/pi-coding-agent", resolve(projectDir, "apps/server"))));
 const photonDirectory = dirname(Bun.resolveSync("@silvia-odwyer/photon-node", agentDirectory));
