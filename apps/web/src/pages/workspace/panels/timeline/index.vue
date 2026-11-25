@@ -2,7 +2,7 @@
   <section class="timelinePanel" aria-label="时间线剪辑" tabindex="0" @keydown="handleKeydown">
     <header class="topBar">
       <button class="backButton" type="button" :aria-label="translate('返回首页')" :title="translate('返回首页')" @click="router.push('/home')">
-        <icon-arrow-left :size="17" aria-hidden="true" />
+        <icon-home :size="16" aria-hidden="true" />
       </button>
       <div class="projectName">
         <el-input v-model="project.name" class="nameInput" size="small" :aria-label="translate('项目名')" @change="timeline.flushSave()" />
@@ -170,7 +170,6 @@ import { translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 import {
   IconArrowBackUp,
-  IconArrowLeft,
   IconArrowForwardUp,
   IconChevronLeft,
   IconDownload,
@@ -185,6 +184,7 @@ import {
   IconScissors,
   IconSubtitles,
   IconTrash,
+  IconHome,
 } from "@tabler/icons-vue";
 import { useRouter } from "vue-router";
 import { useWorkspaceStore } from "@/stores/workspace";

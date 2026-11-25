@@ -236,7 +236,8 @@ const panelOptions = [
   { label: "剪辑", value: "timeline", icon: IconMovie },
   { label: "文档", value: "document", icon: IconFileText },
 ];
-const agentVisible = ref(!openAutomaticFilm.value && route.query.agent !== "0");
+// ACT: Agent 面板默认收起，避免遮住预览与属性面板；一键成片流程仍自动展开。
+const agentVisible = ref(openAutomaticFilm.value);
 watch(() => route.query.agent, value => {
   if (value === "1") agentVisible.value = true;
 });
