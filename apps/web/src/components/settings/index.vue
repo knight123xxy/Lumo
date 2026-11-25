@@ -1,24 +1,29 @@
 <template>
-  <el-dialog v-model="visible" title="设置" width="min(1080px, calc(100vw - 32px))" alignCenter appendToBody>
+  <el-dialog v-model="visible" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody class="lumo-settings">
+    <template #header>
+      <header class="settingsHeader">
+        <h1>{{ translate('设置') }}</h1>
+        <p>{{ activePanel.label }}</p>
+      </header>
+    </template>
     <div class="settings">
-      <aside class="sidebar" aria-label="设置分类">
-        <template v-for="item in settingsPanels" :key="item.id">
-          <h3 v-if="item.groupLabel" class="settingsGroupLabel">{{ item.groupLabel }}</h3>
-          <button
-            class="settingsItem"
-            type="button"
-            :aria-label="item.id === 'about' && hasDesktopUpdate ? `${item.label}，有新版本可用` : item.label"
-            :aria-pressed="activePanel.id === item.id"
-            @click="activePanel = item">
-            <el-badge class="panelIcon" isDot :hidden="item.id !== 'about' || !hasDesktopUpdate">
-              <component :is="item.icon" :size="18" aria-hidden="true" />
-            </el-badge>
-            <span>{{ item.label }}</span>
-          </button>
-        </template>
-      </aside>
+      <nav class="settingsTabs" role="tablist" :aria-label="translate('设置分类')">
+        <button
+          v-for="item in settingsPanels"
+          :key="item.id"
+          class="settingsTab"
+          type="button"
+          role="tab"
+          :aria-selected="activePanel.id === item.id"
+          :aria-label="item.id === 'about' && hasDesktopUpdate ? `${item.label}，有新版本可用` : item.label"
+          :class="{ active: activePanel.id === item.id }"
+          @click="activePanel = item">
+          <component :is="item.icon" :size="14" aria-hidden="true" />
+          <span>{{ item.label }}</span>
+          <span v-if="item.id === 'about' && hasDesktopUpdate" class="tabDot" aria-hidden="true" />
+        </button>
+      </nav>
       <section class="content" :aria-label="activePanel.label" tabindex="0">
-        <h2 class="panelTitle">{{ activePanel.label }}</h2>
         <div class="panelContent">
           <transition name="el-fade-in" mode="out-in">
             <keep-alive include="personalization">
@@ -100,7 +105,12 @@ const settingsPanels = computed(() => allSettingsPanels.filter(item => {
   if (publicWeb.value && currentUser.value?.role === "user") return ["account", "general", "about"].includes(item.id);
   if (publicWeb.value && ["multiTenant", "deviceLink", "network", "mcp", "developer", "pluginMarket"].includes(item.id)) return false;
   return !multiTenantEnabled.value || !["languageModel", "mediaModel", "developer"].includes(item.id);
-}).map(item => publicWeb.value && item.id === "account" ? publicAccountPanel : item));
+}).map(item => {
+  if (publicWeb.value && item.id === "account") return publicAccountPanel;
+  // 本地模式没有云端账号，标签不写「余额」避免误导。
+  if (!multiTenantEnabled.value && item.id === "account") return { ...item, label: "账号" };
+  return item;
+}));
 const activePanel = shallowRef(settingsPanels.value[0]!);
 const visible = defineModel<boolean>({ default: false });
 
@@ -122,77 +132,73 @@ defineExpose({ openPanel });
 </script>
 
 <style lang="scss" scoped>
+// 设置改为「顶部横向分段 + 单列内容」，去掉 Toonflow 的左侧分组树。
+.settingsHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+
+  h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+  p { margin: 0; color: var(--el-text-color-secondary); font-size: 12px; }
+}
+
 .settings {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  height: min(72vh, calc(100dvh - 140px));
+  display: flex;
+  flex-direction: column;
+  max-height: min(64vh, calc(100dvh - 200px));
   overflow: hidden;
 
-  .sidebar {
-    min-height: 0;
-    overflow-y: auto;
-    padding: 2px;
+  .settingsTabs {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 2px 2px;
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--color-border);
+  }
 
-    .settingsGroupLabel {
-      margin: 14px 12px 6px;
-      color: var(--el-text-color-secondary);
-      font-size: 12px;
-      font-weight: 400;
-      line-height: 1.5;
+  .settingsTab {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+    align-items: center;
+    height: 32px;
+    padding: 0 9px;
+    color: var(--el-text-color-secondary);
+    font: inherit;
+    font-size: 12.5px;
+    white-space: nowrap;
+    background: transparent;
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: color .15s ease, background-color .15s ease;
+
+    &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
+    &:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--color-border-2); }
+    // 换行后底部指示条会错位，选中态改用实心 pill。
+    &.active {
+      color: var(--el-text-color-primary);
+      font-weight: 500;
+      background: var(--el-fill-color);
     }
+  }
 
-    .settingsItem {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      padding: 10px 12px;
-      margin-bottom: 4px;
-      border: 0;
-      border-radius: var(--el-border-radius-base);
-      background: transparent;
-      color: var(--el-text-color-regular);
-      font: inherit;
-      text-align: start;
-      cursor: pointer;
-
-      .panelIcon {
-        display: inline-flex;
-        flex-shrink: 0;
-      }
-
-      > span {
-        min-width: 0;
-        overflow-wrap: anywhere;
-      }
-
-      &:hover {
-        background: var(--el-fill-color-light);
-      }
-
-      &[aria-pressed="true"] {
-        background: var(--el-color-primary-light-9);
-        color: var(--el-color-primary);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--el-color-primary);
-      }
-    }
+  .tabDot {
+    width: 5px;
+    height: 5px;
+    background: var(--el-color-danger);
+    border-radius: 50%;
   }
 
   .content {
     display: flex;
+    flex: 1;
     flex-direction: column;
     min-height: 0;
-    padding: 0 20px;
+    padding-top: 16px;
     overflow: hidden;
-
-    .panelTitle {
-      flex-shrink: 0;
-      margin: 0 0 20px;
-      font-size: 18px;
-    }
 
     .panelContent {
       flex: 1;
@@ -200,38 +206,23 @@ defineExpose({ openPanel });
       overflow-x: hidden;
       overflow-y: auto;
       overscroll-behavior: contain;
-      padding-left: 5px;
-      padding-right: 5px;
-      padding-bottom: 50px;
-
-      > :deep(.el-fade-in-enter-active),
-      > :deep(.el-fade-in-leave-active) {
-        transition-duration: 100ms;
-      }
+      padding: 0 2px 4px;
     }
   }
+}
 
-  @media (max-width: 700px) {
-    grid-template-columns: 44px minmax(0, 1fr);
+@media (max-width: 640px) {
+  .settings { height: min(72vh, calc(100dvh - 160px)); }
+}
+</style>
 
-    .sidebar {
-      .settingsGroupLabel {
-        margin: 12px 0 6px;
-        text-align: center;
-      }
+<style lang="scss">
+// 弹窗外壳不受 scoped 约束：统一圆角与内边距，避免 Element 默认 header 留白过大。
+.lumo-settings {
+  border-radius: 16px;
 
-      .settingsItem {
-        justify-content: center;
-        padding: 12px;
-        span {
-          display: none;
-        }
-      }
-    }
-
-    .content {
-      padding: 0 8px 0 16px;
-    }
-  }
+  .el-dialog__header { padding: 18px 22px 6px; margin: 0; }
+  .el-dialog__body { padding: 0 22px 18px; }
+  .el-dialog__headerbtn { top: 16px; inset-inline-end: 14px; }
 }
 </style>

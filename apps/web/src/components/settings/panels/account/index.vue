@@ -91,6 +91,12 @@
       </div>
     </div>
 
+    <section v-else-if="!multiTenantEnabled" class="localSection" aria-label="本地模式">
+      <h3>{{ translate('本地模式') }}</h3>
+      <p>{{ translate('当前未启用云端账号，生成直接使用本机配置的模型，因此这里没有余额与充值入口。') }}</p>
+      <p class="localHint">{{ translate('余额与充值请到算力汇查看；如需云端同步与在线充值，开启多租户能力后这里会显示账号信息。') }}</p>
+    </section>
+
     <section v-else class="authSection" aria-label="登录与注册">
       <div class="authContent">
         <header class="authHeader">
@@ -157,7 +163,7 @@ import { IconChartBar, IconCreditCard, IconExternalLink, IconGift, IconLogout, I
 import logoUrl from "@lumo/assets/logo.svg";
 import type { Captcha, Login, PreviewData, UsageStatistics } from "@lumo/server/channel";
 import http from "@/lib/http";
-import { refreshLumoProvider, saveSettings, settings, lumoProviderError, lumoProviderLoading } from "@/stores/settings";
+import { refreshLumoProvider, saveSettings, settings, lumoProviderError, lumoProviderLoading, multiTenantEnabled } from "@/stores/settings";
 import smsCodeButton from "./smsCodeButton.vue";
 import forgotPasswordDialog from "./forgotPasswordDialog.vue";
 import accountChart from "./accountChart.vue";
@@ -411,7 +417,12 @@ watch([() => props.visible, account], ([visible, currentAccount]) => {
   }
 });
 
-watch([() => props.visible, accountToken], refreshOverview, { immediate: true, flush: "sync" });
+// ACT: 本地模式没有云端账号，别发概览请求，否则会一直弹「请求失败」。
+watch([() => props.visible, accountToken], ([visible, token]) => {
+  if (!multiTenantEnabled.value || !token) return;
+  if (!visible && !token) return;
+  refreshOverview();
+}, { immediate: true, flush: "sync" });
 
 watch([() => props.visible, () => !!account.value, authTab], () => {
   captchaRequest?.abort();
@@ -430,6 +441,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+.localSection {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  padding: 20px 0 4px;
+
+  h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  p { margin: 0; color: var(--el-text-color-regular); font-size: 13px; line-height: 1.75; }
+  .localHint { color: var(--el-text-color-secondary); font-size: 12.5px; }
+}
+
 .accountPanel {
   padding: 0 4px 24px;
 
