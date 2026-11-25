@@ -557,6 +557,8 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
 
   .pageBackground {
     position: absolute;
+    // 品牌纹理：从 Toonflow 那种半调噪点压到极淡，只作底纹不抢内容
+    opacity: 0.22;
     inset-block: 0;
     inset-inline-start: var(--sidebarWidth);
     width: calc(100% - var(--sidebarWidth));

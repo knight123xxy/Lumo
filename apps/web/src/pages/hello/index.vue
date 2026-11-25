@@ -340,9 +340,7 @@ async function completeSetup() {
     inset: -24% -12% auto -12%;
     height: 66vh;
     pointer-events: none;
-    background:
-      radial-gradient(46% 58% at 50% 4%, color-mix(in srgb, #0ea5e9 30%, transparent) 0%, transparent 70%),
-      radial-gradient(38% 46% at 68% 10%, color-mix(in srgb, #14b8a6 22%, transparent) 0%, transparent 72%);
+    background: radial-gradient(52% 62% at 50% 0%, color-mix(in srgb, var(--color-text) 8%, transparent) 0%, transparent 68%);
   }
 
   .pageLanguage { inset-inline-end: 24px; max-width: none; }
@@ -364,7 +362,7 @@ async function completeSetup() {
 
     .eyebrow {
       margin: 0 0 18px;
-      color: var(--color-accent);
+      color: var(--color-text-3);
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.32em;

@@ -1,89 +1,92 @@
 // Lumo 品牌 token。两套语义：默认浅色（蓝青科技感）+ html.dark 深色。
 // 主色统一为蓝青 #0EA5E9（浅）/ #38BDF8（深），强调色只用一处，避免多彩。
 :root {
-  // 品牌自定义 token
-  --color-bg: #f4f7fa;
+  // 中性为主：大面积黑白灰，颜色只做极少量点缀（Vercel / Linear 路线）
+  --color-bg: #fafafa;
   --color-window: #ffffff;
   --color-panel: #ffffff;
-  --color-panel-2: #f7fafc;
+  --color-panel-2: #f5f5f5;
   --color-field: #ffffff;
-  --color-dark: #0f1720;
-  --color-border: #e3e9ef;
-  --color-border-2: #cfd8e2;
-  --color-text: #0f1720;
-  --color-text-2: #5a6773;
-  --color-text-3: #8a97a5;
-  --color-accent: #0ea5e9;
-  --color-accent-soft: rgba(14, 165, 233, 0.12);
-  --color-accent-text: #0369a1;
+  --color-dark: #0a0a0a;
+  --color-border: #e8e8e8;
+  --color-border-2: #d9d9d9;
+  --color-text: #0a0a0a;
+  --color-text-2: #5c5c5c;
+  --color-text-3: #8f8f8f;
+  --color-accent: #111111;
+  --color-accent-soft: rgba(17, 17, 17, 0.06);
+  --color-accent-text: #2563eb;
   --color-success: #16a34a;
   --color-danger: #dc2626;
-  --color-warning: #d97706;
+  --color-warning: #b45309;
 
-  // Element Plus 主色系列（#0ea5e9 派生）
-  --el-color-primary: #0ea5e9;
-  --el-color-primary-light-3: #55bef0;
-  --el-color-primary-light-5: #87d1f4;
-  --el-color-primary-light-7: #b9e4f9;
-  --el-color-primary-light-8: #d0ecfb;
-  --el-color-primary-light-9: #e7f5fd;
-  --el-color-primary-dark-2: #0b84ba;
+  // Element Plus 主色 = 近黑，按钮因此是黑底白字，不抢画面
+  --el-color-primary: #111111;
+  --el-color-primary-light-3: #4d4d4d;
+  --el-color-primary-light-5: #888888;
+  --el-color-primary-light-7: #b8b8b8;
+  --el-color-primary-light-8: #d1d1d1;
+  --el-color-primary-light-9: #f0f0f0;
+  --el-color-primary-dark-2: #000000;
 
-  // Element Plus 中性色与排版
-  --el-bg-color-page: #f4f7fa;
+  --el-bg-color-page: #fafafa;
   --el-bg-color: #ffffff;
   --el-bg-color-overlay: #ffffff;
-  --el-border-color: #e3e9ef;
-  --el-border-color-light: #edf1f5;
-  --el-text-color-primary: #0f1720;
-  --el-text-color-regular: #5a6773;
-  --el-text-color-secondary: #8a97a5;
+  --el-border-color: #e8e8e8;
+  --el-border-color-light: #efefef;
+  --el-text-color-primary: #0a0a0a;
+  --el-text-color-regular: #5c5c5c;
+  --el-text-color-secondary: #8f8f8f;
   --el-border-radius-base: 10px;
   --el-font-size-base: 15px;
   --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 html.dark {
-  // 品牌自定义 token
-  --color-bg: #07090b;
-  --color-window: #0e1013;
-  --color-panel: #14171c;
-  --color-panel-2: #1a1e24;
-  --color-field: #0f1217;
-  --color-dark: #0c0f13;
-  --color-border: #23272e;
-  --color-border-2: #2e343c;
-  --color-text: #e8eaed;
-  --color-text-2: #9ba1aa;
-  --color-text-3: #626a74;
-  --color-accent: #38bdf8;
-  --color-accent-soft: rgba(56, 189, 248, 0.18);
-  --color-accent-text: #bae6fd;
-  --color-success: #34d399;
+  --color-bg: #0a0a0a;
+  --color-window: #111111;
+  --color-panel: #161616;
+  --color-panel-2: #1c1c1c;
+  --color-field: #121212;
+  --color-dark: #050505;
+  --color-border: #262626;
+  --color-border-2: #333333;
+  --color-text: #f5f5f5;
+  --color-text-2: #a3a3a3;
+  --color-text-3: #737373;
+  --color-accent: #f5f5f5;
+  --color-accent-soft: rgba(245, 245, 245, 0.08);
+  --color-accent-text: #93c5fd;
+  --color-success: #4ade80;
   --color-danger: #f87171;
   --color-warning: #fbbf24;
 
-  // Element Plus 主色系列（#38bdf8 派生，暗色语义：light-* 混 bg、dark-2 混白）
-  --el-color-primary: #38bdf8;
-  --el-color-primary-light-3: #2a8cb8;
-  --el-color-primary-light-5: #20688a;
-  --el-color-primary-light-7: #18455c;
-  --el-color-primary-light-8: #133546;
-  --el-color-primary-light-9: #0e2431;
-  --el-color-primary-dark-2: #60cbfa;
+  --el-color-primary: #f5f5f5;
+  --el-color-primary-light-3: #c4c4c4;
+  --el-color-primary-light-5: #9a9a9a;
+  --el-color-primary-light-7: #6b6b6b;
+  --el-color-primary-light-8: #4a4a4a;
+  --el-color-primary-light-9: #2a2a2a;
+  --el-color-primary-dark-2: #ffffff;
 
-  // Element Plus 中性色与排版
-  --el-bg-color-page: #07090b;
-  --el-bg-color: #0e1013;
-  --el-bg-color-overlay: #14171c;
-  --el-border-color: #23272e;
-  --el-border-color-light: #2e343c;
-  --el-text-color-primary: #e8eaed;
-  --el-text-color-regular: #9ba1aa;
-  --el-text-color-secondary: #626a74;
+  --el-bg-color-page: #0a0a0a;
+  --el-bg-color: #111111;
+  --el-bg-color-overlay: #161616;
+  --el-border-color: #262626;
+  --el-border-color-light: #333333;
+  --el-text-color-primary: #f5f5f5;
+  --el-text-color-regular: #a3a3a3;
+  --el-text-color-secondary: #737373;
   --el-border-radius-base: 10px;
   --el-font-size-base: 15px;
   --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+// 深色下主色是近白，主按钮需要反色文字，否则白底白字。
+html.dark .el-button--primary {
+  --el-button-text-color: #0a0a0a;
+  --el-button-hover-text-color: #0a0a0a;
+  --el-button-active-text-color: #0a0a0a;
 }
 
 html:root {
