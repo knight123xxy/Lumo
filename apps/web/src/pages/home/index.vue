@@ -42,7 +42,6 @@
       <div class="pageBody">
         <el-main class="pageContent">
           <homePage v-show="activeSection === 'home'" :disabled="creating || opening" :loading="creating" @create="request => request ? createProject(request) : selectProjectMode()" @open="openProject" @showSection="showSection" @enter="enterDestination" />
-          <explorePage v-show="activeSection === 'explore'" :scrollElement="pageScroll?.wrapRef" />
           <trumanMapPage v-show="activeSection === 'trumanMap'" />
           <agentWorkspacePage v-model:activeAgent="agentWorkspaceTab" v-show="activeSection === 'agentWorkspace'" :disabled="creating || opening" :loading="creating" :scenes="workspaceStore.sceneList" :modelLabel="modelChoices[0]?.label ?? ''" @submit="startAgent" @showSkills="showSection('skills')" @openTruman="showSection('trumanMap')" @openScene="openStandaloneScene" :filmBusy="filmBusy || dramaBusy || marketingBusy" @filmTopic="filmTopic = $event" @marketingRecipe="marketingRecipe = $event">
             <template #film>
@@ -117,7 +116,6 @@ import workspacePicker from "./workspacePicker.vue";
 import homeAdvertisementCarousel from "./homeAdvertisementCarousel.vue";
 import homeAccount from "./homeAccount.vue";
 import homePage from "./pages/home/index.vue";
-import explorePage from "./pages/explore/index.vue";
 import assetsPage from "./pages/assets/index.vue";
 import trumanMapPage from "./pages/trumanMap/index.vue";
 import skillsPage from "./pages/skills/index.vue";
@@ -137,7 +135,7 @@ const sidebarCollapsed = ref(false);
 const pageScroll = ref<ScrollbarInstance>();
 const backgroundScrollTop = ref(0);
 const activeSection = ref("home");
-const homeSectionIds = ["home", "explore", "skills", "assets", "trumanMap", "agentWorkspace"];
+const homeSectionIds = ["home", "skills", "assets", "trumanMap", "agentWorkspace"];
 
 const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
@@ -321,7 +319,7 @@ async function loadAdvertisements() {
   if (import.meta.env.DEV && typeof preview === "string" && ["text", "image", "web", "carousel", "stack"].includes(preview)) {
     const now = Date.now();
     const previewSlides: { title: string; subtitle: string; color: string; actionType: HomeAdvertisement["actionType"]; actionTarget: string }[] = [
-      { title: "探索创作灵感", subtitle: "从一个想法，开始你的下一个作品", color: "#273442", actionType: preview === "web" ? "web" : "path", actionTarget: preview === "web" ? "https://github.com/knight123xxy/Lumo" : "/home?section=explore" },
+      { title: "从整集模板开始", subtitle: "4 套结构 + 11 条流水线，换个文案就能成片", color: "#273442", actionType: preview === "web" ? "web" : "path", actionTarget: preview === "web" ? "https://github.com/knight123xxy/Lumo" : "/home?section=skills" },
       { title: "搭建你的工作流", subtitle: "前往插件市场，发现更多创作工具", color: "#2c303b", actionType: "settings", actionTarget: "pluginMarket" },
       { title: "一起创造更多", subtitle: "在 GitHub 了解 Lumo 的新进展", color: "#243734", actionType: "web", actionTarget: "https://github.com/knight123xxy/Lumo" },
     ];
@@ -361,7 +359,7 @@ async function loadAdvertisements() {
       </svg>`)}`;
     const banner: HomeAdvertisement = {
       title: "创作灵感，从这里开始",
-      content: "探索 **节点与技能**，开始你的下一个作品。\n[创作灵感](/home?section=explore) · [插件市场](settings:pluginMarket) · [项目主页](https://github.com/knight123xxy/Lumo)",
+      content: "用 **整集模板** 开始你的下一个作品。\n[整集模板](/home?section=skills) · [插件市场](settings:pluginMarket) · [项目主页](https://github.com/knight123xxy/Lumo)",
       imageUrl: preview === "image" ? bannerImage : "",
       buttonText: "发现工具",
       actionType: "settings",

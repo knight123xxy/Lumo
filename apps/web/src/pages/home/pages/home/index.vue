@@ -64,16 +64,6 @@
         <projectCard v-for="project in recentProjects" :key="project.directory" :project="project" :disabled="disabled" @select="emit('open', project)" />
       </div>
     </section>
-    <section v-if="exploreProjects.length" class="previewSection" aria-labelledby="homeExploreTitle">
-      <div class="sectionHeader">
-        <h2 id="homeExploreTitle">探索</h2>
-        <button class="moreButton" type="button" @click="emit('showSection', 'explore')">更多<icon-chevron-right :size="16" aria-hidden="true" /></button>
-      </div>
-      <div class="previewGrid exploreGrid">
-        <exploreCard v-for="item in exploreProjects" :key="item.id" :item="item" @click="selectedProjectId = item.id" />
-      </div>
-    </section>
-    <exploreDetail v-if="selectedProjectId" :projectId="selectedProjectId" @close="selectedProjectId = ''" />
   </div>
 </template>
 
@@ -82,7 +72,6 @@ import { locale, translate } from "@lumo/i18n/vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch, type Component } from "vue";
 import { ElMessage, type InputInstance } from "element-plus";
 import { getReadableFileMimeType, readableFileAccept } from "@lumo/server/documentFormats";
-import type { ExplorePage, ExploreProject } from "@lumo/server/channel";
 import { IconArrowUp, IconCamera, IconCube, IconDeviceDesktop, IconFolder, IconMicrophone, IconMovie, IconPhoto, IconPaperclip, IconSparkles, IconSpeakerphone, IconStack2, IconVector, IconWand } from "@tabler/icons-vue";
 import modelPopover from "@/components/modelPopover.vue";
 import attachmentList from "@/components/agent/attachmentList.vue";
@@ -93,8 +82,6 @@ import { useWorkspaceStore, type Project } from "@/stores/workspace";
 import http from "@/lib/http";
 import workspacePicker from "@/pages/home/workspacePicker.vue";
 import projectCard from "../projects/projectCard.vue";
-import exploreCard from "../explore/exploreCard.vue";
-import exploreDetail from "../explore/exploreDetail.vue";
 import { pipelineCatalog } from "../skills/pipelineCatalog";
 
 const quickActions = [
@@ -122,7 +109,6 @@ const emit = defineEmits<{
 const workspaceStore = useWorkspaceStore();
 const pageLifetime = new AbortController();
 const recentProjects = computed(() => [...workspaceStore.projectList].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt).slice(0, 3));
-const exploreProjects = shallowRef<ExploreProject[]>([]);
 const selectedProjectId = ref("");
 const promptWorkspacePicker = ref<InstanceType<typeof workspacePicker>>();
 const workspaceDirectory = ref(workspaceStore.project?.directory ?? "");
@@ -150,7 +136,6 @@ const placeholderPhrases = [
 const promptPlaceholder = ref(translate(placeholderPhrases[0]!));
 
 onMounted(() => {
-  void loadExploreProjects();
   window.addEventListener("dragend", clearAttachmentDrag, true);
   window.addEventListener("drop", clearAttachmentDrag, true);
   window.addEventListener("blur", clearAttachmentDrag);
@@ -199,16 +184,6 @@ onUnmounted(() => {
 watch(() => props.disabled, disabled => {
   if (disabled) clearAttachmentDrag();
 }, { flush: "sync" });
-
-// 首页只预览前 3 个作品：云端未开放或加载失败时不显示该区块，完整列表、错误提示与重试在探索面板。
-async function loadExploreProjects() {
-  try {
-    const result = await http<ExplorePage>({ method: "POST", url: "/api/channel/community/getExploreProjects", signal: pageLifetime.signal, data: { limit: 3 } });
-    exploreProjects.value = result.list.slice(0, 3);
-  } catch (error) {
-    if (!pageLifetime.signal.aborted) console.warn("加载探索作品失败", error);
-  }
-}
 
 function submit() {
   emit("create", { directory: workspaceDirectory.value, prompt: prompt.value, attachments: [...promptAttachments.value], model: selectedModel.value, reasoningEffort: reasoningEffort.value });
