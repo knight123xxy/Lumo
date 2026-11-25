@@ -1,7 +1,17 @@
 <template>
   <div class="workspaceLayout">
-    <aside class="workspaceSidebar" :inert="workspaceStore.projectLoadingVisible || switchingProject">
-      <workspaceTree :disabled="switchingProject" @openProject="openSidebarProject" @openChat="openSidebarProject">
+    <aside class="workspaceSidebar" :class="{ collapsed: !sidebarExpanded }" :inert="workspaceStore.projectLoadingVisible || switchingProject">
+      <div class="sidebarRail">
+        <button class="railButton" type="button" :aria-label="translate(sidebarExpanded ? '收起侧栏' : '展开侧栏')" :aria-expanded="sidebarExpanded"
+          :title="translate(sidebarExpanded ? '收起侧栏' : '展开侧栏')" @click="toggleSidebar">
+          <icon-layout-sidebar-left-collapse v-if="sidebarExpanded" :size="17" aria-hidden="true" />
+          <icon-layout-sidebar-left-expand v-else :size="17" aria-hidden="true" />
+        </button>
+        <button v-if="!sidebarExpanded" class="railButton" type="button" :aria-label="translate('首页')" :title="translate('首页')" @click="router.push('/home')">
+          <icon-home :size="17" aria-hidden="true" />
+        </button>
+      </div>
+      <workspaceTree v-if="sidebarExpanded" :disabled="switchingProject" @openProject="openSidebarProject" @openChat="openSidebarProject">
         <template #actions><router-link to="/home">{{ translate('首页') }}</router-link></template>
       </workspaceTree>
     </aside>
@@ -190,13 +200,21 @@ import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import workspaceTree from "@/pages/home/components/workspaceTree.vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
+import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconHome } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
 import modelLoginGuide from "@/components/modelLoginGuide.vue";
 import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
 import { useWorkspaceStore, type Project } from "@/stores/workspace";
+
+// 进工作区默认收起左栏，把空间让给画布/时间线；用户展开后记住选择。
+const SIDEBAR_KEY = "lumo.workspaceSidebarExpanded";
+const sidebarExpanded = ref(localStorage.getItem(SIDEBAR_KEY) === "1");
+function toggleSidebar() {
+  sidebarExpanded.value = !sidebarExpanded.value;
+  localStorage.setItem(SIDEBAR_KEY, sidebarExpanded.value ? "1" : "0");
+}
 import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
 import { useProviderBalances } from "@/lib/providerBilling";
@@ -713,12 +731,50 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
   display: flex;
   height: 100dvh;
   .workspaceSidebar {
+    display: flex;
     flex: 0 0 clamp(144px, 17vw, 240px);
+    flex-direction: column;
+    gap: 4px;
     min-width: 0;
-    padding: 12px 8px;
+    padding: 8px;
     overflow: auto;
-    border-inline-end: 1px solid var(--el-border-color-lighter);
     background: var(--el-bg-color);
+    border-inline-end: 1px solid var(--el-border-color-lighter);
+    transition: flex-basis .18s ease, padding .18s ease;
+
+    .sidebarRail {
+      display: flex;
+      flex-shrink: 0;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .railButton {
+      display: grid;
+      flex-shrink: 0;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      color: var(--el-text-color-secondary);
+      background: transparent;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color .15s ease, color .15s ease;
+
+      &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
+      &:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--color-border-2); }
+    }
+
+    // 收起后只留一条 44px 窄轨：展开 + 回首页
+    &.collapsed {
+      flex-basis: 44px;
+      align-items: center;
+      padding: 8px 0;
+      overflow: hidden;
+
+      .sidebarRail { flex-direction: column; }
+    }
   }
   .workspacePage { flex: 1; min-width: 0; }
 }
