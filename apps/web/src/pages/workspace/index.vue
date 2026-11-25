@@ -36,9 +36,6 @@
         @automaticFilmOpened="consumeAutomaticFilm"
         @send-to-canvas="sendClipToCanvas" />
     </keep-alive>
-    <button v-if="activePanel === 'canvas'" class="workspaceBack" type="button" :aria-label="translate('返回首页')" :title="translate('返回首页')" @click="router.push('/home')">
-      <icon-arrow-left :size="17" aria-hidden="true" />
-    </button>
     <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
     <div class="workspaceTools">
 
@@ -181,7 +178,7 @@ import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, pr
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase, IconArrowLeft } from "@tabler/icons-vue";
+import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
@@ -755,33 +752,10 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
     }
   }
 
-  // 工作区没有侧栏，只留一个返回首页的浮动按钮
-  .workspaceBack {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 6;
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    color: var(--el-text-color-regular);
-    background: color-mix(in srgb, var(--el-bg-color-overlay) 78%, transparent);
-    border: 1px solid var(--el-border-color-light);
-    border-radius: 9px;
-    box-shadow: var(--el-box-shadow-light);
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    transition: color .15s ease, background-color .15s ease;
-
-    &:hover { color: var(--el-text-color-primary); background: var(--el-bg-color-overlay); }
-    &:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-border-2); }
-  }
-
   .workspaceMenu {
     position: absolute;
     top: 15px;
-    left: 53px;
+    left: 15px;
     z-index: 5;
   }
 

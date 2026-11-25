@@ -87,9 +87,25 @@
         <el-button v-if="workspaceStore.projectList.length" type="primary" :disabled="!filmProjectDirectory" @click="startWorkspace(filmProjectDirectory)">{{ translate('打开项目') }}</el-button>
       </template>
     </el-dialog>
-    <el-dialog v-model="projectModeVisible" :title="translate('新建项目')" width="min(440px, calc(100vw - 32px))">
-      <el-button @click="createProjectInMode('canvas')">{{ translate('画布项目') }}</el-button>
-      <el-button @click="createProjectInMode('edit')">{{ translate('剪辑项目') }}</el-button>
+    <el-dialog v-model="projectModeVisible" width="min(480px, calc(100vw - 32px))" alignCenter appendToBody class="lumo-modeDialog">
+      <template #header>
+        <header class="modeHeader">
+          <h2>{{ translate('新建项目') }}</h2>
+          <p>{{ translate('选一种工作方式；项目默认叫「未命名」，之后可随时重命名') }}</p>
+        </header>
+      </template>
+      <div class="modeOptions">
+        <button class="modeOption" type="button" @click="createProjectInMode('canvas')">
+          <span class="modeIcon"><icon-vector :size="20" aria-hidden="true" /></span>
+          <strong>{{ translate('画布项目') }}</strong>
+          <span class="modeDesc">{{ translate('节点式创作：角色、分镜、素材生成与组装') }}</span>
+        </button>
+        <button class="modeOption" type="button" @click="createProjectInMode('edit')">
+          <span class="modeIcon"><icon-movie :size="20" aria-hidden="true" /></span>
+          <strong>{{ translate('剪辑项目') }}</strong>
+          <span class="modeDesc">{{ translate('时间线剪辑：导入素材、配音、字幕与导出') }}</span>
+        </button>
+      </div>
     </el-dialog>
     <workspacePicker ref="relocationPicker" hideTrigger />
     <standaloneSceneProject v-if="standaloneScene" :directory="standaloneScene.directory" :script="standaloneScene.script" @close="standaloneScene = undefined" />
@@ -174,15 +190,11 @@ function createProjectInMode(mode: ProjectMode) {
 
 async function createWorkspaceProject(mode: ProjectMode, destination?: WorkspaceDestination) {
   if (creating.value || opening.value) return;
-  const result = await ElMessageBox.prompt(translate("给项目起个名字，会把内容放到同名文件夹里。"), translate("新建项目"), {
-    confirmButtonText: translate("创建"), cancelButtonText: translate("取消"),
-    inputValue: mode === "edit" ? translate("未命名剪辑") : translate("未命名画布"),
-    inputValidator: value => !!value?.trim() || translate("项目名称不能为空"),
-  }).catch(() => null);
-  if (!result || pageLifetime.signal.aborted) return;
+  // ACT: 不再让用户先起名——默认「未命名」，进工作区后由 Agent 总结或用户在顶栏改名。
   creating.value = true;
   try {
-    const { directory } = await http<{ directory: string; name: string }>({ method: "POST", url: "/api/workspaces/create", data: { name: result.value.trim() } });
+    const defaultName = mode === "edit" ? translate("未命名剪辑") : translate("未命名画布");
+    const { directory } = await http<{ directory: string; name: string }>({ method: "POST", url: "/api/workspaces/create", data: { name: defaultName } });
     if (pageLifetime.signal.aborted) return;
     if (!await initializeProject(directory, true, mode)) return;
     await nextTick();
@@ -822,5 +834,62 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
     .assetsPanel { padding: 16px; }
     .homeSidebar .sidebarItem { min-height: 44px; }
   }
+}
+
+.modeHeader {
+  h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  p { margin: 6px 0 0; color: var(--el-text-color-secondary); font-size: 12.5px; }
+}
+
+.modeOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 4px 0 2px;
+}
+
+.modeOption {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 16px;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  background: var(--color-panel-2);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
+
+  &:hover { border-color: var(--color-border-2); background: var(--el-fill-color-light); transform: translateY(-1px); }
+  &:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-border-2); }
+
+  strong { font-size: 14px; font-weight: 600; }
+
+  .modeIcon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    color: var(--el-text-color-primary);
+    background: var(--el-fill-color);
+    border-radius: 10px;
+  }
+
+  .modeDesc { color: var(--el-text-color-secondary); font-size: 12.5px; line-height: 1.6; }
+}
+</style>
+
+
+<style lang="scss">
+// 新建项目弹窗外壳：圆角与内边距与设置弹窗一致。
+.lumo-modeDialog {
+  border-radius: 16px;
+
+  .el-dialog__header { padding: 18px 22px 6px; margin: 0; }
+  .el-dialog__body { padding: 0 22px 20px; }
+  .el-dialog__headerbtn { top: 16px; inset-inline-end: 14px; }
 }
 </style>
