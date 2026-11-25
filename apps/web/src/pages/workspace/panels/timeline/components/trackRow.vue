@@ -1,10 +1,11 @@
 <template>
   <div class="trackRow" :class="{ hidden: track.hidden }">
     <div class="trackHeader">
+      <span class="trackBadge" aria-hidden="true">{{ trackBadge }}</span>
       <span class="trackName">{{ track.name }}</span>
       <el-button
         v-if="track.type !== 'subtitle' && track.type !== 'text'"
-        class="trackAction"
+        class="trackAction quiet"
         text
         size="small"
         :aria-label="track.hidden ? translate('显示轨道') : translate('隐藏轨道')"
@@ -34,7 +35,7 @@
       </el-button>
       <el-button
         v-if="track.type !== 'video'"
-        class="trackAction"
+        class="trackAction reveal"
         text
         size="small"
         :aria-label="translate('删除轨道')"
@@ -60,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { ElButton } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
 import { IconEye, IconEyeOff, IconPlus, IconTrash, IconVolume, IconVolumeOff } from "@tabler/icons-vue";
@@ -84,6 +86,9 @@ const emit = defineEmits<{
   addTextClip: [trackId: string];
   seek: [time: number];
 }>();
+
+// 类型徽标：一字母标识轨道用途，中性灰，不加彩色。
+const trackBadge = computed(() => ({ video: "V", audio: "A", effect: "FX", subtitle: "S", text: "T" }[props.track.type] ?? "?"));
 
 function seekLane(event: PointerEvent) {
   if (event.target !== event.currentTarget) return;
@@ -115,18 +120,41 @@ function onMove(clipId: string, timelineStart: number) {
     border-right: 1px solid var(--el-border-color-lighter);
     background: var(--el-fill-color-light);
 
+    .trackBadge {
+      display: grid;
+      flex-shrink: 0;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      color: var(--el-text-color-secondary);
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--el-fill-color);
+      border-radius: 5px;
+    }
+
     .trackName {
       flex: 1;
+      min-width: 0;
       overflow: hidden;
       font-size: 12px;
+      font-weight: 500;
       white-space: nowrap;
       text-overflow: ellipsis;
     }
 
     .trackAction {
-      margin-left: 0;
+      width: 24px;
+      height: 24px;
+      margin: 0;
       padding: 3px;
+
+      // 常驻的只保留开/静音；危险与低频操作悬停行才出现
+      &.quiet { opacity: .55; }
+      &.reveal { opacity: 0; }
     }
+
+    &:hover .trackAction.reveal { opacity: 1; }
   }
 
   .trackLane {

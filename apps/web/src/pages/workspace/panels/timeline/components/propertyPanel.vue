@@ -216,7 +216,10 @@ function emitRange() { emit("updateRange", form.inPoint, form.outPoint); }
 
     .propertySection {
       padding: 10px 12px;
-      border-bottom: 1px solid var(--el-border-color-lighter);
+      margin-bottom: 10px;
+      background: var(--color-panel-2);
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 10px;
 
       .sectionTitle {
         margin-bottom: 8px;
