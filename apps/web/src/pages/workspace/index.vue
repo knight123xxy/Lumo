@@ -207,7 +207,8 @@ const timelinePanel = defineAsyncComponent(() => import("./panels/timeline/index
 const route = useRoute();
 const router = useRouter();
 const openAutomaticFilm = ref(route.query.automaticFilm === "1");
-const projectMode = () => workspaceStore.project?.mode;
+// 直接用 useWorkspaceStore()，避免在 workspaceStore 常量初始化前触发 TDZ。
+const projectMode = () => useWorkspaceStore().project?.mode;
 const activePanel = ref<"canvas" | "document" | "timeline">(
   openAutomaticFilm.value || route.query.panel === "timeline" || projectMode() === "edit" ? "timeline" : "canvas",
 );
