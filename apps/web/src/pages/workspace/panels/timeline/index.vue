@@ -1,6 +1,9 @@
 <template>
   <section class="timelinePanel" aria-label="时间线剪辑" tabindex="0" @keydown="handleKeydown">
     <header class="topBar">
+      <button class="backButton" type="button" :aria-label="translate('返回首页')" :title="translate('返回首页')" @click="router.push('/home')">
+        <icon-arrow-left :size="17" aria-hidden="true" />
+      </button>
       <div class="projectName">
         <el-input v-model="project.name" class="nameInput" size="small" :aria-label="translate('项目名')" @change="timeline.flushSave()" />
       </div>
@@ -166,6 +169,7 @@ import { translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 import {
   IconArrowBackUp,
+  IconArrowLeft,
   IconArrowForwardUp,
   IconChevronLeft,
   IconDownload,
@@ -181,6 +185,7 @@ import {
   IconSubtitles,
   IconTrash,
 } from "@tabler/icons-vue";
+import { useRouter } from "vue-router";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { modelChoices } from "@/stores/settings";
 import { useTimeline } from "./useTimeline";
@@ -202,6 +207,7 @@ const props = defineProps<{ directory: string; openAutomaticFilm?: boolean }>();
 const emit = defineEmits<{ automaticFilmOpened: [] }>();
 
 const workspaceStore = useWorkspaceStore();
+const router = useRouter();
 const timeline = useTimeline(props.directory);
 const {
   project,
@@ -445,6 +451,23 @@ defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanva
     flex: 0 0 48px;
     padding: 0 14px;
     border-bottom: 1px solid var(--el-border-color-lighter);
+
+    .backButton {
+      display: grid;
+      flex-shrink: 0;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      color: var(--el-text-color-regular);
+      background: transparent;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color .15s ease, color .15s ease;
+
+      &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
+      &:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--color-border-2); }
+    }
 
     .projectName {
       flex: 1;

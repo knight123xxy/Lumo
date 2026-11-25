@@ -1,20 +1,5 @@
 <template>
   <div class="workspaceLayout">
-    <aside class="workspaceSidebar" :class="{ collapsed: !sidebarExpanded }" :inert="workspaceStore.projectLoadingVisible || switchingProject">
-      <div class="sidebarRail">
-        <button class="railButton" type="button" :aria-label="translate(sidebarExpanded ? '收起侧栏' : '展开侧栏')" :aria-expanded="sidebarExpanded"
-          :title="translate(sidebarExpanded ? '收起侧栏' : '展开侧栏')" @click="toggleSidebar">
-          <icon-layout-sidebar-left-collapse v-if="sidebarExpanded" :size="17" aria-hidden="true" />
-          <icon-layout-sidebar-left-expand v-else :size="17" aria-hidden="true" />
-        </button>
-        <button v-if="!sidebarExpanded" class="railButton" type="button" :aria-label="translate('首页')" :title="translate('首页')" @click="router.push('/home')">
-          <icon-home :size="17" aria-hidden="true" />
-        </button>
-      </div>
-      <workspaceTree v-if="sidebarExpanded" :disabled="switchingProject" @openProject="openSidebarProject" @openChat="openSidebarProject">
-        <template #actions><router-link to="/home">{{ translate('首页') }}</router-link></template>
-      </workspaceTree>
-    </aside>
   <main class="workspacePage" :inert="workspaceStore.projectLoadingVisible" :style="{ '--agentWidth': `${agentVisible ? agentWidth : 0}px` }">
     <canvasPanel
       :key="workspaceStore.project?.directory"
@@ -50,16 +35,12 @@
         :openAutomaticFilm="openAutomaticFilm"
         @automaticFilmOpened="consumeAutomaticFilm" />
     </keep-alive>
+    <button v-if="activePanel === 'canvas'" class="workspaceBack" type="button" :aria-label="translate('返回首页')" :title="translate('返回首页')" @click="router.push('/home')">
+      <icon-arrow-left :size="17" aria-hidden="true" />
+    </button>
     <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
     <div class="workspaceTools">
-      <el-segmented :modelValue="activePanel" class="panelSwitcher" :options="panelOptions" size="small" aria-label="切换面板" @change="switchPanel">
-        <template #default="{ item }">
-          <span class="panelOption">
-            <component :is="item.icon" :size="15" aria-hidden="true" />
-            {{ item.label }}
-          </span>
-        </template>
-      </el-segmented>
+
       <div class="bottomTools">
         <el-card v-if="activePanel === 'canvas'" class="toolMenu" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
           <div class="toolMenuContent" role="toolbar" aria-label="画布工具">
@@ -198,23 +179,14 @@ import { translate } from "@lumo/i18n/vue";
 import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import axios from "axios";
-import workspaceTree from "@/pages/home/components/workspaceTree.vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconHome } from "@tabler/icons-vue";
+import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase, IconArrowLeft } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
 import modelLoginGuide from "@/components/modelLoginGuide.vue";
 import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
 import { useWorkspaceStore, type Project } from "@/stores/workspace";
-
-// 进工作区默认收起左栏，把空间让给画布/时间线；用户展开后记住选择。
-const SIDEBAR_KEY = "lumo.workspaceSidebarExpanded";
-const sidebarExpanded = ref(localStorage.getItem(SIDEBAR_KEY) === "1");
-function toggleSidebar() {
-  sidebarExpanded.value = !sidebarExpanded.value;
-  localStorage.setItem(SIDEBAR_KEY, sidebarExpanded.value ? "1" : "0");
-}
 import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
 import { useProviderBalances } from "@/lib/providerBilling";
@@ -235,7 +207,10 @@ const timelinePanel = defineAsyncComponent(() => import("./panels/timeline/index
 const route = useRoute();
 const router = useRouter();
 const openAutomaticFilm = ref(route.query.automaticFilm === "1");
-const activePanel = ref<"canvas" | "document" | "timeline">(openAutomaticFilm.value || route.query.panel === "timeline" ? "timeline" : "canvas");
+const projectMode = () => workspaceStore.project?.mode;
+const activePanel = ref<"canvas" | "document" | "timeline">(
+  openAutomaticFilm.value || route.query.panel === "timeline" || projectMode() === "edit" ? "timeline" : "canvas",
+);
 function consumeAutomaticFilm() {
   openAutomaticFilm.value = false;
   const query = { ...route.query };
@@ -728,54 +703,7 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
 
 <style scoped lang="scss">
 .workspaceLayout {
-  display: flex;
   height: 100dvh;
-  .workspaceSidebar {
-    display: flex;
-    flex: 0 0 clamp(144px, 17vw, 240px);
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    padding: 8px;
-    overflow: auto;
-    background: var(--el-bg-color);
-    border-inline-end: 1px solid var(--el-border-color-lighter);
-    transition: flex-basis .18s ease, padding .18s ease;
-
-    .sidebarRail {
-      display: flex;
-      flex-shrink: 0;
-      gap: 2px;
-      align-items: center;
-    }
-
-    .railButton {
-      display: grid;
-      flex-shrink: 0;
-      place-items: center;
-      width: 28px;
-      height: 28px;
-      color: var(--el-text-color-secondary);
-      background: transparent;
-      border: 0;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color .15s ease, color .15s ease;
-
-      &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
-      &:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--color-border-2); }
-    }
-
-    // 收起后只留一条 44px 窄轨：展开 + 回首页
-    &.collapsed {
-      flex-basis: 44px;
-      align-items: center;
-      padding: 8px 0;
-      overflow: hidden;
-
-      .sidebarRail { flex-direction: column; }
-    }
-  }
   .workspacePage { flex: 1; min-width: 0; }
 }
 .workspacePage {
@@ -788,7 +716,6 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
   :deep(.canvasMenu),
   :deep(.balanceCard),
   :deep(.canvasControlsCard),
-  .panelSwitcher,
   .toolMenu {
     background: color-mix(in srgb, var(--el-bg-color-overlay) 70%, transparent);
     backdrop-filter: blur(6px);
@@ -809,10 +736,33 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
     }
   }
 
-  .workspaceMenu {
+  // 工作区没有侧栏，只留一个返回首页的浮动按钮
+  .workspaceBack {
     position: absolute;
     top: 15px;
     left: 15px;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    color: var(--el-text-color-regular);
+    background: color-mix(in srgb, var(--el-bg-color-overlay) 78%, transparent);
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 9px;
+    box-shadow: var(--el-box-shadow-light);
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: color .15s ease, background-color .15s ease;
+
+    &:hover { color: var(--el-text-color-primary); background: var(--el-bg-color-overlay); }
+    &:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-border-2); }
+  }
+
+  .workspaceMenu {
+    position: absolute;
+    top: 15px;
+    left: 53px;
     z-index: 5;
   }
 
@@ -822,34 +772,6 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
     width: calc(100% - var(--agentWidth, 0px));
     container: workspaceTools / inline-size;
     pointer-events: none;
-
-    .panelSwitcher {
-      --el-border-radius-base: var(--ui-radius-large);
-      --el-segmented-color: var(--el-text-color-secondary);
-      --el-segmented-item-selected-color: var(--el-color-white);
-      --el-segmented-item-selected-bg-color: var(--el-color-primary);
-      --el-segmented-item-hover-bg-color: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      z-index: 5;
-      min-height: 28px;
-      padding: 2px;
-      border: 1px solid var(--el-border-color-light);
-      font-size: 12px;
-      transform: translateX(-50%);
-      pointer-events: auto;
-
-      .panelOption {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        padding: 0 2px;
-        line-height: 22px;
-        font-weight: 500;
-      }
-    }
 
     .bottomTools {
       position: absolute;
