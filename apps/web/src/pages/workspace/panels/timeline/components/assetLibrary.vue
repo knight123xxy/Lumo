@@ -2,7 +2,7 @@
   <aside class="assetLibrary" :aria-label="translate('素材库')">
     <div class="assetHeader">
       <span class="assetTitle">{{ translate("素材库") }}</span>
-      <el-button class="importButton" size="small" type="primary" :loading="busy" @click="pickFiles">
+      <el-button class="importButton" size="small" :loading="busy" @click="pickFiles">
         <icon-upload :size="14" />
         {{ translate("导入") }}
       </el-button>

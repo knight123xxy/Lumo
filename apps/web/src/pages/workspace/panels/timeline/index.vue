@@ -5,6 +5,7 @@
         <el-input v-model="project.name" class="nameInput" size="small" :aria-label="translate('项目名')" @change="timeline.flushSave()" />
       </div>
       <div class="topActions">
+        <div class="actionGroup">
         <el-tooltip :content="translate('撤销')" placement="bottom" :showArrow="false">
           <el-button class="barButton" text size="small" :disabled="!canUndo" :aria-label="translate('撤销')" @click="timeline.undo()">
             <icon-arrow-back-up :size="17" />
@@ -25,12 +26,16 @@
             <icon-refresh :size="17" />
           </el-button>
         </el-tooltip>
+        </div>
+        <span class="actionDivider" aria-hidden="true" />
+        <div class="actionGroup">
         <el-button size="small" :disabled="!timeline.ready.value || busy" @click="templateVisible = true">{{ translate('整集模板') }}</el-button>
         <el-button size="small" :disabled="!timeline.ready.value || busy" @click="automaticFilmVisible = true">{{ translate('一键成片') }}</el-button>
         <el-button class="exportButton" type="primary" size="small" :disabled="!duration || busy" @click="exportVisible = true">
           <icon-download :size="15" />
           {{ translate("导出") }}
         </el-button>
+        </div>
       </div>
     </header>
 
@@ -445,23 +450,53 @@ defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanva
       flex: 1;
       max-width: 360px;
 
+      .nameInput :deep(.el-input__wrapper) {
+        padding: 0 6px;
+        background: transparent;
+        box-shadow: none;
+        transition: background-color .15s ease, box-shadow .15s ease;
+      }
+
       .nameInput :deep(.el-input__inner) {
+        height: 26px;
+        font-size: 13px;
         font-weight: 600;
+      }
+
+      .nameInput :deep(.el-input__wrapper:hover) { background: var(--el-fill-color-light); }
+      .nameInput :deep(.el-input__wrapper.is-focus) {
+        background: var(--el-bg-color);
+        box-shadow: 0 0 0 1px var(--color-border-2) inset;
       }
     }
 
     .topActions {
       display: flex;
       align-items: center;
-      gap: 2px;
+      gap: 10px;
 
+      .actionGroup {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+      }
+
+      .actionDivider {
+        width: 1px;
+        height: 16px;
+        background: var(--el-border-color);
+      }
+
+      // 图标按钮统一 28×28 / 8px 圆角，hover 才出色块
       .barButton {
-        margin-left: 0;
+        width: 28px;
+        height: 28px;
+        margin: 0;
+        padding: 0;
+        border-radius: 8px;
       }
 
-      .exportButton {
-        margin-left: 10px;
-      }
+      .exportButton { margin: 0; }
     }
   }
 
