@@ -153,7 +153,12 @@
       <div class="emptyCard">
         <p class="emptyTitle">{{ translate("导入素材开始剪辑") }}</p>
         <p class="emptyTip">{{ translate("上传视频、音频、图片或字幕，拖到时间线即可编排。") }}</p>
-        <el-button type="primary" @click="openAssetPicker">{{ translate("导入素材") }}</el-button>
+        <div class="emptyActions">
+          <el-button type="primary" @click="openAssetPicker">{{ translate("导入素材") }}</el-button>
+          <el-button :disabled="!timeline.ready.value || busy" @click="automaticFilmVisible = true">{{ translate("一键成片") }}</el-button>
+          <el-button :disabled="!timeline.ready.value || busy" @click="templateVisible = true">{{ translate("整集模板") }}</el-button>
+        </div>
+        <p class="emptyHint">{{ translate("也可以在画布生成素材后「发送到剪辑」，或让 Agent 直接安排。") }}</p>
       </div>
     </div>
 
@@ -668,6 +673,18 @@ defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanva
         font-size: 16px;
         font-weight: 600;
       }
+    .emptyActions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .emptyHint {
+      margin: 10px 0 0;
+      color: var(--el-text-color-secondary);
+      font-size: 12px;
+    }
 
       .emptyTip {
         margin: 0 0 16px;
