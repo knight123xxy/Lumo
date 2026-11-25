@@ -396,11 +396,14 @@ async function restoreAttachment(index: number) {
 
       em {
         position: absolute;
-        inset-block-end: 6px;
+        inset-block-end: 8px;
         inset-inline-end: 8px;
-        font-size: 10px;
+        padding: 1px 6px;
+        color: #f5f5f5;
+        font-size: 11px;
         font-style: normal;
-        opacity: .82;
+        background: rgb(0 0 0 / 34%);
+        border-radius: 5px;
       }
 
       &.tone0 { background: linear-gradient(150deg, #1c1c1c, #3d3d3d); }
@@ -528,6 +531,7 @@ async function restoreAttachment(index: number) {
               width: 36px;
               height: 36px;
               margin: 0;
+              border-radius: 12px;
               background: var(--el-fill-color-light);
               color: var(--el-text-color-regular);
 
@@ -542,7 +546,7 @@ async function restoreAttachment(index: number) {
               height: 36px;
               margin: 0;
               padding: 0 10px;
-              border-radius: calc(var(--ui-radius) * 2);
+              border-radius: 12px;
               color: var(--el-text-color-secondary);
             }
           }
@@ -562,17 +566,17 @@ async function restoreAttachment(index: number) {
 
               :deep(.modelButton) {
                 height: 36px;
-                border-radius: calc(var(--ui-radius) * 2);
+                border-radius: 12px;
               }
             }
 
             .sendButton {
               flex-shrink: 0;
-              height: 38px;
+              height: 36px;
               margin: 0;
-              border-radius: calc(var(--ui-radius) * 2);
+              border-radius: 12px;
 
-              &.is-circle { width: 38px; border-radius: 50%; }
+              &.is-circle { width: 36px; border-radius: 50%; }
             }
           }
 
