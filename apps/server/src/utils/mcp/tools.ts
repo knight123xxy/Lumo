@@ -14,7 +14,6 @@ import { callControl, getConnection, listConnections } from "@/utils/mcp/control
 import { appOperations, runAppOperation, type InstallDetails } from "@/utils/mcp/operations";
 import { listTools } from "@/utils/plugins/tools";
 import { runPluginDevelopment } from "@/utils/plugins/development";
-import { installMarketPlugin, installMarketPluginSchema, resolveMarketPlugin, searchPluginMarket, searchPluginMarketSchema } from "@/lib/pluginMarket";
 import { isLocalHostRequest, isLocalWorkspaceRequest } from "@/utils/workspace";
 import { isWithin, lockWorkspaceFiles, protectWorkspaceRoot, renameWorkspaceFile, removeWorkspaceFile, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
 import { getRuntimePlatform } from "@/lib/platform";
@@ -145,7 +144,7 @@ export async function getMcpTools(): Promise<McpTool[]> {
   const authorizationSignal = authorizationController.signal;
   let pluginError: string | undefined;
   const tools: McpTool[] = [{
-    name: "getAppState", description: t`列出连接的 Lumo 页面及其 connectionId、工作目录、画布、项目列表和节点能力。控制多个页面时用 target.connectionId 明确操作对象。市场搜索无需连接页面，服务端工作区工具可显式指定 target.directory。`,
+    name: "getAppState", description: t`列出连接的 Lumo 页面及其 connectionId、工作目录、画布、项目列表和节点能力。控制多个页面时用 target.connectionId 明确操作对象。服务端工作区工具可显式指定 target.directory。`,
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     async execute() {
       const workspaceRoot = resolve(dirname(conf.path), "workspaces");
@@ -153,16 +152,6 @@ export async function getMcpTools(): Promise<McpTool[]> {
       return { connections: listConnections(), workspaceRoot, ...(pluginError ? { pluginError } : {}) };
     },
   }];
-  tools.push(wrapTool("searchPluginMarket", t`搜索 Lumo 插件市场，返回可用于申请安装的插件 ID。`, z.toJSONSchema(searchPluginMarketSchema, { io: "input" }), async (args, _target, signal) =>
-    searchPluginMarket(args, signal)));
-  tools.push(wrapTool("installMarketPlugin", t`按市场插件 ID 向目标 Lumo 页面请求安装，用户允许后下载并安装。`, z.toJSONSchema(installMarketPluginSchema), async (args, target, signal) => {
-    const page = await getInstallTarget(target, signal);
-    const plugin = resolveMarketPlugin(args, page.signal);
-    const source = [t`插件市场`, plugin.supplier, plugin.fileName].filter(Boolean).join(" · ");
-    await page.confirm({ name: `${plugin.name} (${plugin.identifier})`, type: plugin.type, version: plugin.version, source });
-    const result = await installMarketPlugin(plugin, page.signal);
-    return { ...result, ...await refreshResources(result, signal) };
-  }));
   for (const [name, schema] of Object.entries(uiSchemas)) {
     tools.push(wrapTool(name, uiDescriptions[name as keyof typeof uiSchemas], z.toJSONSchema(schema), async (input, target, signal) => {
       const args = schema.parse(input);

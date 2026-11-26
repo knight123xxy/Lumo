@@ -58,6 +58,7 @@ import { computed, ref, useId, watch } from "vue";
 import { ElButton, ElCheckbox, ElDialog, ElInput, ElOption, ElSelect } from "element-plus";
 import { translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
+import { templateCatalog } from "@/pages/home/pages/skills/templateCatalog";
 import type { AssetItem } from "../timelineTypes";
 
 const props = defineProps<{
@@ -71,12 +72,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ "update:modelValue": [value: boolean]; generated: [video: { path: string; name: string; mimeType: string }] }>();
 const formId = useId();
-const templates = [
-  { id: "vertical-beat", name: "竖屏卡点", summary: "标题 → 录屏 → 纸片卡 → 主张 → 结果 → 行动，适合产品演示与口播。" },
-  { id: "product-three", name: "三段产品片", summary: "痛点 → 解法 → 证据 → 行动，四拍讲清一个产品。" },
-  { id: "knowledge-qa", name: "知识三问", summary: "提问 → 拆解 → 例证 → 收束，适合讲解类与科普内容。" },
-  { id: "data-brief", name: "数据播报", summary: "数字 → 来源 → 图表 → 结论，适合财经与数据解读。" },
-] as const;
+const templates = templateCatalog;
 const templateId = ref<(typeof templates)[number]["id"]>("vertical-beat");
 const activeTemplate = computed(() => templates.find(item => item.id === templateId.value) ?? templates[0]);
 const themes = [

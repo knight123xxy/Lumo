@@ -6,10 +6,8 @@ import type { DesktopRuntime, desktopUpdateAttempt, updateSnapshot } from "@/typ
 import { msg, translateError, translateMessage } from "@/lib/i18n";
 import { messageError } from "@lumo/i18n/errors";
 
-const updateBaseUrls = {
-  official: "https://api.toonflow.net/web/version/desktopUpdates",
-  github: "https://github.com/HBAI-Ltd/Toonflow-app/releases/latest/download",
-};
+const releasePage = "https://github.com/knight123xxy/Lumo/releases";
+const defaultUpdateBaseUrl = `${releasePage}/latest/download`;
 const updateRuntimeId = crypto.randomUUID();
 let cancelledUpdateAttempt: string | undefined;
 
@@ -61,7 +59,7 @@ function getInstallFailure(local: Awaited<ReturnType<DesktopRuntime["updater"]["
     currentVersion: local.version,
     currentHash: local.hash,
     message: translateMessage(message),
-    downloadUrl: "https://github.com/HBAI-Ltd/Toonflow-app/releases/latest",
+    downloadUrl: releasePage,
   };
 }
 
@@ -85,9 +83,12 @@ export function isValidUpdateUrl(value: unknown): value is string {
 
 function getUpdateBaseUrl(): string {
   const settings = conf.get("settings", {});
-  if (settings.desktopUpdateSource === "github") return updateBaseUrls.github;
-  if (settings.desktopUpdateSource === "custom" && isValidUpdateUrl(settings.desktopUpdateCustomUrl)) return settings.desktopUpdateCustomUrl;
-  return updateBaseUrls.official;
+  if (settings.desktopUpdateSource === "custom" && isValidUpdateUrl(settings.desktopUpdateCustomUrl)) {
+    const url = new URL(settings.desktopUpdateCustomUrl);
+    if (!/(^|\.)toonflow\.net$/i.test(url.hostname)
+      && !(url.hostname === "github.com" && /^\/HBAI-Ltd\/Toonflow-app(?:\/|$)/i.test(url.pathname))) return url.href;
+  }
+  return defaultUpdateBaseUrl;
 }
 
 async function withUpdateSource<T>(updater: DesktopRuntime["updater"], updateBaseUrl: string, run: () => Promise<T>) {

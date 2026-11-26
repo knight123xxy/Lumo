@@ -1,7 +1,6 @@
 <template>
   <div class="providerList">
     <div class="itemList">
-      <lumoProviderCard scope="media" :provider="providers.find(item => item.id === 'lumo')" />
       <el-card v-for="item in visibleProviders" :key="item.fileName" class="providerItem" shadow="never">
         <div class="providerHeader">
           <div v-if="item.icon" class="providerMark" aria-hidden="true">
@@ -54,14 +53,13 @@ import { saveSettings } from "@/stores/settings";
 import { invalidateNodeModels } from "@lumo/nodes-scaffold/nodeAi";
 import { getBuiltinSource, useBuiltinUpgrades } from "@/lib/builtinProviders";
 import { withTerminalConfirm } from "@/lib/pluginInstallConfirmation";
-import lumoProviderCard from "../../lumoProviderCard.vue";
 
 defineProps<{ visible?: boolean }>();
 const upgradeVersion = useBuiltinUpgrades("media");
 const mediaProviderDialog = shallowRef<Component>();
 const editProviderDialog = shallowRef<Component>();
 const providers = ref<MediaProvider[]>([]);
-const visibleProviders = computed(() => providers.value.filter(item => item.id !== "lumo"));
+const visibleProviders = computed(() => providers.value.filter(item => !["lumo", "ideamine"].includes(item.id.toLowerCase())));
 const providerDialogVisible = ref(false);
 const editorVisible = ref(false);
 const editingProvider = ref<MediaProvider>();

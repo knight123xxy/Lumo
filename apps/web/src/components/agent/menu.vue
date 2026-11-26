@@ -44,7 +44,6 @@
           </ul>
         </div>
       </el-popover>
-      <el-button v-if="!parentFile" text circle aria-label="新建对话" title="新建对话" @click="emit('newChat')"><icon-message-plus :size="16" /></el-button>
       <el-popover v-if="!parentFile" v-model:visible="historyVisible" trigger="click" placement="bottom-end" :width="280" :showArrow="false" @show="emit('history')">
         <template #reference>
           <el-button text circle :loading="loading" :icon="IconHistory" :aria-expanded="historyVisible" aria-label="历史对话" title="历史对话" />
@@ -75,7 +74,16 @@
           </div>
         </div>
       </el-popover>
-      <el-button text circle :icon="IconAdjustmentsHorizontal" aria-label="节点工具控制" title="节点工具控制" @click="configVisible = true" />
+      <el-dropdown trigger="click" placement="bottom-end" @command="runHeaderCommand">
+        <el-button text circle :aria-label="translate('对话操作')" :title="translate('对话操作')"><icon-dots :size="17" aria-hidden="true" /></el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item v-if="!parentFile" command="newChat">{{ translate('新建对话') }}</el-dropdown-item>
+            <el-dropdown-item command="nodeTools">{{ translate('节点工具') }}</el-dropdown-item>
+            <slot name="menuItems" />
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
       <slot name="actions" />
       <el-button text circle aria-label="关闭对话" title="关闭" @click="emit('close')"><icon-x :size="16" /></el-button>
     </div>
@@ -86,13 +94,14 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
 import { ElMessageBox, type InputInstance } from "element-plus";
+import { translate } from "@lumo/i18n/vue";
 import type { AgentHistory } from "./types";
 import type { AgentSubAgent } from "@lumo/server/agent/types";
 import nodeToolsDialog from "./nodeToolsDialog.vue";
 import {
-  IconMessagePlus, IconHistory,
+  IconHistory, IconDots,
   IconX, IconPencil, IconTrash,
-  IconMessageCircle, IconCheck, IconAdjustmentsHorizontal,
+  IconMessageCircle, IconCheck,
   IconArrowLeft, IconUsersGroup,
 } from "@tabler/icons-vue";
 
@@ -104,13 +113,18 @@ const props = defineProps<{
   subAgents?: AgentSubAgent[];
   parentFile?: string;
 }>();
-const emit = defineEmits<{ newChat: []; history: []; select: [file: string]; rename: [file: string, name: string]; remove: [file: string]; close: []; openSubAgent: [file: string]; back: [] }>();
+const emit = defineEmits<{ newChat: []; history: []; select: [file: string]; rename: [file: string, name: string]; remove: [file: string]; close: []; openSubAgent: [file: string]; back: []; command: [value: string] }>();
 const historyVisible = ref(false);
 const subAgentsVisible = ref(false);
 const editingName = ref(false);
 const nameDraft = ref("");
 const nameInput = ref<InputInstance>();
 const configVisible = ref(false);
+function runHeaderCommand(command: string) {
+  if (command === "newChat") emit("newChat");
+  else if (command === "nodeTools") configVisible.value = true;
+  else emit("command", command);
+}
 const subAgentStatusLabels: Record<string, string> = {
   pending: "准备中", running: "执行中", completed: "已完成", error: "失败",
   limited: "达到限制", cancelled: "已取消", inputRequired: "等待补充", unknown: "状态待确认",

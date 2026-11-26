@@ -24,12 +24,12 @@
             前往 GitHub 更新
           </el-button>
           <template v-else>
-            <el-select :modelValue="updateSource" aria-label="更新源" size="small" :disabled="working || sourceSaving" @change="saveUpdateSource">
+            <el-select :modelValue="updateSource === 'github' ? 'official' : updateSource" aria-label="更新源" size="small" :disabled="working || sourceSaving" @change="saveUpdateSource">
               <template #prefix>
                 <icon-brand-github v-if="updateSource === 'github'" :size="14" aria-hidden="true" />
                 <icon-world v-else :size="14" aria-hidden="true" />
               </template>
-              <el-option label="官方源" value="official" />
+              <el-option label="Lumo 发布源" value="official" />
               <el-option label="GitHub" value="github" />
               <el-option v-if="customUpdateUrl" label="自定义源" value="custom" />
             </el-select>
@@ -52,9 +52,8 @@
       <div v-if="!isMobile && snapshot?.installFailure" class="installFailureNotice" role="alert">
         <strong>上次更新未成功</strong>
         <p>{{ snapshot.installFailure.message }}</p>
-        <p>请前往 GitHub 最新发布页或官网 toonflow.net，选择适合当前系统的完整安装包，关闭客户端后重新安装。</p>
-        <el-button tag="a" type="primary" size="small" :href="snapshot.installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
-        <el-button tag="a" size="small" href="https://toonflow.net" target="_blank" rel="noopener noreferrer">前往官网</el-button>
+        <p>请前往 Lumo 发布页，选择适合当前系统的完整安装包，关闭客户端后重新安装。</p>
+        <el-button tag="a" type="primary" size="small" :href="`${repositoryUrl}/releases`" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
       </div>
     </el-card>
 
@@ -201,7 +200,7 @@
       <template #footer>
         <el-button size="small" @click="resultVisible = false">关闭</el-button>
         <el-button v-if="updateError && !snapshot?.installFailure && !updateInProgress" tag="a" size="small" :href="`${repositoryUrl}/releases/latest`" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
-        <el-button v-if="snapshot?.installFailure" tag="a" type="primary" size="small" :href="snapshot.installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
+        <el-button v-if="snapshot?.installFailure" tag="a" type="primary" size="small" :href="`${repositoryUrl}/releases`" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
         <el-button v-else-if="snapshot?.updating && !working" size="small" type="primary" @click="runUpdate('read')">重新读取状态</el-button>
         <el-button
           v-else-if="snapshot?.canUpdate && snapshot.updateAvailable"

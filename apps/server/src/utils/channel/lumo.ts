@@ -197,6 +197,7 @@ export class Lumo implements Channel {
   private async request<T>(params: {
     path: string; method: "GET" | "POST"; data?: unknown; token?: string; signal?: AbortSignal; timeout?: number; sensitiveValues?: string[]; cache?: "no-store";
   }): Promise<T> {
+    if (params.path.startsWith("/web/web/plugIn/")) fail("在线插件市场暂未开放", 503);
     const timeout = AbortSignal.timeout(params.timeout ?? 20000);
     const signal = params.signal ? AbortSignal.any([params.signal, timeout]) : timeout;
     let response: Response | undefined;

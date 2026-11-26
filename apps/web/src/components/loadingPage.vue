@@ -1,11 +1,9 @@
 <template>
   <teleport to="body">
-    <div v-if="visible" class="loadingPage" role="status" aria-label="正在加载项目">
-      <div class="logoWrap" :class="{ drawn, filling }" aria-hidden="true">
-        <div class="logoOutline" @animationend="finishDrawing">
-          <div ref="logoElement" class="logoPulse" v-html="logoSvg" />
-        </div>
-        <img class="logoFill" :src="logoUrl" alt="" @animationend="finishFilling" />
+    <div v-if="visible" class="loadingPage" :class="{ leaving: filling }" role="status" aria-label="正在加载项目">
+      <div class="loadingMark">
+        <img class="loadingLogo" :src="logoUrl" alt="" aria-hidden="true" />
+        <span class="loadingDots" aria-hidden="true"><i v-for="index in 3" :key="index" /></span>
       </div>
     </div>
   </teleport>
@@ -13,75 +11,61 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from "vue";
-import logoRaw from "@lumo/assets/logo.svg?raw";
 import logoUrl from "@lumo/assets/logo.svg";
 
 const props = defineProps<{ active: boolean }>();
 const visible = defineModel<boolean>("visible", { default: false });
 const drawn = defineModel<boolean>("drawn", { default: false });
-const logoDocument = new DOMParser().parseFromString(logoRaw, "image/svg+xml");
-// ACT: 仅拆分当前 Logo 的绝对 M 轮廓；相对路径需解析命令，填充始终复用原图。
-for (const [index, path] of [...logoDocument.querySelectorAll("path")].entries()) {
-  const contours = path.getAttribute("d")!.match(/M[^M]*/g)!;
-  path.replaceWith(...contours.map(contour => {
-    const outline = path.cloneNode(false) as SVGPathElement;
-    outline.setAttribute("d", contour);
-    outline.setAttribute("pathLength", "1");
-    outline.setAttribute("data-part", String(index));
-    return outline;
-  }));
-}
-const logoSvg = new XMLSerializer().serializeToString(logoDocument.documentElement);
-const logoElement = ref<HTMLElement>();
 const filling = ref(false);
 const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
 const reducedMotion = ref(motionPreference.matches);
+let readyTimer: ReturnType<typeof setTimeout> | undefined;
+let leaveTimer: ReturnType<typeof setTimeout> | undefined;
 
 function updateMotionPreference(event: MediaQueryListEvent) {
   reducedMotion.value = event.matches;
 }
 motionPreference.addEventListener("change", updateMotionPreference);
-onBeforeUnmount(() => motionPreference.removeEventListener("change", updateMotionPreference));
+onBeforeUnmount(() => {
+  motionPreference.removeEventListener("change", updateMotionPreference);
+  if (readyTimer) clearTimeout(readyTimer);
+  if (leaveTimer) clearTimeout(leaveTimer);
+});
 
-watch([() => props.active, reducedMotion], ([active, reducedMotion]) => {
+// ACT: 用简洁的 Logo 淡入替代旧描边动画；ready 阶段由定时器推进，保持 visible/drawn/active 三个对外状态不变。
+function markReady() {
+  drawn.value = true;
+  if (!props.active) filling.value = true;
+}
+
+watch([() => props.active, reducedMotion], ([active, reduce]) => {
+  if (readyTimer) clearTimeout(readyTimer);
   if (active) {
     if (!visible.value) {
       drawn.value = false;
       visible.value = true;
     }
     filling.value = false;
-  }
-  if (reducedMotion) {
+    if (reduce) markReady();
+    else readyTimer = setTimeout(markReady, 700);
+  } else if (visible.value) {
     drawn.value = true;
-    if (!active) visible.value = false;
-  } else if (!active && drawn.value && visible.value) {
-    filling.value = true;
+    if (reduce) {
+      filling.value = false;
+      visible.value = false;
+    } else {
+      filling.value = true;
+    }
   }
 }, { immediate: true });
 
-// 项目导航等待描边完成。后台窗口或渲染器漏发 animationend 时仍要继续。
-watch([visible, drawn, filling], ([shown, outlined, fill], _, onCleanup) => {
-  if (!shown || outlined && !fill) return;
-  const timeout = setTimeout(() => {
-    if (!outlined) {
-      drawn.value = true;
-      if (!props.active) filling.value = true;
-    } else if (!props.active) {
-      visible.value = false;
-    }
-  }, 1600);
-  onCleanup(() => clearTimeout(timeout));
+watch(filling, leaving => {
+  if (leaveTimer) clearTimeout(leaveTimer);
+  if (!leaving || !visible.value) return;
+  leaveTimer = setTimeout(() => {
+    if (!props.active) visible.value = false;
+  }, 320);
 });
-
-function finishDrawing(event: AnimationEvent) {
-  if (event.target !== logoElement.value?.querySelector("path:last-of-type")) return;
-  drawn.value = true;
-  if (!props.active) filling.value = true;
-}
-
-function finishFilling() {
-  if (!props.active) visible.value = false;
-}
 </script>
 
 <style lang="scss" scoped>
@@ -89,107 +73,58 @@ function finishFilling() {
   position: fixed;
   inset: 0;
   z-index: 1100;
+  display: grid;
+  place-items: center;
   background: var(--el-bg-color);
+  transition: opacity 0.3s ease;
 
-  // 网格单独成层，用 transform 从中心缩小入场，不逐帧重绘背景尺寸。
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(var(--el-border-color) 1px, transparent 1px);
-    background-position: center;
-    background-size: 20px 20px;
-    animation: gridZoom 1.2s cubic-bezier(0.33, 1, 0.68, 1) both;
+  &.leaving { opacity: 0; }
 
-    @media (prefers-reduced-motion: reduce) { animation: none; }
+  .loadingMark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
   }
 
-  .logoWrap {
-    position: absolute;
-    top: 50dvh;
-    left: 50vw;
-    width: 96px;
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%);
+  .loadingLogo {
+    width: 72px;
+    height: 72px;
+    animation: logoIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 
-    // 先沿轮廓投出黑色阴影再整体反相，暗色主题下即为亮色边缘辉光；描边与填充共用。
-    .dark & { filter: drop-shadow(0 0 3px rgb(0 0 0 / 60%)) invert(1); }
+    .dark & { filter: invert(1); }
+  }
 
-    .logoOutline {
-      width: 100%;
-      line-height: 0;
-      will-change: opacity, filter;
-      // 时长不超过描边，避免收尾填充提前打断模糊过渡。
-      animation: logoFocus 0.7s ease-out both;
+  .loadingDots {
+    display: flex;
+    gap: 6px;
 
-      :deep(svg) { display: block; width: 100%; height: auto; overflow: visible; }
-      :deep(path) {
-        stroke: #000;
-        stroke-width: 14;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        fill: none;
-        stroke-dasharray: 1;
-        stroke-dashoffset: 1;
-        animation: logoDraw 0.65s linear both;
-      }
-      :deep(path[data-part="1"]) { animation-delay: 0.08s; }
+    i {
+      width: 5px;
+      height: 5px;
+      background: var(--el-text-color-secondary);
+      border-radius: 50%;
+      animation: dotBreathe 1.1s ease-in-out infinite;
+
+      &:nth-child(2) { animation-delay: 0.15s; }
+      &:nth-child(3) { animation-delay: 0.3s; }
     }
+  }
 
-    .logoFill {
-      position: absolute;
-      inset: 0;
-      display: block;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      will-change: opacity;
-    }
-
-    &.drawn .logoOutline :deep(path) { animation: none; stroke-dashoffset: 0; }
-    &.drawn .logoPulse { animation: logoPulse 0.9s ease-in-out infinite; will-change: opacity; }
-    &.filling {
-      .logoOutline { animation: logoOutlineOut 0.25s ease both; }
-      .logoPulse { animation-play-state: paused; }
-      .logoFill { animation: logoFill 0.25s ease both; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .logoOutline { opacity: 0; animation: none; }
-      .logoOutline :deep(path) { animation: none; }
-      &.drawn .logoPulse { animation: none; }
-      .logoFill { opacity: 1; }
-    }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    .loadingLogo { animation: none; }
+    .loadingDots i { animation: none; }
   }
 }
 
-@keyframes gridZoom {
-  from { opacity: 0; transform: scale(1.2); }
+@keyframes logoIn {
+  from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes logoFocus {
-  from { opacity: 0; filter: blur(6px); }
-  to { opacity: 1; filter: blur(0); }
-}
-
-@keyframes logoDraw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes logoFill {
-  0% { opacity: 0; }
-  70%, 100% { opacity: 1; }
-}
-
-@keyframes logoOutlineOut {
-  0% { opacity: 1; }
-  70%, 100% { opacity: 0; }
-}
-
-@keyframes logoPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+@keyframes dotBreathe {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
 }
 </style>

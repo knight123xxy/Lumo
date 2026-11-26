@@ -60,7 +60,7 @@ const imagePrices: Record<string, { price: string; discount: string }> = {
 
 export default {
   id: "ideamine",
-  label: "默认模型服务",
+  label: "算力汇",
   version: "1.1.0",
   readme: "算力汇（api.ideamine.cn）OpenAI 兼容服务：Seedance 视频、gpt-image 图片。参考图需使用可公开读取的 URL。 [去注册](https://api.ideamine.cn/register) · [去充值](https://api.ideamine.cn/topup)",
   rules: [
@@ -167,7 +167,7 @@ export default {
 
 export const ideamineTextProviderSource = `export default {
   id: "ideamineText",
-  label: "默认模型服务（文本）",
+  label: "算力汇（文本）",
   version: "1.0.0",
   readme: "算力汇（api.ideamine.cn）OpenAI 兼容文本模型。 [去注册](https://api.ideamine.cn/register) · [去充值](https://api.ideamine.cn/topup)",
   apiUrl: "https://api.ideamine.cn/v1",

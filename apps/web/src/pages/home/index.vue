@@ -5,35 +5,6 @@
     <el-scrollbar v-show="activeSection !== 'assets'" ref="pageScroll" class="pageScroll" @scroll="backgroundScrollTop = $event.scrollTop">
       <div class="pageBody">
         <el-main class="pageContent">
-          <homePage v-show="activeSection === 'home'" :disabled="creating || opening" :loading="creating" @create="request => request ? createProject(request) : emit('create')" @open="openProject" @showSection="showSection" @enter="enterDestination" />
-          <trumanMapPage v-show="activeSection === 'trumanMap'" />
-          <agentWorkspacePage v-model:activeAgent="agentWorkspaceTab" v-show="activeSection === 'agentWorkspace'" :disabled="creating || opening" :loading="creating" :scenes="workspaceStore.sceneList" :modelLabel="modelChoices[0]?.label ?? ''" @submit="startAgent" @showSkills="showSection('skills')" @openTruman="showSection('trumanMap')" @openScene="openStandaloneScene" :filmBusy="filmBusy || dramaBusy || marketingBusy" @filmTopic="filmTopic = $event" @marketingRecipe="marketingRecipe = $event">
-            <template #film>
-              <div v-if="filmDirectory">
-                <p>{{ filmProject?.name }}</p>
-                <filmDraft v-if="activeSection === 'agentWorkspace'" :key="filmDirectory" v-model:topic="filmTopic" :directory="filmDirectory" @busy="filmBusy = $event" @generated="openFilmDraft" />
-              </div>
-              <el-button v-else :loading="selectingFilmProject" @click="selectFilmProject">{{ translate('选择工作目录') }}</el-button>
-            </template>
-            <template #drama>
-              <div v-if="filmDirectory">
-                <p>{{ filmProject?.name }}</p>
-                <dramaDraft v-if="activeSection === 'agentWorkspace'" :key="filmDirectory" v-model:script="dramaScript" :directory="filmDirectory" @busy="dramaBusy = $event" @saved="openShortDramaDraft" />
-              </div>
-              <el-button v-else :loading="selectingFilmProject" @click="selectFilmProject">{{ translate('选择工作目录') }}</el-button>
-            </template>
-            <template #marketing>
-              <marketingDraft v-if="filmDirectory && activeSection === 'agentWorkspace'" :key="filmDirectory" :directory="filmDirectory" :recipe="marketingRecipe" @busy="marketingBusy = $event" @saved="openDramaDraft" />
-              <el-button v-else-if="!filmDirectory" :loading="selectingFilmProject" @click="selectFilmProject">{{ translate('选择工作目录') }}</el-button>
-            </template>
-            <template #truman>
-              <div class="previsComposer">
-                <label for="standalonePrevisScript">{{ translate('单场剧本') }}</label>
-                <el-input id="standalonePrevisScript" v-model="standaloneScript" type="textarea" :autosize="{ minRows: 4, maxRows: 10 }" :maxlength="6000" :disabled="selectingStandalone || !!standaloneScene" />
-                <el-button type="primary" :loading="selectingStandalone" :disabled="!standaloneScript.trim() || !!standaloneScene" @click="generateStandalonePrevis">{{ translate('生成白模预演') }}</el-button>
-              </div>
-            </template>
-          </agentWorkspacePage>
           <skillsPage v-show="activeSection === 'skills'" :active="activeSection === 'skills'" :disabled="creating || opening" @start="startPipeline" @openTemplate="enterDestination('template')" @manage="settingsDialog?.openPanel('pluginMarket')" />
         </el-main>
       </div>
@@ -52,7 +23,6 @@
       </template>
     </el-dialog>
     <workspacePicker ref="relocationPicker" hideTrigger />
-    <standaloneSceneProject v-if="standaloneScene" :directory="standaloneScene.directory" :script="standaloneScene.script" @close="standaloneScene = undefined" />
   </div>
 </template>
 
@@ -68,22 +38,14 @@ import { createEmptyProject, timelineProjectFile } from "@/pages/workspace/panel
 import { currentUser, publicWeb } from "@/stores/multiTenant";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import http from "@/lib/http";
-import { waitForControlValue } from "@/lib/mcpControl";
 import settings from "@/components/settings/index.vue";
 import bg from "./bg.vue";
 import workspacePicker from "./workspacePicker.vue";
 import homeAdvertisementCarousel from "./homeAdvertisementCarousel.vue";
-import homePage from "./pages/home/index.vue";
 import assetsPage from "./pages/assets/index.vue";
-import trumanMapPage from "./pages/trumanMap/index.vue";
 import skillsPage from "./pages/skills/index.vue";
-import agentWorkspacePage from "./pages/agentWorkspace/index.vue";
-import filmDraft from "./pages/agentWorkspace/filmDraft.vue";
-import marketingDraft from "./pages/agentWorkspace/marketingDraft.vue";
-import dramaDraft from "./pages/agentWorkspace/dramaDraft.vue";
 import { modelChoices, saveSettings } from "@/stores/settings";
 
-const emit = defineEmits<{ create: [] }>();
 const settingsVisible = ref(false);
 const settingsDialog = ref<InstanceType<typeof settings>>();
 provide("openSettingsPanel", (id: string) => settingsDialog.value?.openPanel(id));
@@ -91,8 +53,8 @@ const advertisements = ref<HomeAdvertisements>({ banner: null, banners: [], bann
 const mobileConnectVisible = ref(false);
 const pageScroll = ref<ScrollbarInstance>();
 const backgroundScrollTop = ref(0);
-const activeSection = ref("home");
-const homeSectionIds = ["home", "skills", "assets", "trumanMap", "agentWorkspace"];
+const activeSection = ref("skills");
+const homeSectionIds = ["skills", "assets"];
 
 const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
@@ -102,24 +64,7 @@ const creating = ref(false);
 const opening = ref(false);
 const filmProjectVisible = ref(false);
 const filmProjectDirectory = ref("");
-type WorkspaceDestination = "canvas" | "timeline" | "agent" | "automaticFilm" | "template" | "drama" | "previs" | "image" | "video";
-type AgentTab = "film" | "drama" | "marketing" | "truman";
-const agentWorkspaceTab = ref<AgentTab>("film");
-
-// Agent 工作台：沿用首页同一套「交给 Agent 推进」的入口，有项目就直接进，没有才选目录。
-async function startAgent(request: { agent: AgentTab; title: string; prompt: string }) {
-  if (creating.value || opening.value) return;
-  agentWorkspaceTab.value = request.agent;
-  const pending = { prompt: request.prompt, attachments: [], model: modelChoices.value[0]?.value ?? "", reasoningEffort: "" };
-  const current = workspaceStore.project?.directory;
-  if (current) {
-    workspaceStore.pendingAgentMessage = { ...pending, directory: current };
-    return enterWorkspace("agent");
-  }
-  const directory = await relocationPicker.value?.chooseDirectory();
-  if (!directory || pageLifetime.signal.aborted) return;
-  await createProject({ ...pending, directory }, "agent");
-}
+type WorkspaceDestination = "canvas" | "timeline" | "agent" | "template";
 async function createWorkspaceProject(mode: ProjectMode, destination?: WorkspaceDestination) {
   if (creating.value || opening.value) return;
   // ACT: 不再让用户先起名——默认「未命名」，进工作区后由 Agent 总结或用户在顶栏改名。
@@ -129,6 +74,7 @@ async function createWorkspaceProject(mode: ProjectMode, destination?: Workspace
     await nextTick();
     await saveSettings();
     await enterWorkspace(destination ?? (mode === "edit" ? "timeline" : "canvas"));
+    return true;
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : translate("无法新建项目，请重试"));
   } finally {
@@ -136,8 +82,8 @@ async function createWorkspaceProject(mode: ProjectMode, destination?: Workspace
   }
 }
 
-const workspaceDestination = ref<WorkspaceDestination>("automaticFilm");
-const destinationLabels: Record<WorkspaceDestination, string> = { canvas: "画布", timeline: "剪辑", agent: "Agent", automaticFilm: "一键成片", template: "整集模板", drama: "短剧工作流", previs: "白模预演", image: "图片生成", video: "视频生成" };
+const workspaceDestination = ref<WorkspaceDestination>("template");
+const destinationLabels: Record<WorkspaceDestination, string> = { canvas: "画布", timeline: "剪辑", agent: "Agent", template: "整集模板" };
 const sidebarProjects = computed(() => [...workspaceStore.projectList].sort((left, right) => right.lastOpenedAt - left.lastOpenedAt).slice(0, 6));
 
 // ACT: 画布/剪辑/Agent 等优先直接进入——已打开的项目、或最近一个项目都不再追问目录；一个项目都没有时才让用户选文件夹。
@@ -160,103 +106,21 @@ function startWorkspace(directory?: string) {
 }
 const relocationPicker = ref<InstanceType<typeof workspacePicker>>();
 const workspaceStore = useWorkspaceStore();
-const standaloneSceneProject = defineAsyncComponent(() => import("./pages/trumanMap/sceneProject.vue"));
-const standaloneScript = ref("");
-const selectingStandalone = ref(false);
-const standaloneScene = ref<{ directory: string; script?: string }>();
-
-function openStandaloneScene(scene: Project) {
-  if (!standaloneScene.value && !selectingStandalone.value) standaloneScene.value = { directory: scene.directory };
-}
-
-async function generateStandalonePrevis() {
-  const script = standaloneScript.value.trim();
-  if (!script || selectingStandalone.value || standaloneScene.value || creating.value || opening.value) return;
-  selectingStandalone.value = true;
-  try {
-    const path = await relocationPicker.value?.chooseDirectory();
-    if (!path || pageLifetime.signal.aborted) return;
-    const { directory, empty } = await useWorkspaceFiles(path).list();
-    if (!empty) return void ElMessage.warning(translate("请选择空文件夹保存新的白模场景"));
-    if (!pageLifetime.signal.aborted) standaloneScene.value = { directory, script };
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : translate("无法打开白模预演"));
-  } finally {
-    selectingStandalone.value = false;
-  }
-}
-
-const filmProject = computed(() => workspaceStore.project ?? sidebarProjects.value[0]);
-const filmDirectory = computed(() => filmProject.value?.directory ?? "");
-const filmTopic = ref("");
-const filmBusy = ref(false);
-const dramaScript = ref("");
-const dramaBusy = ref(false);
-const marketingBusy = ref(false);
-const marketingRecipe = ref("");
-const selectingFilmProject = ref(false);
-
-async function selectFilmProject() {
-  if (selectingFilmProject.value || creating.value || opening.value) return;
-  selectingFilmProject.value = true;
-  try {
-    const path = await relocationPicker.value?.chooseDirectory();
-    if (path && !pageLifetime.signal.aborted) await initializeProject(path);
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : translate("无法打开或创建项目，请重试"));
-  } finally {
-    selectingFilmProject.value = false;
-  }
-}
-
-function openShortDramaDraft(directory: string, path: string) {
-  return openDramaDraft(directory, path, true);
-}
-
-async function openDramaDraft(directory: string, path: string, shortDrama = false) {
-  try {
-    if (workspaceStore.project?.directory !== directory) await workspaceStore.openProject(directory, directory, pageLifetime.signal, "canvas");
-    if (shortDrama) workspaceStore.updateProjectMetadata(directory, { category: "drama" });
-    await router.push({ path: "/workspace", query: { panel: "canvas", scriptDraft: path } });
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : translate("分镜已保存，请从项目中打开画布"));
-  }
-}
-
-async function openFilmDraft(directory: string) {
-  try {
-    if (workspaceStore.project?.directory !== directory) await workspaceStore.openProject(directory);
-    await router.push({ path: "/workspace", query: { panel: "timeline" } });
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : translate("草稿已保存，请从项目中打开剪辑"));
-  }
-}
-
-
+onMounted(() => { void loadAdvertisements(); });
 watch(() => route.query.section, section => {
   if (route.path !== "/home") return;
-  activeSection.value = typeof section === "string" && homeSectionIds.includes(section) && (section !== "assets" || currentUser.value?.role !== "user") ? section : "home";
-  pageScroll.value?.setScrollTop(0);
+  showSection(section === "assets" && currentUser.value?.role !== "user" ? "assets" : "skills");
 }, { immediate: true });
-onMounted(() => {
-  void loadAdvertisements();
-});
 
 onUnmounted(() => {
   pageLifetime.abort();
-  if (router.currentRoute.value.path !== "/workspace") workspaceStore.projectLoading = false;
 });
-watch([creating, opening], ([creating, opening]) => {
-  if (creating || opening) {
-    workspaceStore.projectLoadingDrawn = false;
-    workspaceStore.projectLoading = true;
-  } else if (router.currentRoute.value.path !== "/workspace") {
-    workspaceStore.projectLoading = false;
-  }
+watch([creating, opening], () => {
+  workspaceStore.projectLoading = false;
 }, { flush: "sync" });
 // 在设置里切换为子账号后素材库入口会隐藏，停留在素材库会让右侧空白。
 watch(() => currentUser.value?.role, role => {
-  if (role === "user" && activeSection.value === "assets") showSection("home");
+  if (role === "user" && activeSection.value === "assets") showSection("skills");
 });
 
 async function loadAdvertisements() {
@@ -355,7 +219,7 @@ async function activateAdvertisement(advertisement: HomeAdvertisement) {
     await router.push(target);
     if (resolved.matched.some(route => route.path === "/home")) {
       const section = typeof resolved.query.section === "string" ? resolved.query.section : resolved.hash.slice(1);
-      showSection(homeSectionIds.includes(section) ? section : "home");
+      showSection(homeSectionIds.includes(section) ? section : "skills");
     }
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : "无法打开页面");
@@ -364,32 +228,21 @@ async function activateAdvertisement(advertisement: HomeAdvertisement) {
 
 function showSection(section: string) {
   activeSection.value = section;
-  if (route.path === "/home" && (route.query.section ?? "home") !== section) {
-    void router.replace({ query: { ...route.query, section } });
-  }
   pageScroll.value?.setScrollTop(0);
 }
 
-async function enterWorkspace(destination?: WorkspaceDestination) {
-  await waitForControlValue(() => workspaceStore.projectLoadingDrawn || undefined, pageLifetime.signal).catch(error => {
-    if (!pageLifetime.signal.aborted) throw error;
-  });
-  if (pageLifetime.signal.aborted) return;
-  if (!document.hidden) await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+async function enterWorkspace(destination?: WorkspaceDestination, sessionMode?: ProjectMode) {
+  // ACT: 直接切换路由，由工作区自行渲染骨架，不再用全屏加载页挡住房型结构。
   if (pageLifetime.signal.aborted) return;
   await router.push({
     path: "/workspace",
-    query: destination === "automaticFilm" ? { panel: "canvas", film: "1" }
-      : destination === "template" ? { panel: "canvas", template: "1" }
-      : destination === "drama" ? { panel: "canvas", drama: "1" }
-      : destination === "previs" ? { panel: "canvas", previs: "1" }
-      : destination === "image" || destination === "video" ? { panel: "canvas", generation: destination }
-      : destination === "agent" ? { panel: workspaceStore.project?.mode === "edit" ? "timeline" : "canvas", agent: "1" }
+    query: destination === "template" ? { panel: "canvas", template: "1" }
+      : destination === "agent" ? { panel: (sessionMode ?? workspaceStore.project?.mode) === "edit" ? "timeline" : "canvas", agent: "1" }
       : destination ? { panel: destination } : {},
   });
 }
 
-async function openProject(project: Project, destination?: WorkspaceDestination, sessionFile?: string) {
+async function openProject(project: Project, destination?: WorkspaceDestination, sessionFile?: string, sessionMode?: ProjectMode) {
   if (creating.value || opening.value) return;
   opening.value = true;
   try {
@@ -407,7 +260,7 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
     }
     const opened = workspaceStore.project;
     workspaceStore.pendingAgentSession = opened && sessionFile ? { directory: opened.directory, file: sessionFile } : null;
-    await enterWorkspace(destination ?? (opened?.mode === "edit" ? "timeline" : "canvas"));
+    await enterWorkspace(destination ?? (opened?.mode === "edit" ? "timeline" : "canvas"), sessionMode);
   } catch (err) {
     ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
       ? err.response?.data.message || "无法打开项目，请重试"
@@ -416,9 +269,9 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
 }
 
 defineExpose({
-  navigationBusy: computed(() => creating.value || opening.value || filmBusy.value || dramaBusy.value || marketingBusy.value),
+  navigationBusy: computed(() => creating.value || opening.value),
   createSidebarProject: createWorkspaceProject,
-  openSidebarProject: (project: Project, file?: string) => openProject(project, file ? "agent" : undefined, file),
+  openSidebarProject: (project: Project, file?: string, mode?: ProjectMode) => openProject(project, file ? "agent" : undefined, file, mode),
   openSidebarSettings(panel?: string) {
     if (panel === "deviceLink") mobileConnectVisible.value = true;
     else if (panel) settingsDialog.value?.openPanel(panel);
