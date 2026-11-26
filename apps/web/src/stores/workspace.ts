@@ -1,6 +1,10 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import axios from "axios";
+import { translate } from "@lumo/i18n/vue";
+import http from "@/lib/http";
+import { createEmptyProject, timelineProjectFile } from "@/pages/workspace/panels/timeline/timelineModel";
+import useWorkspaceFiles from "@/lib/workspaceFiles";
 import type { AgentAttachment } from "@/components/agent/types";
 
 export type ProjectMode = "canvas" | "edit";
@@ -72,8 +76,25 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   }
 
   async function openProject(path: string, previousDirectory = path, signal?: AbortSignal, mode?: ProjectMode) {
-    project.value = await addProject(path, undefined, signal, previousDirectory, { mode });
+    const savedMode = mode ?? projectList.value.find(item => item.directory === previousDirectory)?.mode;
+    const projectMode = savedMode ?? ((await useWorkspaceFiles(path).list("", signal)).entries.some(entry => entry.type === "file" && entry.name === timelineProjectFile) ? "edit" : "canvas");
+    const opened = await addProject(path, undefined, signal, previousDirectory, { mode: projectMode });
     pendingAgentMessage.value = null;
+    pendingAgentSession.value = null;
+    project.value = opened;
+    return opened;
+  }
+
+  async function createProject(mode: ProjectMode, signal: AbortSignal) {
+    const name = mode === "edit" ? translate("未命名剪辑") : translate("未命名画布");
+    const { directory } = await http<{ directory: string }>({ method: "POST", url: "/api/workspaces/create", data: { name }, signal });
+    signal.throwIfAborted();
+    const { directory: canonical, empty } = await useWorkspaceFiles(directory).list("", signal);
+    if (!empty) throw new Error(translate("该文件夹不为空，请重新选择空文件夹"));
+    const files = useWorkspaceFiles(canonical);
+    if (mode === "edit") await files.writeJson(timelineProjectFile, createEmptyProject(), true);
+    else await files.writeJson("画布1.json", { lumoCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
+    return openProject(canonical, canonical, signal, mode);
   }
 
   function renameProject(path: string, name: string) {
@@ -94,7 +115,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     if (project.value?.directory === path) project.value = null;
   }
 
-  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentSession, activeAgentSession, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, renameProject, updateProjectMetadata, removeProject };
+  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentSession, activeAgentSession, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, createProject, renameProject, updateProjectMetadata, removeProject };
 }, {
   persist: {
     key: "lumo.projectList",

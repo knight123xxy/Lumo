@@ -1,47 +1,11 @@
 <template>
-  <div class="home" :class="{ sidebarCollapsed }" :inert="creating || opening || workspaceStore.projectLoadingVisible">
+  <div class="home" :inert="creating || opening || workspaceStore.projectLoadingVisible">
     <bg class="pageBackground" :scrollTop="backgroundScrollTop" />
     <homeAdvertisementCarousel class="topPromotion" :advertisements="advertisements.banners" placement="banner" :mode="advertisements.bannerMode" :interval="advertisements.bannerInterval" @activate="activateAdvertisement" />
-    <aside id="homeSidebar" class="homeSidebar" aria-label="首页侧栏">
-      <div class="sidebarHeader">
-        <div class="sidebarBrand">
-          <el-image class="sidebarLogo" :src="logoUrl" fit="contain" alt="Lumo" />
-          <span class="brandName">Lumo</span>
-        </div>
-        <button class="sidebarToggle" type="button" :aria-label="sidebarCollapsed ? '展开侧栏' : '收起侧栏'" :title="sidebarCollapsed ? '展开侧栏' : '收起侧栏'" :aria-expanded="!sidebarCollapsed" aria-controls="homeSidebar" @click="sidebarCollapsed = !sidebarCollapsed">
-          <icon-layout-sidebar-left-expand v-if="sidebarCollapsed" :size="18" aria-hidden="true" />
-          <icon-layout-sidebar-left-collapse v-else :size="18" aria-hidden="true" />
-        </button>
-      </div>
-      <el-button class="sidebarCreate" type="primary" :aria-label="translate('新建项目')" :title="translate('新建项目')"
-        :disabled="creating || opening || filmBusy || dramaBusy || marketingBusy" @click="selectProjectMode">
-        <icon-plus :size="18" aria-hidden="true" />
-        <span class="sidebarCreateLabel">{{ translate('新建') }}</span>
-      </el-button>
-      <nav class="sidebarNav" aria-label="主导航" :inert="filmBusy || dramaBusy || marketingBusy">
-        <button class="sidebarItem" :class="{ active: activeSection === 'home' }" type="button" :aria-current="activeSection === 'home' ? 'page' : undefined" :aria-label="translate('首页')" :title="translate('首页')" @click="showSection('home')">
-          <icon-home :size="18" aria-hidden="true" />
-          <span class="sidebarText">{{ translate('首页') }}</span>
-        </button>
-        <button v-if="currentUser?.role !== 'user'" class="sidebarItem" :class="{ active: activeSection === 'assets' }" type="button" :aria-current="activeSection === 'assets' ? 'page' : undefined" :aria-label="translate('资产')" :title="translate('资产')" @click="showSection('assets')">
-          <icon-library-photo :size="18" aria-hidden="true" />
-          <span class="sidebarText">{{ translate('资产') }}</span>
-        </button>
-        <button class="sidebarItem" :class="{ active: activeSection === 'skills' }" type="button" :aria-current="activeSection === 'skills' ? 'page' : undefined" :aria-label="translate('技能')" :title="translate('技能')" @click="showSection('skills')">
-          <icon-book :size="18" aria-hidden="true" />
-          <span class="sidebarText">{{ translate('技能') }}</span>
-        </button>
-      </nav>
-      <workspaceTree v-if="!sidebarCollapsed" :disabled="filmBusy || dramaBusy || marketingBusy" @openProject="project => openProject(project)" @openChat="openChat" />
-      <div class="sidebarFooter">
-        <homeAdvertisementCarousel class="sidebarPromotion" :advertisements="advertisements.sidebar" @activate="activateAdvertisement" />
-        <homeAccount :collapsed="sidebarCollapsed" @openSettings="settingsVisible = true" @openAccount="settingsDialog?.openPanel('account')" @openUpdate="settingsDialog?.openPanel('about')" @openDeviceLink="mobileConnectVisible = true" />
-      </div>
-    </aside>
     <el-scrollbar v-show="activeSection !== 'assets'" ref="pageScroll" class="pageScroll" @scroll="backgroundScrollTop = $event.scrollTop">
       <div class="pageBody">
         <el-main class="pageContent">
-          <homePage v-show="activeSection === 'home'" :disabled="creating || opening" :loading="creating" @create="request => request ? createProject(request) : selectProjectMode()" @open="openProject" @showSection="showSection" @enter="enterDestination" />
+          <homePage v-show="activeSection === 'home'" :disabled="creating || opening" :loading="creating" @create="request => request ? createProject(request) : emit('create')" @open="openProject" @showSection="showSection" @enter="enterDestination" />
           <trumanMapPage v-show="activeSection === 'trumanMap'" />
           <agentWorkspacePage v-model:activeAgent="agentWorkspaceTab" v-show="activeSection === 'agentWorkspace'" :disabled="creating || opening" :loading="creating" :scenes="workspaceStore.sceneList" :modelLabel="modelChoices[0]?.label ?? ''" @submit="startAgent" @showSkills="showSection('skills')" @openTruman="showSection('trumanMap')" @openScene="openStandaloneScene" :filmBusy="filmBusy || dramaBusy || marketingBusy" @filmTopic="filmTopic = $event" @marketingRecipe="marketingRecipe = $event">
             <template #film>
@@ -87,26 +51,6 @@
         <el-button v-if="workspaceStore.projectList.length" type="primary" :disabled="!filmProjectDirectory" @click="startWorkspace(filmProjectDirectory)">{{ translate('打开项目') }}</el-button>
       </template>
     </el-dialog>
-    <el-dialog v-model="projectModeVisible" width="min(480px, calc(100vw - 32px))" alignCenter appendToBody class="lumo-modeDialog">
-      <template #header>
-        <header class="modeHeader">
-          <h2>{{ translate('新建项目') }}</h2>
-          <p>{{ translate('选一种工作方式；项目默认叫「未命名」，之后可随时重命名') }}</p>
-        </header>
-      </template>
-      <div class="modeOptions">
-        <button class="modeOption" type="button" @click="createProjectInMode('canvas')">
-          <span class="modeIcon"><icon-vector :size="20" aria-hidden="true" /></span>
-          <strong>{{ translate('画布项目') }}</strong>
-          <span class="modeDesc">{{ translate('节点式创作：角色、分镜、素材生成与组装') }}</span>
-        </button>
-        <button class="modeOption" type="button" @click="createProjectInMode('edit')">
-          <span class="modeIcon"><icon-movie :size="20" aria-hidden="true" /></span>
-          <strong>{{ translate('剪辑项目') }}</strong>
-          <span class="modeDesc">{{ translate('时间线剪辑：导入素材、配音、字幕与导出') }}</span>
-        </button>
-      </div>
-    </el-dialog>
     <workspacePicker ref="relocationPicker" hideTrigger />
     <standaloneSceneProject v-if="standaloneScene" :directory="standaloneScene.directory" :script="standaloneScene.script" @close="standaloneScene = undefined" />
   </div>
@@ -116,10 +60,9 @@
 import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, provide, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type ScrollbarInstance } from "element-plus";
 import type { HomeAdvertisement, HomeAdvertisements } from "@lumo/server/channel";
-import logoUrl from "@lumo/assets/logo.svg";
 import { useWorkspaceStore, type Project, type ProjectMode } from "@/stores/workspace";
 import { createEmptyProject, timelineProjectFile } from "@/pages/workspace/panels/timeline/timelineModel";
 import { currentUser, publicWeb } from "@/stores/multiTenant";
@@ -130,7 +73,6 @@ import settings from "@/components/settings/index.vue";
 import bg from "./bg.vue";
 import workspacePicker from "./workspacePicker.vue";
 import homeAdvertisementCarousel from "./homeAdvertisementCarousel.vue";
-import homeAccount from "./homeAccount.vue";
 import homePage from "./pages/home/index.vue";
 import assetsPage from "./pages/assets/index.vue";
 import trumanMapPage from "./pages/trumanMap/index.vue";
@@ -140,14 +82,13 @@ import filmDraft from "./pages/agentWorkspace/filmDraft.vue";
 import marketingDraft from "./pages/agentWorkspace/marketingDraft.vue";
 import dramaDraft from "./pages/agentWorkspace/dramaDraft.vue";
 import { modelChoices, saveSettings } from "@/stores/settings";
-import workspaceTree from "./components/workspaceTree.vue";
 
+const emit = defineEmits<{ create: [] }>();
 const settingsVisible = ref(false);
 const settingsDialog = ref<InstanceType<typeof settings>>();
 provide("openSettingsPanel", (id: string) => settingsDialog.value?.openPanel(id));
 const advertisements = ref<HomeAdvertisements>({ banner: null, banners: [], bannerMode: "carousel", bannerInterval: 5, sidebar: [] });
 const mobileConnectVisible = ref(false);
-const sidebarCollapsed = ref(false);
 const pageScroll = ref<ScrollbarInstance>();
 const backgroundScrollTop = ref(0);
 const activeSection = ref("home");
@@ -155,6 +96,7 @@ const homeSectionIds = ["home", "skills", "assets", "trumanMap", "agentWorkspace
 
 const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
+const route = useRoute();
 const pageLifetime = new AbortController();
 const creating = ref(false);
 const opening = ref(false);
@@ -178,25 +120,12 @@ async function startAgent(request: { agent: AgentTab; title: string; prompt: str
   if (!directory || pageLifetime.signal.aborted) return;
   await createProject({ ...pending, directory }, "agent");
 }
-const projectModeVisible = ref(false);
-function selectProjectMode() {
-  projectModeVisible.value = true;
-}
-
-function createProjectInMode(mode: ProjectMode) {
-  projectModeVisible.value = false;
-  return createWorkspaceProject(mode);
-}
-
 async function createWorkspaceProject(mode: ProjectMode, destination?: WorkspaceDestination) {
   if (creating.value || opening.value) return;
   // ACT: 不再让用户先起名——默认「未命名」，进工作区后由 Agent 总结或用户在顶栏改名。
   creating.value = true;
   try {
-    const defaultName = mode === "edit" ? translate("未命名剪辑") : translate("未命名画布");
-    const { directory } = await http<{ directory: string; name: string }>({ method: "POST", url: "/api/workspaces/create", data: { name: defaultName } });
-    if (pageLifetime.signal.aborted) return;
-    if (!await initializeProject(directory, true, mode)) return;
+    await workspaceStore.createProject(mode, pageLifetime.signal);
     await nextTick();
     await saveSettings();
     await enterWorkspace(destination ?? (mode === "edit" ? "timeline" : "canvas"));
@@ -304,6 +233,11 @@ async function openFilmDraft(directory: string) {
 }
 
 
+watch(() => route.query.section, section => {
+  if (route.path !== "/home") return;
+  activeSection.value = typeof section === "string" && homeSectionIds.includes(section) && (section !== "assets" || currentUser.value?.role !== "user") ? section : "home";
+  pageScroll.value?.setScrollTop(0);
+}, { immediate: true });
 onMounted(() => {
   void loadAdvertisements();
 });
@@ -430,6 +364,9 @@ async function activateAdvertisement(advertisement: HomeAdvertisement) {
 
 function showSection(section: string) {
   activeSection.value = section;
+  if (route.path === "/home" && (route.query.section ?? "home") !== section) {
+    void router.replace({ query: { ...route.query, section } });
+  }
   pageScroll.value?.setScrollTop(0);
 }
 
@@ -457,7 +394,7 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
   opening.value = true;
   try {
     const directory = project.directory;
-    try { await openRegisteredProject(directory, project); }
+    try { await workspaceStore.openProject(directory, project.directory, pageLifetime.signal, project.mode); }
     catch (err) {
       if (!axios.isAxiosError(err) || err.response?.status !== 404) throw err;
       const reselect = await ElMessageBox.confirm(`项目“${project.name}”的文件夹不存在，是否重新选择文件夹？`, "工作目录不存在", {
@@ -466,7 +403,7 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
       if (!reselect) return;
       const directory = await relocationPicker.value?.chooseDirectory();
       if (!directory) return;
-      await openRegisteredProject(directory, project);
+      await workspaceStore.openProject(directory, project.directory, pageLifetime.signal, project.mode);
     }
     const opened = workspaceStore.project;
     workspaceStore.pendingAgentSession = opened && sessionFile ? { directory: opened.directory, file: sessionFile } : null;
@@ -478,9 +415,16 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
   } finally { opening.value = false; }
 }
 
-function openChat(project: Project, file: string) {
-  return openProject(project, "agent", file);
-}
+defineExpose({
+  navigationBusy: computed(() => creating.value || opening.value || filmBusy.value || dramaBusy.value || marketingBusy.value),
+  createSidebarProject: createWorkspaceProject,
+  openSidebarProject: (project: Project, file?: string) => openProject(project, file ? "agent" : undefined, file),
+  openSidebarSettings(panel?: string) {
+    if (panel === "deviceLink") mobileConnectVisible.value = true;
+    else if (panel) settingsDialog.value?.openPanel(panel);
+    else settingsVisible.value = true;
+  },
+});
 
 // 整集模板：把流水线定位和用户主题拼成创作要求，走与首页输入框相同的新建项目入口。
 async function startPipeline(request: { name: string; summary: string; category: string; topic: string }) {
@@ -498,12 +442,6 @@ async function startPipeline(request: { name: string; summary: string; category:
 
 function inferProjectMode(entries: { name: string; type: string }[]): ProjectMode {
   return entries.some(entry => entry.type === "file" && entry.name === timelineProjectFile) ? "edit" : "canvas";
-}
-
-async function openRegisteredProject(path: string, project: Project) {
-  const signal = pageLifetime.signal;
-  const mode = project.mode ?? inferProjectMode((await useWorkspaceFiles(path).list("", signal)).entries);
-  await workspaceStore.openProject(path, project.directory, signal, mode);
 }
 
 async function initializeProject(path: string, requireEmpty = false, mode?: ProjectMode) {
@@ -548,230 +486,22 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
 .previsComposer .el-button { justify-self: end; }
 
 .home {
-  --sidebarWidth: 240px;
-  --sidebarMotion: 220ms;
-  --sidebarFade: 140ms;
   position: relative;
   display: grid;
-  grid-template-columns: var(--sidebarWidth) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
-  height: 100dvh;
+  height: 100%;
   overflow: hidden;
   color: var(--el-text-color-primary);
   background: color-mix(in srgb, var(--el-bg-color) 96%, var(--el-text-color-primary));
-  transition: grid-template-columns var(--sidebarMotion) ease;
 
-  @media (prefers-reduced-motion: reduce) { transition: none; }
-
-  .topPromotion { grid-column: 1 / -1; grid-row: 1; z-index: 1; }
+  .topPromotion { grid-column: 1; grid-row: 1; z-index: 1; }
 
   .pageBackground {
     position: absolute;
-    // 品牌纹理：从 Toonflow 那种半调噪点压到极淡，只作底纹不抢内容
     opacity: 0.22;
-    inset-block: 0;
-    inset-inline-start: var(--sidebarWidth);
-    width: calc(100% - var(--sidebarWidth));
-    transition: inset-inline-start var(--sidebarMotion) ease, width var(--sidebarMotion) ease;
-
-    @media (prefers-reduced-motion: reduce) { transition: none; }
-  }
-
-  &.sidebarCollapsed {
-    --sidebarWidth: 72px;
-
-    .homeSidebar {
-      .sidebarPromotion, .sidebarCreateLabel { display: none; }
-      .sidebarHeader {
-        .sidebarBrand {
-          gap: 0;
-
-          .brandName { max-width: 0; opacity: 0; }
-        }
-
-        .sidebarToggle { inset-inline-start: 9px; opacity: 0; }
-
-        @media (min-width: 901px) {
-          &:hover, &:has(.sidebarToggle:focus-visible) {
-            .sidebarLogo { opacity: 0; }
-            .sidebarToggle { opacity: 1; }
-          }
-        }
-      }
-
-      .sidebarItem {
-        gap: 0;
-        padding-inline: 14px;
-
-        .sidebarText { max-width: 0; opacity: 0; }
-      }
-    }
-  }
-
-  .homeSidebar {
-    position: relative;
-    grid-column: 1;
-    grid-row: 2;
-    min-height: 0;
-    display: flex;
-    flex: 0 0 var(--sidebarWidth);
-    flex-direction: column;
-    width: var(--sidebarWidth);
-    padding: 20px 12px 16px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    border-inline-end: 1px solid var(--el-border-color-lighter);
-    background: inherit;
-    transition: flex-basis var(--sidebarMotion) ease, width var(--sidebarMotion) ease;
-
-    .sidebarHeader {
-      position: relative;
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-      height: 30px;
-      gap: 8px;
-      margin-bottom: 24px;
-      padding: 0 8px;
-
-      .sidebarBrand {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        gap: 9px;
-        overflow: hidden;
-        transition: gap var(--sidebarMotion) ease;
-
-        .sidebarLogo {
-          flex-shrink: 0;
-          width: 30px;
-          height: 30px;
-          transition: opacity var(--sidebarFade) ease;
-
-          .dark & { filter: invert(1); }
-        }
-
-        .brandName {
-          max-width: 150px;
-          overflow: hidden;
-          font-size: 20px;
-          font-weight: 600;
-          letter-spacing: -0.5px;
-          white-space: nowrap;
-          transition: max-width var(--sidebarMotion) ease, opacity var(--sidebarFade) ease;
-        }
-      }
-
-      .sidebarToggle {
-        position: absolute;
-        top: 1px;
-        inset-inline-start: calc(100% - 32px);
-        display: grid;
-        flex-shrink: 0;
-        place-items: center;
-        width: 28px;
-        height: 28px;
-        padding: 0;
-        border: 0;
-        border-radius: var(--ui-radius);
-        background: transparent;
-        color: var(--el-text-color-secondary);
-        cursor: pointer;
-        transition: inset-inline-start var(--sidebarMotion) ease, opacity var(--sidebarFade) ease;
-
-        &:hover { background: var(--color-panel-2); color: var(--color-text); }
-        &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
-        &:dir(rtl) svg { transform: scaleX(-1); }
-      }
-    }
-
-    .sidebarItem {
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-      min-height: 42px;
-      width: 100%;
-      gap: 10px;
-      padding: 10px 12px;
-      border: 0;
-      border-radius: var(--ui-radius);
-      background: transparent;
-      color: var(--el-text-color-regular);
-      font: inherit;
-      font-size: 14px;
-      line-height: 1.5;
-      text-align: start;
-      text-decoration: none;
-      cursor: pointer;
-      transition: gap var(--sidebarMotion) ease, padding var(--sidebarMotion) ease;
-
-      > svg { flex-shrink: 0; }
-      .sidebarText {
-        min-width: 0;
-        max-width: 180px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        transition: max-width var(--sidebarMotion) ease, opacity var(--sidebarFade) ease;
-      }
-
-      &:hover:not(:disabled) { background: var(--color-panel-2); color: var(--color-text); }
-      &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
-      &:disabled { cursor: wait; opacity: 0.6; }
-      &.active { background: var(--color-panel-2); color: var(--color-accent); font-weight: 500; }
-    }
-
-    .sidebarGroup {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 4px 12px 2px;
-
-      .sidebarGroupTitle { color: var(--el-text-color-secondary); font-size: 12px; letter-spacing: .02em; }
-
-      .sidebarGroupAction {
-        display: grid;
-        place-items: center;
-        width: 22px;
-        height: 22px;
-        padding: 0;
-        color: var(--el-text-color-secondary);
-        background: transparent;
-        border: 0;
-        border-radius: 6px;
-        cursor: pointer;
-
-        &:hover:not(:disabled) { color: var(--color-text); background: var(--color-panel-2); }
-        &:disabled { cursor: wait; opacity: .6; }
-      }
-    }
-
-    .sidebarGroupTitleSpaced { display: block; padding: 4px 12px 2px; }
-
-    .sidebarChat { min-height: 34px; padding: 6px 12px; font-size: 13px; color: var(--el-text-color-secondary); }
-    .sidebarProject { min-height: 34px; padding: 6px 12px; font-size: 13px; color: var(--el-text-color-secondary); }
-    .sidebarEmpty { margin: 2px 12px 0; color: var(--el-text-color-secondary); font-size: 12px; line-height: 1.6; }
-
-    .sidebarCreate {
-      flex-shrink: 0;
-      width: 100%;
-      min-height: 40px;
-      margin: 0 0 12px;
-      padding-inline: 0;
-      .sidebarCreateLabel { margin-inline-start: 6px; }
-    }
-
-    .sidebarNav, .sidebarFooter { display: flex; flex-direction: column; gap: 4px; }
-    .sidebarNav {
-      .sidebarDivider { margin: 12px 8px; border: 0; border-top: 1px solid var(--el-border-color-lighter); }
-    }
-    .sidebarFooter { margin-top: auto; padding-top: 24px; }
-
-    @media (prefers-reduced-motion: reduce) {
-      --sidebarMotion: 0ms;
-      --sidebarFade: 0ms;
-    }
+    inset: 0;
+    width: 100%;
   }
 
   .projectChatHeader { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 600; }
@@ -779,7 +509,7 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
   .projectChatEmpty { margin: 0; color: var(--el-text-color-secondary); }
 
   .pageScroll {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 2;
     position: relative;
     flex: 1;
@@ -800,96 +530,15 @@ async function createProject(request?: NonNullable<typeof workspaceStore.pending
 
   .assetsPanel {
     position: relative;
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 2;
     padding: 24px clamp(20px, 4vw, 56px);
-  }
-
-  @media (max-width: 900px) {
-    --sidebarWidth: 72px;
-
-    .homeSidebar {
-      .sidebarPromotion, .sidebarCreateLabel { display: none; }
-      .sidebarHeader {
-        .sidebarBrand {
-          gap: 0;
-
-          .brandName { max-width: 0; opacity: 0; }
-        }
-
-        .sidebarToggle { display: none; }
-      }
-
-      .sidebarItem {
-        gap: 0;
-        padding-inline: 14px;
-
-        .sidebarText { max-width: 0; opacity: 0; }
-      }
-    }
   }
 
   @media (max-width: 560px) {
     .pageScroll .pageBody .pageContent { padding: 24px 16px 40px; }
     .assetsPanel { padding: 16px; }
-    .homeSidebar .sidebarItem { min-height: 44px; }
   }
 }
 
-.modeHeader {
-  h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-  p { margin: 6px 0 0; color: var(--el-text-color-secondary); font-size: 12.5px; }
-}
-
-.modeOptions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 4px 0 2px;
-}
-
-.modeOption {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-  padding: 16px;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  background: var(--color-panel-2);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: border-color .15s ease, background-color .15s ease, transform .15s ease;
-
-  &:hover { border-color: var(--color-border-2); background: var(--el-fill-color-light); transform: translateY(-1px); }
-  &:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-border-2); }
-
-  strong { font-size: 14px; font-weight: 600; }
-
-  .modeIcon {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    color: var(--el-text-color-primary);
-    background: var(--el-fill-color);
-    border-radius: 10px;
-  }
-
-  .modeDesc { color: var(--el-text-color-secondary); font-size: 12.5px; line-height: 1.6; }
-}
-</style>
-
-
-<style lang="scss">
-// 新建项目弹窗外壳：圆角与内边距与设置弹窗一致。
-.lumo-modeDialog {
-  border-radius: 16px;
-
-  .el-dialog__header { padding: 18px 22px 6px; margin: 0; }
-  .el-dialog__body { padding: 0 22px 20px; }
-  .el-dialog__headerbtn { top: 16px; inset-inline-end: 14px; }
-}
 </style>

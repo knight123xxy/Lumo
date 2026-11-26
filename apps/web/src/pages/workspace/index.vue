@@ -36,7 +36,6 @@
         @automaticFilmOpened="consumeAutomaticFilm"
         @send-to-canvas="sendClipToCanvas" />
     </keep-alive>
-    <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
     <div class="workspaceTools">
 
       <div class="bottomTools">
@@ -177,14 +176,13 @@ import { translate } from "@lumo/i18n/vue";
 import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import axios from "axios";
-import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
 import modelLoginGuide from "@/components/modelLoginGuide.vue";
 import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
-import { useWorkspaceStore, type Project } from "@/stores/workspace";
+import { useWorkspaceStore, type Project, type ProjectMode } from "@/stores/workspace";
 import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
 import { useProviderBalances } from "@/lib/providerBilling";
@@ -194,7 +192,6 @@ import filmDraft from "@/pages/home/pages/agentWorkspace/filmDraft.vue";
 import dramaDraft from "@/pages/home/pages/agentWorkspace/dramaDraft.vue";
 import marketingDraft from "@/pages/home/pages/agentWorkspace/marketingDraft.vue";
 import type { DocumentNodeOptions } from "./panels/canvas/canvasFiles";
-import workspaceMenu from "./components/workspaceMenu.vue";
 import floatingAgent from "./components/floatingAgent.vue";
 import templateDialog from "./panels/timeline/components/templateDialog.vue";
 import { useTimeline } from "./panels/timeline/useTimeline";
@@ -237,7 +234,7 @@ const panelOptions = [
   { label: "文档", value: "document", icon: IconFileText },
 ];
 // ACT: Agent 面板默认收起，避免遮住预览与属性面板；一键成片流程仍自动展开。
-const agentVisible = ref(openAutomaticFilm.value);
+const agentVisible = ref(openAutomaticFilm.value || route.query.agent === "1");
 watch(() => route.query.agent, value => {
   if (value === "1") agentVisible.value = true;
 });
@@ -558,27 +555,11 @@ async function flushSave() {
 }
 
 const switchingProject = ref(false);
-async function openSidebarProject(project: Project, file?: string) {
+async function changeSidebarProject(action: () => Promise<void>) {
   if (switchingProject.value) return;
   switchingProject.value = true;
   try {
-    if (workspaceStore.project?.directory !== project.directory) {
-      if (canvasPanelRef.value?.saveBusy || sendingVideo.value || openingTemplate.value || canvasTemplate.value || canvasFilmBusy.value || dramaBusy.value || marketingBusy.value || previs.value) {
-        throw new Error(translate("项目正在处理，请稍后再切换"));
-      }
-      await flushSave();
-      const signal = controlLifetime.signal;
-      const mode = project.mode ?? ((await useWorkspaceFiles(project.directory).list("", signal)).entries.some(entry => entry.type === "file" && entry.name === "timeline.json") ? "edit" : "canvas");
-      await workspaceStore.openProject(project.directory, project.directory, signal, mode);
-      const panel = workspaceStore.project?.mode === "edit" ? "timeline" : "canvas";
-      activePanel.value = panel;
-      await router.replace({ query: { panel } });
-    }
-    const directory = workspaceStore.project?.directory;
-    if (directory && file) {
-      workspaceStore.pendingAgentSession = { directory, file };
-      agentVisible.value = true;
-    }
+    await action();
   } catch (error) {
     if (!controlLifetime.signal.aborted) ElMessage.error(error instanceof Error ? error.message : translate("无法打开项目，请重试"));
   } finally {
@@ -586,8 +567,52 @@ async function openSidebarProject(project: Project, file?: string) {
   }
 }
 
+async function prepareProjectSwitch() {
+  if (canvasPanelRef.value?.saveBusy || sendingVideo.value || openingTemplate.value || canvasTemplate.value || canvasFilmBusy.value || dramaBusy.value || marketingBusy.value || previs.value) {
+    throw new Error(translate("项目正在处理，请稍后再切换"));
+  }
+  await flushSave();
+}
+
+async function showOpenedProject(project: Project) {
+  const panel = project.mode === "edit" ? "timeline" : "canvas";
+  activePanel.value = panel;
+  await router.replace({ query: { panel } });
+}
+
+function openSidebarProject(project: Project, file?: string) {
+  return changeSidebarProject(async () => {
+    if (workspaceStore.project?.directory !== project.directory) {
+      await prepareProjectSwitch();
+      await showOpenedProject(await workspaceStore.openProject(project.directory, project.directory, controlLifetime.signal, project.mode));
+    }
+    const directory = workspaceStore.project?.directory;
+    if (directory && file) {
+      workspaceStore.pendingAgentSession = { directory, file };
+      agentVisible.value = true;
+    }
+  });
+}
+
+function createSidebarProject(mode: ProjectMode) {
+  return changeSidebarProject(async () => {
+    await prepareProjectSwitch();
+    await showOpenedProject(await workspaceStore.createProject(mode, controlLifetime.signal));
+  });
+}
+
+defineExpose({
+  navigationBusy: switchingProject,
+  openSidebarProject,
+  createSidebarProject,
+  openSidebarSettings(panel?: string) {
+    if (panel) settingsDialog.value?.openPanel(panel);
+    else settingsVisible.value = true;
+  },
+});
+
 onBeforeRouteLeave(async () => {
-  if (canvasPanelRef.value?.saveBusy) {
+  if (switchingProject.value || canvasPanelRef.value?.saveBusy) {
     ElMessage.warning("画布操作尚未完成，请稍后退出");
     return false;
   }
@@ -729,7 +754,6 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
   height: 100dvh;
   background-color: var(--el-bg-color);
 
-  :deep(.workspaceMenu > .el-card),
   :deep(.canvasMenu),
   :deep(.balanceCard),
   :deep(.canvasControlsCard),
@@ -753,12 +777,7 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
     }
   }
 
-  .workspaceMenu {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 5;
-  }
+
 
   .workspaceTools {
     position: absolute;
