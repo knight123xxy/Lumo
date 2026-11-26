@@ -34,9 +34,11 @@
     <p v-if="!projects.length" class="workspaceEmpty">{{ translate('还没有项目') }}</p>
     <div v-for="project in projects" :key="project.directory" class="workspaceFolder">
       <div class="workspaceFolderRow">
-        <button class="workspaceFolderToggle" type="button" :aria-expanded="expanded.has(project.directory)" :title="project.name" @click="toggle(project.directory)">
+        <button class="workspaceFolderChevron" type="button" :aria-label="translate(expanded.has(project.directory) ? '收起对话列表' : '展开对话列表')" :aria-expanded="expanded.has(project.directory)" @click="toggle(project.directory)">
           <icon-chevron-down v-if="expanded.has(project.directory)" :size="14" aria-hidden="true" />
           <icon-chevron-right v-else :size="14" aria-hidden="true" />
+        </button>
+        <button class="workspaceFolderToggle" type="button" :aria-label="`${translate('打开项目')} · ${project.name}`" :title="project.name" :aria-current="store.project?.directory === project.directory ? 'true' : undefined" :disabled="disabled" @click="emit('openProject', project)">
           <icon-folder :size="15" aria-hidden="true" />
           <span>{{ project.name }}</span>
         </button>
@@ -251,6 +253,23 @@ watch(() => store.agentHistoryChange, directory => {
     svg { flex-shrink: 0; }
     span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
+  .workspaceFolderChevron {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 18px;
+    height: 28px;
+    padding: 0;
+    color: var(--el-text-color-secondary);
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
+    &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 1px; }
+  }
+
   .workspaceFolderToggle, .workspaceChat { flex: 1; min-width: 0; }
   .workspaceChat { width: 100%; }
   .workspaceChats { margin-inline-start: 17px; padding-inline-start: 4px; border-inline-start: 1px solid var(--el-border-color-lighter); }
