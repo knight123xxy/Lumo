@@ -18,6 +18,7 @@ import createLinuxDebUpdater from "./update/linuxDebUpdater";
 import createWindowsUpdater, { confirmWindowsUpdateStartup } from "./update/windowsUpdater";
 import showWindowsNotification from "./windowsNotification";
 import registerWindowAppearance from "./windowAppearance";
+import startOpenFilmStudio, { openFilmRuntime } from "./openFilmStudio";
 
 const execFileAsync = promisify(execFile);
 const pendingInstalls: PluginInstallRequest[] = [];
@@ -89,6 +90,11 @@ async function restoreInstallRegistration(installDirectory: string) {
 }
 
 async function start() {
+  const startedAt = performance.now();
+  const trace = process.platform === "darwin" && process.env.LUMO_MAC_STARTUP_TRACE === "1"
+    ? (stage: string) => console.info(`[Lumo 启动] ${Math.round(performance.now() - startedAt)} ms ${stage}`)
+    : undefined;
+  trace?.("桌面入口已加载");
   let splash: Awaited<ReturnType<typeof showNativeSplash>> | undefined;
   let desktopConnection: Awaited<ReturnType<typeof import("./connection").default>> | undefined;
   let creationWindow: BrowserWindow | undefined;
@@ -150,11 +156,13 @@ async function start() {
       splash?.close();
       return;
     }
+    trace?.("正在加载服务模块");
     setRuntimeHost("desktop");
     const { createApp } = await import("@lumo/server/app");
     const { closeBrowsers } = await import("@lumo/server/browser");
     const { hash, version, identifier, channel } = await file(resolve(PATHS.RESOURCES_FOLDER, "version.json")).json();
     if (typeof hash !== "string" || !hash) throw new Error(t`应用构建标识缺失，无法同步内置插件`);
+    trace?.("正在初始化本地服务");
     const app = await createApp({
       webRoot: resolve(PATHS.VIEWS_FOLDER, "mainview"),
       appVersion: typeof version === "string" ? version : "",
@@ -167,11 +175,29 @@ async function start() {
       // agentsRoot: resolve(PATHS.VIEWS_FOLDER, "../agents"),
       pluginRevision: hash,
     });
+    trace?.("本地服务已初始化，正在建立桌面连接");
     const hostSecret = randomBytes(32).toString("hex");
     const { registerHostClient } = await import("@lumo/server/multiTenant");
     registerHostClient(app, hostSecret);
+    let studioConnectionRevision = 0;
+    let openFilmBridgeToken = randomBytes(32).toString("hex");
+    let openFilmStudio: ReturnType<typeof startOpenFilmStudio> | undefined;
+    let studioShutdown = Promise.resolve();
+    function closeOpenFilmStudio() {
+      const pending = openFilmStudio;
+      openFilmStudio = undefined;
+      if (pending) {
+        studioShutdown = studioShutdown.then(async () => {
+          const studio = await pending.catch(() => undefined);
+          await studio?.close();
+        }).catch(error => console.error("OpenFilm Studio 关闭失败：", error));
+      }
+    }
     const { default: createDesktopConnection } = await import("./connection");
     const connection = desktopConnection = await createDesktopConnection(app, dataDirectory, resolve(PATHS.VIEWS_FOLDER, "../mcp/stdio.js"), (port, remote, hostMode) => {
+      studioConnectionRevision++;
+      openFilmBridgeToken = randomBytes(32).toString("hex");
+      closeOpenFilmStudio();
       deliverInstall = undefined;
       closeCreationWindow();
       saveRuntime(port);
@@ -183,6 +209,23 @@ async function start() {
     });
     if (isClosing) { await connection.close(); return; }
     console.log(`桌面服务：http://127.0.0.1:${connection.port}`);
+    const openFilmBundle = resolve(PATHS.VIEWS_FOLDER, "../openFilmStudio");
+    const openFilmEnabled = Boolean(openFilmRuntime(openFilmBundle));
+    function installStudioBridge() {
+      if (!openFilmEnabled || isClosing || connection.remote || connection.hostMode) return;
+      const origin = JSON.stringify(`http://127.0.0.1:${connection.port}`);
+      mainWindow.webview.executeJavascript(`(() => {
+        if (window !== window.top || location.origin !== ${origin} || typeof window.__electrobunSendToHost !== "function") return;
+        const params = new URLSearchParams(location.search);
+        if (params.has("remote") || params.has("host")) return;
+        window.lumoRequestOpenFilm = (message) => window.__electrobunSendToHost({
+          ...message, type: "openFilmStudio", bridgeToken: ${JSON.stringify(openFilmBridgeToken)},
+        });
+        window.lumoOpenFilmAvailable = true;
+        window.dispatchEvent(new Event("lumo:open-film-available"));
+        ${trace ? `window.__electrobunSendToHost({ type: "openFilmBridgeReady", bridgeToken: ${JSON.stringify(openFilmBridgeToken)} });` : ""}
+      })()`);
+    }
 
     const { workArea } = Screen.getPrimaryDisplay();
     // ACT: 宽高分别限制在屏幕可用区域内，预留标题栏和边距，不固定比例。
@@ -388,6 +431,112 @@ async function start() {
       const detail = event.data.detail;
       if (!detail || typeof detail !== "object" || !("type" in detail)) return;
       if (detail.type === "openExternal") openLink(detail);
+      if (detail.type === "openFilmBridgeReady" && !isClosing && !connection.remote && !connection.hostMode
+        && "bridgeToken" in detail && detail.bridgeToken === openFilmBridgeToken) trace?.("主窗口 Studio 桥接已就绪");
+      if (detail.type === "openFilmStudio" && openFilmEnabled && !isClosing && !connection.remote && !connection.hostMode
+        && "bridgeToken" in detail && detail.bridgeToken === openFilmBridgeToken
+        && "directory" in detail && typeof detail.directory === "string" && "requestId" in detail && typeof detail.requestId === "string") {
+        const { directory: requestedDirectory, requestId } = detail;
+        const openingStudio = "action" in detail && detail.action === "open";
+        if (openingStudio) trace?.("收到 Studio 打开请求，正在校验工作区");
+        const lumoOrigin = `http://127.0.0.1:${connection.port}`;
+        const revision = studioConnectionRevision;
+        const canDispatch = () => revision === studioConnectionRevision && !isClosing && !connection.remote && !connection.hostMode
+          && lumoOrigin === `http://127.0.0.1:${connection.port}`;
+        function deliver(payload: { regionPng?: string; clipEdit?: Awaited<ReturnType<NonNullable<Awaited<typeof openFilmStudio>>["setClipProperty"]>>; url?: string; error?: string; clips?: Awaited<ReturnType<NonNullable<Awaited<typeof openFilmStudio>>["canvasVideos"]>>; video?: { path: string; name: string; mimeType: string } }) {
+          if (!canDispatch()) return;
+          mainWindow.webview.executeJavascript(`if (location.origin === ${JSON.stringify(lumoOrigin)}) window.dispatchEvent(new CustomEvent("lumo:open-film-studio", { detail: ${JSON.stringify({ ...payload, requestId })} }));`);
+        }
+        void (async () => {
+          const checkUrl = new URL("/api/workspaces/check", lumoOrigin);
+          checkUrl.searchParams.set("directory", requestedDirectory);
+          const checked = await fetch(checkUrl, {
+            headers: { referer: `${lumoOrigin}/?desktop=1`, "x-lumo-workspace": "1" },
+            redirect: "error",
+            signal: AbortSignal.timeout(5000),
+          });
+          if (!checked.ok) throw new Error(`无法打开 Lumo 项目（${checked.status}）`);
+          const result = await checked.json();
+          const directory = result?.data?.directory;
+          if (result?.code !== 200 || typeof directory !== "string") throw new Error("Lumo 项目目录无效");
+          if (!canDispatch()) return;
+          async function getStudio() {
+            const pending = openFilmStudio ??= (async () => {
+              const previousShutdown = studioShutdown;
+              await previousShutdown;
+              if (!canDispatch()) return;
+              const { prepareWorkspaceFfmpeg } = await import("@lumo/server/ffmpeg");
+              const mediaTools = await prepareWorkspaceFfmpeg();
+              if (!canDispatch()) return;
+              return startOpenFilmStudio(dataDirectory, lumoOrigin, openFilmBundle, mediaTools);
+            })();
+            try {
+              const studio = await pending;
+              if ((!studio || !studio.isRunning()) && openFilmStudio === pending) openFilmStudio = undefined;
+              return studio;
+            } catch (error) {
+              if (openFilmStudio === pending) openFilmStudio = undefined;
+              throw error;
+            }
+          }
+          let studio = await getStudio();
+          // 只在派发打开操作前恢复已退出的进程，避免重放已发出的写入。
+          if (openingStudio && studio && !studio.isRunning() && canDispatch()) studio = await getStudio();
+          if (!canDispatch()) return;
+          if (!studio) throw new Error("OpenFilm Studio 原型未启用");
+          if (!studio.isRunning()) throw new Error("OpenFilm Studio 已退出，请重试");
+          if ("action" in detail && detail.action === "captureRegion") {
+            if (!("projectId" in detail) || typeof detail.projectId !== "string" || !("region" in detail)) throw new Error("Studio 框选参数无效");
+            deliver({ regionPng: await studio.captureRegion(directory, detail.projectId, detail.region) });
+            return;
+          }
+          if ("action" in detail && detail.action === "setClipProperty") {
+            const { projectId, clipId, field, value, expectedValue } = detail as Record<string, unknown>;
+            const isEditValue = (item: unknown): item is boolean | number | [number, number] | null => item === null || typeof item === "number" || typeof item === "boolean"
+              || (Array.isArray(item) && item.length === 2 && item.every(n => typeof n === "number"));
+            if (typeof projectId !== "string" || typeof clipId !== "string" || (field !== "volume" && field !== "speed" && field !== "time" && field !== "disabled")
+              || !isEditValue(value) || (expectedValue !== undefined && !isEditValue(expectedValue))) throw new Error("Studio 片段参数无效");
+            deliver({ clipEdit: await studio.setClipProperty(directory, projectId, clipId, field, value, expectedValue) });
+            return;
+          }
+          if ("action" in detail && detail.action === "listVideos") {
+            if (!("projectId" in detail) || typeof detail.projectId !== "string") throw new Error("Studio 工程无效");
+            deliver({ clips: await studio.canvasVideos(directory, detail.projectId) });
+            return;
+          }
+          if ("action" in detail && (detail.action === "copyVideo" || detail.action === "renderVideo")) {
+            if (!("projectId" in detail) || typeof detail.projectId !== "string" || !("clipId" in detail) || typeof detail.clipId !== "string") throw new Error("Studio 片段无效");
+            deliver({ video: await studio.copyToCanvas(directory, detail.projectId, detail.clipId, detail.action === "renderVideo") });
+            return;
+          }
+          if ("action" in detail && detail.action === "renderRange") {
+            const { projectId, range } = detail as { projectId?: unknown; range?: { start?: unknown; end?: unknown } };
+            if (typeof projectId !== "string" || typeof range?.start !== "number" || typeof range.end !== "number") throw new Error("Studio 时间范围无效");
+            deliver({ video: await studio.renderRangeToCanvas(directory, projectId, range.start, range.end) });
+            return;
+          }
+          if ("action" in detail && detail.action === "importLegacy") {
+            deliver({ url: await studio.importLegacy(directory) });
+            return;
+          }
+          if ("action" in detail && detail.action === "importDraft") {
+            deliver({ url: await studio.importDraft(directory, "draft" in detail ? detail.draft : undefined) });
+            return;
+          }
+          const videoPath = "videoPath" in detail ? detail.videoPath : undefined;
+          if (videoPath !== undefined && typeof videoPath !== "string") throw new Error("画布视频路径无效");
+          const overlayAt = "overlayAt" in detail ? detail.overlayAt : undefined;
+          if (overlayAt !== undefined && typeof overlayAt !== "number") throw new Error("Studio 动效位置无效");
+          if (openingStudio) trace?.("Studio 运行时已就绪，正在打开工程");
+          const url = await studio.openProject(directory, videoPath, overlayAt, "clipTiming" in detail ? detail.clipTiming : undefined);
+          deliver({ url });
+          if (openingStudio) trace?.("Studio 工程打开调用已完成");
+        })().catch(error => {
+          if (openingStudio) trace?.("Studio 打开请求失败");
+          const message = error instanceof Error ? error.message : String(error);
+          deliver({ error: message });
+        });
+      }
       if (detail.type === "quitReady" && "ready" in detail && typeof detail.ready === "boolean") {
         quitReady = detail.ready;
         if (!quitReady) pendingQuit?.resolve(false);
@@ -452,7 +601,9 @@ async function start() {
       },
       async ready(failed = false) {
         if (isClosing) return;
+        if (!failed) installStudioBridge();
         if (!isShowing) {
+          trace?.(failed ? "主窗口页面报告初始化失败" : "主窗口页面已完成初始化");
           if (splash) {
             await splash.finish();
             if (isClosing || !splash) return;
@@ -534,6 +685,7 @@ async function start() {
     mainWindow.on("close", () => {
       isClosing = true;
       closeCreationWindow();
+      closeOpenFilmStudio();
       void connection.close().catch(error => console.error("设备连接关闭失败：", error));
       void closeBrowsers().catch(error => console.error("浏览器关闭失败：", error));
       deliverInstall = undefined;

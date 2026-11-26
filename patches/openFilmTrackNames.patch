@@ -1,0 +1,82 @@
+--- a/packages/openfilm/studio/ui/src/components/ProjectView.tsx
++++ b/packages/openfilm/studio/ui/src/components/ProjectView.tsx
+@@ -683,6 +683,24 @@
+ 
+   /* ── the project's editor settings (`.film/settings.json`): its frame rate, its tracks' names ── */
+   const [settings, setSettings] = React.useState<ProjectSettings | null>(null);
++  const trackNames = React.useMemo(() => {
++    const tracks = film.film?.tracks ?? [];
++    const names = new Map<number, string>();
++    for (const saved of settings?.trackNames ?? []) {
++      const ids = new Set(saved.clips);
++      let best = -1;
++      let count = 0;
++      tracks.forEach((track, index) => {
++        const matches = track.clips.filter(clip => ids.has(clip.id)).length;
++        if (matches > count || (matches > 0 && matches === count && index === saved.index)) {
++          best = index;
++          count = matches;
++        }
++      });
++      if (best >= 0 && !names.has(best)) names.set(best, saved.name);
++    }
++    return names;
++  }, [film.film, settings?.trackNames]);
+   React.useEffect(() => {
+     setSettings(null);
+     void api.settings(projectId).then(setSettings, () => setSettings({}));
+@@ -5903,6 +5921,7 @@
+                     onRelink={(block, path) => void relinkBlock(block, path)}
+                     onViewChange={setThumbView}
+                     tracks={layerTracks ? layerTracks.map((r) => r.track) : editTracks}
++                    trackNames={trackNames}
+                     layers={layerTracks ? layerView(filmMotion, layerTracks, pickedKeys.size > 0, selectedBlocks.length > 0, openComposition) : null}
+                     totalMs={totalMs}
+                     timeMs={timeMs}
+--- a/packages/openfilm/studio/ui/src/components/Timeline.tsx
++++ b/packages/openfilm/studio/ui/src/components/Timeline.tsx
+@@ -607,6 +607,7 @@
+ export interface TimelineProps {
+   /** The rows, top to bottom. Empty before the film has anything — the timeline is still there. */
+   tracks: readonly TimelineTrack[];
++  trackNames?: ReadonlyMap<number, string>;
+   /** Entries put first on the menu of the clips right-clicked (an app Studio is embedded in adds its own). */
+   blockMenuExtra?: (blocks: readonly TimelineBlock[], clicked?: TimelineBlock) => ContextMenuEntry[];
+   /** The menu of a track's head (right-clicked); without entries the head has no menu. */
+@@ -1019,6 +1020,7 @@
+  */
+ export const Timeline = React.memo(function Timeline({
+   tracks: tracksIn,
++  trackNames,
+   blockMenuExtra,
+   trackMenuExtra,
+   onOrganizeTracks,
+@@ -3092,7 +3094,8 @@
+         ? <div key={track.lane}>{head}<div style={{ height: track.extra, background: TL.trackHead }} className="rounded-l-[3px]">{layers.extraHead(track)}</div></div>
+         : head;
+     }
+-    const pose = `${liftingHead}:${lit}:${targeted}:${chatLit}:${headsCollapsed}`;
++    const name = track.captions?.label ?? (track.docIndex == null ? undefined : trackNames?.get(track.docIndex));
++    const pose = `${liftingHead}:${lit}:${targeted}:${chatLit}:${headsCollapsed}:${name ?? ''}`;
+     const cached = headElements.get(track.lane);
+     if (cached?.pose === pose) return withLaneHeads(track, cached.node);
+     const node = (
+@@ -3110,7 +3113,8 @@
+         data-lane-muted={track.muted ? '1' : '0'}
+         onPointerDown={(e) => startLaneReorder(e, laneIndex)}
+         onContextMenu={(e) => openHeadMenu(e, track)}
+-        title={mainHead && !headsCollapsed ? t('timeline.mainTrack') : undefined}
++        title={name || (mainHead && !headsCollapsed ? t('timeline.mainTrack') : undefined)}
++        aria-label={name}
+         data-main-track={mainHead ? '' : undefined}
+         style={{
+           marginTop: GAP,
+@@ -3183,7 +3187,7 @@
+     );
+     headElements.set(track.lane, { pose, node });
+     return withLaneHeads(track, node);
+-  }), [tracks, t, laneOrder, onEditBlocks, onEditOps, startLaneReorder, toggleTrack, canToggleTrack, selectedLanes, openHeadMenu, chatTrack, targetLane, solo, onResizeTrack, nearFirst, nearLast, headElements, motionLanes, layers, headsCollapsed]);
++  }), [tracks, t, laneOrder, onEditBlocks, onEditOps, startLaneReorder, toggleTrack, canToggleTrack, selectedLanes, openHeadMenu, chatTrack, targetLane, solo, onResizeTrack, nearFirst, nearLast, headElements, motionLanes, layers, headsCollapsed, trackNames]);
+ 
+   /* row backgrounds are fixed to the view and only follow vertical scroll; the clips move horizontally above them */
+   const laneSkins = React.useMemo(() => tracks.map((track) => (

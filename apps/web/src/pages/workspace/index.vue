@@ -33,8 +33,11 @@
         :ref="setTimelinePanel"
         :directory="workspaceStore.project?.directory ?? ''"
         :openAutomaticFilm="openAutomaticFilm"
+        :openFilmAvailable="openFilmAvailable"
+        :canvasKey="canvasPanelRef?.canvasReady ? canvasPanelRef.activeKey : undefined"
         @automaticFilmOpened="consumeAutomaticFilm"
-        @send-to-canvas="sendClipToCanvas" />
+        @send-to-canvas="sendClipToCanvas"
+        @openAgent="agentVisible = true" />
     </keep-alive>
     <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
     <div class="workspaceTools">
@@ -53,9 +56,10 @@
             <el-button v-if="selectedDramaShot" :disabled="preparingShot || settingsVisible || !canvasPanelRef?.canvasReady" :loading="preparingShot" @click="prepareShotVideo">
               {{ translate('转为视频生成节点') }}
             </el-button>
-            <el-button v-if="canvasPanelRef?.selectedVideoOutput" :loading="sendingVideo" :disabled="sendingVideo || settingsVisible" @click="sendVideoToTimeline">
+            <el-button v-if="canvasPanelRef?.selectedVideoOutput" :loading="sendingVideo" :disabled="sendingVideo || settingsVisible" @click="sendVideoToTimeline()">
               {{ translate('发送到剪辑') }}
             </el-button>
+            <el-button v-if="openFilmAvailable && canvasPanelRef?.selectedVideoOutput" :loading="sendingVideo" :disabled="sendingVideo || settingsVisible" @click="sendVideoToTimeline(true)">发送到 OpenFilm Studio</el-button>
             <el-tooltip content="添加节点" placement="top" :showArrow="false" :hideAfter="0" :enterable="false" :triggerKeys="[]">
               <el-button class="toolButton addNodeButton" :disabled="!canvasPanelRef?.canvasReady || settingsVisible" aria-label="添加节点" aria-haspopup="menu" @click="canvasPanelRef?.addNodeAtPointer()">
                 <icon-plus :size="18" aria-hidden="true" />
@@ -495,7 +499,26 @@ function setTimelinePanel(value: Element | ComponentPublicInstance | null) {
   const directory = workspaceStore.project?.directory;
   if (value && directory) timelinePanelCache.value = { directory, instance: value as InstanceType<typeof timelinePanel> };
 }
-provide("canvas", () => canvasPanelRef.value?.getCanvasContext());
+provide("canvas", () => {
+  const canvas = canvasPanelRef.value?.getCanvasContext();
+  const timeline = timelinePanelRef.value;
+  const studioSelection = timeline?.studioEditAvailable() === true;
+  if (!studioSelection || !timeline) return canvas;
+  return {
+    ...canvas,
+    id: canvas?.id ?? "",
+    tools: canvas?.tools ?? [],
+    studioSelection,
+    call(request: { name: string; args: Record<string, unknown> }, signal?: AbortSignal) {
+      if (request.name === "setStudioClipVolume") return timeline.setStudioClipProperty("volume", request.args, signal);
+      if (request.name === "setStudioClipSpeed") return timeline.setStudioClipProperty("speed", request.args, signal);
+      if (request.name === "trimStudioClip") return timeline.setStudioClipProperty("time", request.args, signal);
+      if (request.name === "setStudioClipDisabled") return timeline.setStudioClipProperty("disabled", request.args, signal);
+      if (!canvas) throw new Error("画布尚未就绪");
+      return canvas.call(request, signal);
+    },
+  };
+});
 provide("mentionCanvas", () => canvasPanelRef.value?.mentionSource);
 provide("activateCanvasPanel", () => switchPanel("canvas"));
 provide("performWorkspaceFileAction", (directory: string, action: "copy" | "rename" | "move" | "delete", path: string, target?: string, entryType: "canvas" | "directory" = "canvas") =>
@@ -620,23 +643,37 @@ onBeforeRouteLeave(async () => {
 const sendingVideo = ref(false);
 
 // 剪辑→画布：选中片段直接在画布上生成视频节点，不切换面板。
-async function sendClipToCanvas() {
+async function sendClipToCanvas(studioVideo?: { path: string; name: string; mimeType: string }, studioDirectory?: string, studioCanvasKey?: string) {
   const directory = workspaceStore.project?.directory;
+  if (studioVideo && (!studioDirectory || studioDirectory !== directory)) return;
   const canvas = canvasPanelRef.value;
   const timeline = timelinePanelRef.value;
   if (!directory || !canvas || !timeline) return;
-  const video = timeline.getSelectedVideo();
+  const video = studioVideo ?? timeline.getSelectedVideo();
   if (!video) return;
   try {
-    if (!canvas.canvasId || !canvas.canvasReady) throw new Error(translate("画布尚未就绪"));
-    await canvas.addTemplateVideo(directory, canvas.canvasId, video);
+    if (studioVideo) {
+      if (!studioCanvasKey) throw new Error(translate("画布尚未就绪"));
+      await canvas.addStudioVideo(directory, studioCanvasKey, video);
+    } else {
+      if (!canvas.canvasId) throw new Error(translate("画布尚未就绪"));
+      await canvas.addTemplateVideo(directory, canvas.canvasId, video);
+    }
     ElMessage.success(translate("片段已作为视频节点添加到画布"));
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : translate("发送到画布失败"));
   }
 }
 
-async function sendVideoToTimeline() {
+const openFilmAvailable = ref(false);
+function updateStudioAvailability() {
+  openFilmAvailable.value = (window as Window & { lumoOpenFilmAvailable?: boolean }).lumoOpenFilmAvailable === true;
+}
+window.addEventListener("lumo:open-film-available", updateStudioAvailability);
+updateStudioAvailability();
+onScopeDispose(() => window.removeEventListener("lumo:open-film-available", updateStudioAvailability));
+
+async function sendVideoToTimeline(openFilm = false) {
   const video = canvasPanelRef.value?.selectedVideoOutput;
   const directory = workspaceStore.project?.directory;
   if (!video || !directory || sendingVideo.value) return;
@@ -646,6 +683,10 @@ async function sendVideoToTimeline() {
     const signal = AbortSignal.any([controlLifetime.signal, AbortSignal.timeout(20000)]);
     const timeline = await waitForControlValue(() => timelinePanelRef.value?.ready ? timelinePanelRef.value : undefined, signal);
     if (workspaceStore.project?.directory !== directory) throw new Error(translate("工作目录已切换"));
+    if (openFilm) {
+      timeline.openStudio(video.path);
+      return;
+    }
     await timeline.appendCanvasVideo(video);
     ElMessage.success(translate("视频已追加到时间线"));
   } catch (error) {

@@ -25,6 +25,9 @@ export default {
       } : {}),
     },
     copy: {
+      ...(process.platform === "darwin" && process.env.LUMO_OPENFILM_BUNDLE_DIR ? {
+        [process.env.LUMO_OPENFILM_BUNDLE_DIR]: "openFilmStudio",
+      } : {}),
       "build/desktop/ffmpeg/ffmpegWorker.js": "bun/ffmpegWorker.js",
       "build/desktop/sandbox/sandboxProcess.js": "bun/sandboxProcess.js",
       "apps/server/src/utils/showcase/renderCards.mjs": "bun/renderCards.mjs",

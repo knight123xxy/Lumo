@@ -33,7 +33,7 @@
     <p v-if="error" role="alert" class="filmError">{{ error }}</p>
     <p>{{ translate('生成会调用所选模型，按供应商规则计费。可编辑草稿将追加到时间线。') }}</p>
     <div class="filmActions">
-      <el-button v-if="running || !inline" @click="cancel">{{ translate(running ? '取消生成' : '关闭') }}</el-button>
+      <el-button v-if="running || !inline" :disabled="saving" @click="cancel">{{ translate(saving ? '正在保存草稿' : running ? '取消生成' : '关闭') }}</el-button>
       <el-button type="primary" :loading="running" :disabled="loading || busy || importing || !topic.trim() || !selected.length || !writerId || !narratorId" @click="generate">{{ translate('生成草稿') }}</el-button>
     </div>
   </div>
@@ -56,10 +56,10 @@ const props = defineProps<{
   assets: AssetItem[];
   busy: boolean;
   importFiles: (files: File[]) => Promise<AssetItem[]>;
-  createFilm: (input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void) => Promise<AutomaticFilmDraft>;
+  createFilm: (input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void, onSaving?: () => void) => Promise<AutomaticFilmDraft>;
   currentStyle?: ProjectStyle;
 }>();
-const emit = defineEmits<{ close: []; generated: []; running: [value: boolean]; importing: [value: boolean] }>();
+const emit = defineEmits<{ close: []; generated: [draft: AutomaticFilmDraft]; running: [value: boolean]; importing: [value: boolean] }>();
 const formId = useId();
 const ai = useNodeAi();
 const topic = defineModel<string>("topic", { default: "" });
@@ -110,9 +110,11 @@ async function importVideos(event: Event) {
 const stage = ref("");
 const error = ref("");
 const videos = computed(() => props.assets.filter(asset => asset.kind === "video"));
+const saving = ref(false);
 let controller: AbortController | undefined;
+watch([() => props.active, () => props.directory], () => controller?.abort(), { flush: "sync" });
 
-watch(() => props.active, async (open, _, onCleanup) => {
+watch([() => props.active, () => props.directory], async ([open], _, onCleanup) => {
   if (!open) return;
   const signal = new AbortController();
   onCleanup(() => signal.abort());
@@ -139,8 +141,9 @@ async function generate() {
   const writer = findNodeModel(writers.value, writerId.value);
   const narrator = findNodeModel(narrators.value, narratorId.value);
   const assets = selected.value.flatMap(id => videos.value.filter(asset => asset.id === id));
-  if (running.value || props.busy || !writer || !narrator || !assets.length || !topic.value.trim()) return;
+  if (!props.active || running.value || props.busy || !writer || !narrator || !assets.length || !topic.value.trim()) return;
   const topicSnapshot = topic.value.trim();
+  const directory = props.directory;
   const request = new AbortController();
   controller = request;
   running.value = true;
@@ -160,7 +163,7 @@ async function generate() {
     } else {
       // ACT: 供应商报价可能长时间不返回，超时即降级为「未提供报价」，不能把整单卡在报价阶段。
       const quoteSignal = AbortSignal.any([request.signal, AbortSignal.timeout(8000)]);
-      const quote = await ai.getMediaPrice({ ...narratorModel, mediaType: "audio", directory: props.directory, outputDirectory: "assets/timeline", prompt: "" }, quoteSignal).catch(() => null);
+      const quote = await ai.getMediaPrice({ ...narratorModel, mediaType: "audio", directory, outputDirectory: "assets/timeline", prompt: "" }, quoteSignal).catch(() => null);
       details.push(`${translate("配音报价")} · ${quote?.price ?? translate("供应商未提供报价")}`);
       details.push(translate("整单金额未知，以供应商账单为准"));
     }
@@ -169,12 +172,20 @@ async function generate() {
     if (!confirmed) return;
     request.signal.throwIfAborted();
     stage.value = translate("正在检查视频素材");
-    const draft = await props.createFilm({ topic: topicSnapshot, assets, writer, narrator, style: resolveStyle() }, request.signal, value => { stage.value = value; });
+    const draft = await props.createFilm({ topic: topicSnapshot, assets, writer, narrator, style: resolveStyle() }, request.signal, value => {
+      if (!request.signal.aborted) stage.value = value;
+    }, () => {
+      saving.value = true;
+      stage.value = translate("正在保存草稿");
+    });
+    // 保存已完成，离开表单时只抑制结果通知。
+    if (request.signal.aborted) return;
     if (draft.hasVideoGaps) ElMessage.warning(translate("部分镜头短于实际配音，已保留旁白和字幕，请在时间线补齐画面"));
-    emit("generated");
+    emit("generated", draft);
   } catch (failure) {
-    error.value = request.signal.aborted ? translate("已取消生成") : failure instanceof Error ? failure.message : translate("生成失败");
+    error.value = request.signal.aborted && !saving.value ? translate("已取消生成") : failure instanceof Error ? failure.message : translate("生成失败");
   } finally {
+    saving.value = false;
     running.value = false;
     emit("running", false);
     stage.value = "";
@@ -183,6 +194,7 @@ async function generate() {
 }
 
 function cancel() {
+  if (saving.value) return;
   if (running.value) controller?.abort();
   else emit("close");
 }

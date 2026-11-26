@@ -69,6 +69,7 @@ export interface CanvasToolCall {
 
 export interface CanvasInfo {
   id: string;
+  studioSelection?: boolean;
   tools: NodeToolInfo[];
 }
 

@@ -99,10 +99,29 @@ export function useTimeline(directory: string) {
     ready.value = true;
   }
 
+  let pendingSave = Promise.resolve();
+  function queueSave(save: () => Promise<void>) {
+    const result = pendingSave.then(save);
+    // 失败返回给本次调用方，后续保存仍可执行。
+    pendingSave = result.catch(() => {});
+    return result;
+  }
+
   async function flushSave() {
     if (!loaded.value) return;
     if (timelineReadError) throw new Error(timelineReadError);
-    await files.writeJson(timelineProjectFile, project.value);
+    // 等前一个写入发布工程状态后再读取快照，避免保存旧时间线。
+    await queueSave(() => files.writeJson(timelineProjectFile, project.value));
+  }
+
+  function saveTimelineChange(change: TimelineProject | (() => TimelineProject), beforeWrite = () => lifetime.signal.throwIfAborted()) {
+    return queueSave(async () => {
+      beforeWrite();
+      const next = typeof change === "function" ? change() : change;
+      await files.writeJson(timelineProjectFile, next);
+      commit();
+      project.value = next;
+    });
   }
 
   async function appendCanvasVideo(video: { path: string; name: string; mimeType: string }) {
@@ -141,9 +160,7 @@ export function useTimeline(directory: string) {
       track.clips.push(clip);
       next.assets.push({ id: uid("asset"), path, name: video.name, mimeType: video.mimeType, kind: "video", size: Number(media.format.size) || 0,
         duration: seconds, width: stream.width, height: stream.height });
-      await files.writeJson(timelineProjectFile, next);
-      commit();
-      project.value = next;
+      await saveTimelineChange(next);
       selection.value = { trackId: track.id, clipId: clip.id };
       playing.value = false;
       playhead.value = start;
@@ -152,7 +169,7 @@ export function useTimeline(directory: string) {
     }
   }
 
-  async function createAutomaticFilm(input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void) {
+  async function createAutomaticFilm(input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void, onSaving?: () => void) {
     if (!ready.value || busy.value) throw new Error(translate("剪辑工程正在处理，请稍后重试"));
     if (timelineReadError) throw new Error(timelineReadError);
     busy.value = true;
@@ -177,9 +194,10 @@ export function useTimeline(directory: string) {
       }
       next.assets.push(...draft.assets);
       if (draft.style) next.style = draft.style;
-      await files.writeJson(timelineProjectFile, next);
-      commit();
-      project.value = next;
+      await saveTimelineChange(next, () => {
+        combined.throwIfAborted();
+        onSaving?.();
+      });
       playing.value = false;
       selection.value = null;
       playhead.value = start;
@@ -306,9 +324,7 @@ export function useTimeline(directory: string) {
       }
       const clip = createClip({ kind: "effect", source: result.output, timelineStart: start, timelineDuration: result.seconds, sourceDuration: result.seconds, text: name });
       track.clips.push(clip);
-      await files.writeJson(timelineProjectFile, next);
-      commit();
-      project.value = next;
+      await saveTimelineChange(next);
       playing.value = false;
       playhead.value = start;
       selection.value = { trackId: track.id, clipId: clip.id };
@@ -528,34 +544,43 @@ export function useTimeline(directory: string) {
   // ---------- 口播自动化（剪沉默 / 加速停顿） ----------
 
   async function silenceEdit(mode: SilenceEditMode) {
+    if (!ready.value || busy.value) throw new Error(translate("剪辑工程正在处理，请稍后重试"));
+    if (timelineReadError) throw new Error(timelineReadError);
     const clip = selectedClip.value;
     if (!clip) throw new Error(translate("请先选择要处理的口播片段"));
     if (clip.kind !== "video" && clip.kind !== "audio") throw new Error(translate("仅支持视频或音频片段"));
     // ACT: 对整段源素材做口播自动化，忽略片段已裁剪的 inPoint/outPoint 与变速，处理后重置为整段成品。
     const duration = clip.sourceDuration > 0 ? clip.sourceDuration : clip.outPoint;
-    if (!clip.source || duration <= 0) throw new Error(translate("片段缺少源素材"));
+    const source = clip.source;
+    if (!source || duration <= 0) throw new Error(translate("片段缺少源素材"));
     const suffix = clip.kind === "video" ? "mp4" : "mp3";
-    const outputPath = `assets/timeline/${clip.id}-${mode}.${suffix}`;
+    const outputPath = `assets/timeline/${uid(mode)}.${suffix}`;
     busy.value = true;
     try {
       const result = await applySilenceEdit(
         await getFfmpeg(),
-        { path: clip.source, duration, hasVideo: clip.kind === "video" },
+        { path: source, duration, hasVideo: clip.kind === "video" },
         outputPath,
         mode,
         lifetime.signal,
       );
+      lifetime.signal.throwIfAborted();
       if (!result.silenceCount) return { silenceCount: 0, removedSeconds: 0 };
-      commit();
-      applyToClip(clip.id, {
-        source: outputPath,
-        sourceDuration: result.newDuration,
-        inPoint: 0,
-        outPoint: result.newDuration,
-        timelineDuration: result.newDuration,
-        speed: 1,
+      await saveTimelineChange(() => {
+        const next = snapshot(project.value);
+        const target = next.tracks.flatMap(track => track.clips).find(item => item.id === clip.id);
+        if (!target || target.source !== source) throw new Error(translate("口播片段已改变，请重新选择片段"));
+        Object.assign(target, {
+          source: outputPath,
+          sourceDuration: result.newDuration,
+          inPoint: 0,
+          outPoint: result.newDuration,
+          timelineDuration: result.newDuration,
+          speed: 1,
+        });
+        return next;
       });
-      return { silenceCount: result.silenceCount, removedSeconds: result.removedSeconds };
+      return { silenceCount: result.silenceCount, removedSeconds: result.removedSeconds, outputPath };
     } finally {
       busy.value = false;
     }

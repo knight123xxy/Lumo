@@ -253,6 +253,18 @@ async function fillPrompt(prompt: string, attachments?: AgentAttachment[]) {
   return true;
 }
 
+async function appendPrompt(text: string, images: File[] = []) {
+  const instance = sender;
+  if (!instance || !props.active || locked.value || running.value || editingId.value || instance.chatEditor.isComposition) return false;
+  const model = instance.getModel();
+  const lines = text.split("\n").map(line => [{ type: "Write" as const, text: line }]);
+  await instance.reset({ clearHistory: false, chatNode: getDraftContent().trim() ? [...model, [], ...lines] : lines });
+  if (sender !== instance) return false;
+  if (images.length) addAttachments(images);
+  instance.focus("last");
+  return true;
+}
+
 async function fillQueuedMessage(prompt: string) {
   const instance = sender;
   if (!instance) return;
@@ -517,7 +529,7 @@ async function clearDraft() {
   await sender?.reset();
 }
 
-defineExpose({ getDraft, clearDraft, fillPrompt, fillQueuedMessage, editMessage, cancelEdit, restoreEditingDraft });
+defineExpose({ getDraft, clearDraft, fillPrompt, appendPrompt, fillQueuedMessage, editMessage, cancelEdit, restoreEditingDraft });
 </script>
 
 <style lang="scss">

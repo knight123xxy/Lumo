@@ -25,6 +25,8 @@ import { createMcpAgentTools } from "@/utils/mcp/servers";
 import { createPluginMarketTools } from "./pluginMarket";
 import { currentIdentity } from "@/utils/multiTenant/context";
 import { modelGateway, requireDirectModelAccess } from "@/utils/multiTenant/gateway";
+import { z } from "zod";
+import { studioVolumeSchema, studioSpeedSchema, studioTrimSchema, studioDisabledSchema } from "@/agent/bridge/canvas";
 import * as mediaTasks from "@/utils/media/tasks";
 
 export function createAgentToolContext(cwd: string, config: Record<string, unknown> = {}, canvas?: CanvasContext, question?: QuestionContext, workspaceAvailable = true): ToolContext {
@@ -170,6 +172,42 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
 
 export async function createAgentTools(cwd: string, canvas?: CanvasContext, question?: QuestionContext, includeMcp = true): Promise<ToolDefinition[]> {
   const tools = createPluginMarketTools(question);
+  if (canvas?.studioSelection) tools.push({
+    name: "setStudioClipVolume", label: "调整 Studio 片段音量",
+    description: "根据用户要求调整本次引用的 Studio 视频片段音量。使用草稿里的项目和片段 ID，1 为原音量，0 为静音。操作需要用户在页面确认。",
+    parameters: z.toJSONSchema(studioVolumeSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "setStudioClipVolume", args: studioVolumeSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.studioSelection) tools.push({
+    name: "setStudioClipSpeed", label: "调整 Studio 片段速度",
+    description: "按用户要求调整引用的 Studio 视频片段播放倍速。使用草稿里的项目和片段 ID。修改保留素材入出点和片段起点，其他片段保持原位。操作需要页面确认。",
+    parameters: z.toJSONSchema(studioSpeedSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "setStudioClipSpeed", args: studioSpeedSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.studioSelection) tools.push({
+    name: "trimStudioClip", label: "裁切 Studio 视频片段",
+    description: "裁切用户引用的 Studio 视频片段。start 和 end 是源素材秒数，需要根据片段起点、源入点和倍速换算用户指定的时间线区间。保留片段在时间线的起点，其他片段保持原位。用户须在页面确认。",
+    parameters: z.toJSONSchema(studioTrimSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "trimStudioClip", args: studioTrimSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.studioSelection) tools.push({
+    name: "setStudioClipDisabled", label: "停用或恢复 Studio 视频片段",
+    description: "停用或恢复用户引用的 Studio 视频片段。停用保留位置和素材，播放与导出时跳过该片段。需要用户在页面确认。",
+    parameters: z.toJSONSchema(studioDisabledSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "setStudioClipDisabled", args: studioDisabledSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
   const names = new Set(tools.map(tool => tool.name));
   const context = createAgentToolContext(cwd, {}, canvas, question);
   function appendTools(definitions: ToolDefinition[], prompt: string, label: string) {

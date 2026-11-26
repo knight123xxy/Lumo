@@ -1,0 +1,30 @@
+--- a/packages/openfilm/studio/server/film.mjs
++++ b/packages/openfilm/studio/server/film.mjs
+@@ -165,8 +165,11 @@
+  * puts back an earlier one of the person's.
+  * @param {string} root @param {string | null} base @param {Op[]} ops @param {{ undo?: boolean }} [o]
+  */
+-export async function editProjectFilm(root, base, ops, { undo = false } = {}) {
++export async function editProjectFilm(root, base, ops, { undo = false, strictBase = false } = {}) {
+   const done = await changeProjectFilm(root, (start, current) => {
++    if (strictBase && (base == null || base !== current.rev)) {
++      throw new EditError('the film changed before the host edit: try again', 'conflict');
++    }
+     /* a film.html that does not read is the agent's to fix: Studio never writes over it */
+     if (!current.value && (current.text.trim() || (base != null && base !== current.rev))) {
+       throw new EditError(current.problems.join('\n'), 'invalid');
+--- a/packages/openfilm/studio/server/server.mjs
++++ b/packages/openfilm/studio/server/server.mjs
+@@ -1327,10 +1327,10 @@
+     if (rest === 'kept' && req.method === 'GET') {
+       return json(res, 200, personEdits.noteFor(project.path, (url.searchParams.get('agent') || 'app:unknown').slice(0, 200)) ?? { line: null });
+     }
+-    if (rest === 'edit' && req.method === 'POST') {
++    if ((rest === 'edit' || rest === 'lumo-edit') && req.method === 'POST') {
+       const { base = null, ops, undo } = /** @type {{ base?: string | null, ops?: import('./film.mjs').Op[], undo?: boolean }} */ (await readJson(req));
+       try {
+-        return json(res, 200, await editProjectFilm(project.path, base, ops ?? [], { undo: undo === true }));
++        return json(res, 200, await editProjectFilm(project.path, base, ops ?? [], { undo: undo === true, strictBase: rest === 'lumo-edit' }));
+       } catch (e) {
+         if (!(e instanceof EditError)) throw e;
+         /* the person's view is out of date or the edit cannot be: send the film as it is now with the reason */

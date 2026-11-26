@@ -20,13 +20,13 @@ const props = defineProps<{
   assets: AssetItem[];
   busy: boolean;
   importFiles: (files: File[]) => Promise<AssetItem[]>;
-  createFilm: (input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void) => Promise<AutomaticFilmDraft>;
+  createFilm: (input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void, onSaving?: () => void) => Promise<AutomaticFilmDraft>;
   currentStyle?: ProjectStyle;
 }>();
-const emit = defineEmits<{ "update:modelValue": [value: boolean]; generated: [] }>();
+const emit = defineEmits<{ "update:modelValue": [value: boolean]; generated: [draft: AutomaticFilmDraft] }>();
 const running = ref(false);
-function onGenerated() {
+function onGenerated(draft: AutomaticFilmDraft) {
   emit("update:modelValue", false);
-  emit("generated");
+  emit("generated", draft);
 }
 </script>

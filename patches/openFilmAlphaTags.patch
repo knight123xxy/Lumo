@@ -1,0 +1,36 @@
+--- a/packages/openfilm/src/seekable.mjs
++++ b/packages/openfilm/src/seekable.mjs
+@@ -30,6 +30,6 @@
+     plays, else copied scaled down to fit. */
+ const MAX_SIDE = 4096;
+-/** Changing how copies are made makes new ones (3: a VP9's or an HEVC's alpha was not seen, and its copy was without it). */
+-const VERSION = 3;
++/** Changing how copies are made makes new ones (4: recognize case variants of WebM alpha tags). */
++const VERSION = 4;
+ /** A copy on the graphics chip that writes nothing for this long has hung (VideoToolbox does on some virtual Macs):
+     stopped, and made on the processor. */
+@@ -53,5 +53,5 @@
+ export function hasAlpha(stream) {
+   return /^(yuva|rgba|bgra|argb|abgr|gbrap|ya)/.test(String(stream.pix_fmt))
+-    || stream.tags?.alpha_mode === '1'
++    || Object.entries(stream.tags ?? {}).some(([key, value]) => key.toLowerCase() === 'alpha_mode' && value === '1')
+     || String(stream.view_ids_available ?? '').includes(',');
+ }
+--- a/packages/openfilm/src/look.mjs
++++ b/packages/openfilm/src/look.mjs
+@@ -447,5 +447,5 @@
+   const name = basename(file, extname(file));
+   const head = `${basename(file)}  ${video ? `${w}×${h}` : 'sound only'}${dur ? ` · ${fmt(dur)}` : ''}${fps && !still ? ` · ${Number(fps.toFixed(3))} fps` : ''}${audio ? ' · with sound' : ''}`;
+-  const libvpx = video?.tags?.alpha_mode === '1' && LIBVPX[video.codec_name];
++  const libvpx = video && Object.entries(video.tags ?? {}).some(([key, value]) => key.toLowerCase() === 'alpha_mode' && value === '1') && LIBVPX[video.codec_name];
+   const decode = libvpx && hasDecoder(libvpx) ? ['-c:v', libvpx] : [];
+   const grab = (t, thumbnail = false) => {
+--- a/packages/openfilm/studio/server/nle.mjs
++++ b/packages/openfilm/studio/server/nle.mjs
+@@ -730,5 +730,5 @@
+           ...(a?.channels ? { channels: a.channels } : {}),
+           ...(a?.sample_rate ? { sampleRate: Number(a.sample_rate) } : {}),
+-          alpha: v?.tags?.alpha_mode === '1' || /^(yuva|rgba|bgra|argb|abgr|gbrap|ya)/.test(v?.pix_fmt ?? ''),
++          alpha: Object.entries(v?.tags ?? {}).some(([key, value]) => key.toLowerCase() === 'alpha_mode' && value === '1') || /^(yuva|rgba|bgra|argb|abgr|gbrap|ya)/.test(v?.pix_fmt ?? ''),
+         });
+       } catch {

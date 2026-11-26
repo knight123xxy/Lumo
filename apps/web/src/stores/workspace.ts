@@ -22,6 +22,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const projectLoadingDrawn = ref(false);
   const projectLoadingVisible = ref(false);
   const pendingAgentMessage = ref<{ directory: string; prompt: string; attachments?: AgentAttachment[]; model: string; reasoningEffort: string } | null>(null);
+  const pendingAgentDraft = ref<{ directory: string; text: string; images?: File[] } | null>(null);
   // ACT: 从首页对话列表跳转时，只记录目标会话文件；工作区打开后由 Agent 面板消费一次并清空。
   const pendingAgentSession = ref<{ directory: string; file: string } | null>(null);
   const activeAgentSession = ref<{ directory: string; file: string } | null>(null);
@@ -74,6 +75,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   async function openProject(path: string, previousDirectory = path, signal?: AbortSignal, mode?: ProjectMode) {
     project.value = await addProject(path, undefined, signal, previousDirectory, { mode });
     pendingAgentMessage.value = null;
+    pendingAgentDraft.value = null;
   }
 
   function renameProject(path: string, name: string) {
@@ -94,7 +96,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     if (project.value?.directory === path) project.value = null;
   }
 
-  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentSession, activeAgentSession, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, renameProject, updateProjectMetadata, removeProject };
+  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentDraft, pendingAgentSession, activeAgentSession, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, renameProject, updateProjectMetadata, removeProject };
 }, {
   persist: {
     key: "lumo.projectList",

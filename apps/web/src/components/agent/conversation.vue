@@ -534,7 +534,7 @@ async function sendMessage(source?: AgentMessage) {
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
-      body: JSON.stringify({ prompt, mentions, attachments: attachments.map(({ name, path, mimeType }) => ({ name, path, mimeType })), directory, runId: requestRunId, providerId: currentModel.providerId, modelId: currentModel.modelId, thinkingLevel: reasoningEffort.value || undefined, sessionFile: props.sessionFile, resendFrom, canvas: canvasContext ? { id: canvasContext.id, tools: canvasContext.tools } : undefined }),
+      body: JSON.stringify({ prompt, mentions, attachments: attachments.map(({ name, path, mimeType }) => ({ name, path, mimeType })), directory, runId: requestRunId, providerId: currentModel.providerId, modelId: currentModel.modelId, thinkingLevel: reasoningEffort.value || undefined, sessionFile: props.sessionFile, resendFrom, canvas: canvasContext ? { id: canvasContext.id, tools: canvasContext.tools, studioSelection: canvasContext.studioSelection } : undefined }),
       signal: requestController.signal,
     });
     connected = response.ok;
@@ -707,6 +707,13 @@ watch(() => !props.initialSession?.parentFile && props.active && !locked.value &
   if (!filled || input.value !== instance || !props.active || workspaceStore.pendingAgentMessage !== message) return;
   workspaceStore.pendingAgentMessage = null;
   void submitMessage();
+}, { flush: "post" });
+
+watch(() => props.active && !locked.value && !remoteRunning.value && !editingId.value && input.value ? workspaceStore.pendingAgentDraft : null, async draft => {
+  const instance = input.value;
+  if (!draft || !instance || draft.directory !== directory) return;
+  const added = await instance.appendPrompt(draft.text, draft.images);
+  if (added && workspaceStore.pendingAgentDraft === draft) workspaceStore.pendingAgentDraft = null;
 }, { flush: "post" });
 
 onBeforeUnmount(abortRequest);

@@ -1,0 +1,16 @@
+--- a/packages/openfilm/studio/server/exports.mjs
++++ b/packages/openfilm/studio/server/exports.mjs
+@@ -524,4 +524,13 @@
+   const canvas = join(root, TOOL_DIR, 'canvas.json');
+   if (existsSync(canvas)) files.push({ name: `${TOOL_DIR}/canvas.json`, file: canvas, size: statSync(canvas).size });
++  // Include the additional boards alongside the main board, without taking the tool directory's cache or history.
++  const boards = join(root, TOOL_DIR, 'canvases');
++  const boardFiles = await readdir(boards, { withFileTypes: true }).catch(() => []);
++  for (const entry of boardFiles.sort((a, b) => a.name.localeCompare(b.name))) {
++    if (!entry.isFile() || !/^[a-z0-9]{1,32}\.json$/.test(entry.name)) continue;
++    const file = join(boards, entry.name);
++    const info = await stat(file).catch(() => null);
++    if (info?.isFile()) files.push({ name: `${TOOL_DIR}/canvases/${entry.name}`, file, size: info.size });
++  }
+   for (const part of parts) await walk(join(root, TOOL_DIR, part), `${TOOL_DIR}/${part}`);
+   return files;
