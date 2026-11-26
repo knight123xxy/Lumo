@@ -398,11 +398,12 @@ export async function branchAgentConversation(cwd: string, path: string, options
   }
 }
 
-export async function createAgentConversation(cwd: string, child?: Omit<AgentSubAgent, "file" | "status">) {
+export async function createAgentConversation(cwd: string, child?: Omit<AgentSubAgent, "file" | "status">, mode?: "canvas" | "edit") {
   const { path: directory } = await resolveWorkspacePath(cwd, ".agent/sessions", true);
   const history = SessionManager.create(cwd, directory, child ? { parentSession: child.parentFile } : undefined);
   const path = history.getSessionFile()!;
   history.appendCustomEntry("lumoReasoning", { thinkingLevel: child?.thinkingLevel ?? null });
+  if (mode) history.appendCustomEntry("lumoConversationMode", { mode });
   if (child) {
     history.appendSessionInfo(child.name);
     history.appendCustomEntry("lumoSubAgentInfo", { ...child, file: basename(path), status: "running" });
@@ -434,12 +435,13 @@ export async function listAgentSessions(cwd: string, directory: string) {
   return Promise.all(sessions
     .filter((item) => files.has(basename(item.path)) && !item.parentSessionPath)
     .sort((left, right) => right.modified.getTime() - left.modified.getTime())
-    .map(async (item) => ({
-      file: basename(item.path),
-      name: item.name || (await getAgentSession(cwd, item.path)).name,
-      modified: item.modified,
-      messageCount: item.messageCount,
-    })));
+    .map(async (item) => {
+      const entries = parseSessionEntries(await readFile(item.path, "utf8"));
+      const entry = entries.find(e => e.type === "custom" && e.customType === "lumoConversationMode");
+      const mode = entry?.type === "custom" ? (entry.data as { mode?: unknown } | undefined)?.mode : undefined;
+      return { file: basename(item.path), name: item.name || (await getAgentSession(cwd, item.path)).name,
+        modified: item.modified, messageCount: item.messageCount, mode: mode === "canvas" || mode === "edit" ? mode : undefined };
+    }));
 }
 
 export async function getAgentSession(cwd: string, path: string) {

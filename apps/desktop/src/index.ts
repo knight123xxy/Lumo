@@ -190,6 +190,8 @@ async function start() {
     const height = Math.min(960, workArea.height - 64);
     const mainWindow = new BrowserWindow({
       title: "Lumo",
+      // ACT: macOS 用 hiddenInset 让页面背景延伸到标题栏，避免顶部出现一条与页面割裂的深色条；其他平台保留原生标题栏。
+      ...(process.platform === "darwin" ? { titleBarStyle: "hiddenInset" as const } : {}),
       url: getMainWindowUrl(connection.port, connection.remote, connection.hostMode),
       navigationRules: JSON.stringify(getNavigationRules(connection.port)),
       // ACT: Windows SDK 未接管普通新窗口请求，在创建 WebView 弹窗前交给宿主。
@@ -412,6 +414,20 @@ async function start() {
       deliverInstall = undefined;
     });
     let isShowing = false;
+    function showMainWindow() {
+      if (isClosing || isShowing) return;
+      mainWindow.show();
+      isShowing = true;
+      clearTimeout(splashDeadline);
+      splash?.close();
+      splash = undefined;
+      void restoreInstallRegistration(installDirectory);
+    }
+    // ACT: WebView 未通知或动画收尾超时，仍展示主窗口；更新成功信号继续走 ready。
+    const splashDeadline = splash ? setTimeout(() => {
+      console.warn("启动画面等待超时，显示主窗口");
+      showMainWindow();
+    }, 5000) : undefined;
     const lifecycle = Utils as unknown as Parameters<typeof createWindowsUpdater>[1];
     const updater = process.platform === "win32" ? createWindowsUpdater(PATHS.RESOURCES_FOLDER, lifecycle)
       : process.platform === "linux" && process.env.LUMO_INSTALL_METHOD === "deb"
@@ -453,16 +469,9 @@ async function start() {
       async ready(failed = false) {
         if (isClosing) return;
         if (!isShowing) {
-          if (splash) {
-            await splash.finish();
-            if (isClosing || !splash) return;
-            mainWindow.show();
-            splash.close();
-            splash = undefined;
-          }
-          isShowing = true;
-          // ACT: 安装器已完成注册；更新后的修复仅首次展示时执行，不阻塞主窗口。
-          void restoreInstallRegistration(installDirectory);
+          await splash?.finish();
+          if (isClosing) return;
+          showMainWindow();
         }
         if (failed && !connection.remote) {
           if (process.platform === "win32") confirmWindowsUpdateStartup(PATHS.RESOURCES_FOLDER, true);
@@ -533,6 +542,7 @@ async function start() {
     }
     mainWindow.on("close", () => {
       isClosing = true;
+      clearTimeout(splashDeadline);
       closeCreationWindow();
       void connection.close().catch(error => console.error("设备连接关闭失败：", error));
       void closeBrowsers().catch(error => console.error("浏览器关闭失败：", error));

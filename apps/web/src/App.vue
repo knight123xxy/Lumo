@@ -1,11 +1,7 @@
 <template>
   <el-config-provider :locale="elementLocale">
     <config-provider :globalConfig="tdesignLocale">
-      <router-view v-slot="{ Component: currentComponent }">
-        <transition name="el-fade-in" mode="out-in">
-          <component :is="currentComponent" />
-        </transition>
-      </router-view>
+      <router-view />
       <loadingPage v-model:visible="workspaceStore.projectLoadingVisible" v-model:drawn="workspaceStore.projectLoadingDrawn" :active="workspaceStore.projectLoading" />
       <ffmpegRequired v-if="currentUser?.role !== 'user'" />
       <desktopQuit v-if="actualPlatform.isDesktop" />
@@ -29,12 +25,11 @@
               <dd><strong>{{ installFailure.targetVersion ? `v${installFailure.targetVersion}` : "未知版本" }}</strong><code>{{ installFailure.targetHash || "构建标识未知" }}</code></dd>
             </div>
           </dl>
-          <p class="failureHint">请前往 GitHub 最新发布页或官网 toonflow.net，选择适合当前系统的完整安装包，关闭客户端后重新安装。</p>
+          <p class="failureHint">请前往 Lumo 发布页，选择适合当前系统的完整安装包，关闭客户端后重新安装。</p>
         </div>
         <template #footer>
           <el-button @click="installFailureVisible = false">稍后</el-button>
-          <el-button tag="a" href="https://toonflow.net" target="_blank" rel="noopener noreferrer">前往官网</el-button>
-          <el-button tag="a" type="primary" :href="installFailure.downloadUrl" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
+          <el-button tag="a" type="primary" href="https://github.com/knight123xxy/Lumo/releases" target="_blank" rel="noopener noreferrer">前往下载页</el-button>
         </template>
       </el-dialog>
     </config-provider>

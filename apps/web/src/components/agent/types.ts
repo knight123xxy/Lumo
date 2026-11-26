@@ -24,7 +24,7 @@ export type AgentMessage = {
   agentMessage?: { fromFile: string; fromName: string; toFile: string; toName: string; startsTurn?: boolean };
 };
 
-export type AgentHistory = { file: string; name: string; modified: string; messageCount: number };
+export type AgentHistory = { file: string; name: string; modified: string; messageCount: number; mode?: "canvas" | "edit" };
 
 export type AgentConversation = {
   file: string;

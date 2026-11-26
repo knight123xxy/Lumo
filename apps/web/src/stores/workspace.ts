@@ -25,6 +25,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   // ACT: 从首页对话列表跳转时，只记录目标会话文件；工作区打开后由 Agent 面板消费一次并清空。
   const pendingAgentSession = ref<{ directory: string; file: string } | null>(null);
   const activeAgentSession = ref<{ directory: string; file: string } | null>(null);
+  const sidebarSessionChange = ref<{ directory: string; file: string; removed: boolean; name?: string }>();
   const agentHistoryChange = ref<{ directory: string }>();
   // 白模预演打开过的场景文件夹，与普通项目列表分开；最近打开的排在最前。
   const sceneList = ref<Project[]>([]);
@@ -94,7 +95,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     if (project.value?.directory === path) project.value = null;
   }
 
-  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentSession, activeAgentSession, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, renameProject, updateProjectMetadata, removeProject };
+  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentSession, activeAgentSession, sidebarSessionChange, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, renameProject, updateProjectMetadata, removeProject };
 }, {
   persist: {
     key: "lumo.projectList",

@@ -2,7 +2,7 @@ import axios from "axios";
 import type { AxiosRequestConfig } from "axios";
 
 type HttpRequestConfig = Pick<AxiosRequestConfig, "data" | "headers" | "params" | "signal" | "timeout"> & {
-  method: "GET" | "POST" | "PUT" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   url: string;
 };
 type HttpResponse<T> = { code: number; data: T; message?: string };

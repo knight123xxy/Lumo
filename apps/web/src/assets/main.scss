@@ -1,6 +1,8 @@
 // Lumo 品牌 token。两套语义：默认浅色（蓝青科技感）+ html.dark 深色。
 // 主色统一为蓝青 #0EA5E9（浅）/ #38BDF8（深），强调色只用一处，避免多彩。
 :root {
+  // 桌面端 macOS 隐藏标题栏时的顶部预留（红绿灯按钮高度）。
+  --titlebarInset: 0px;
   // 中性为主：大面积黑白灰，颜色只做极少量点缀（Vercel / Linear 路线）
   --color-bg: #fafafa;
   --color-window: #ffffff;
@@ -41,6 +43,8 @@
   --el-font-size-base: 15px;
   --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
+
+html.hiddenTitlebar { --titlebarInset: 28px; }
 
 html.dark {
   --color-bg: #0a0a0a;

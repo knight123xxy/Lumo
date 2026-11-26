@@ -38,14 +38,40 @@
     <teleport v-for="target in draftMentionTargets" :key="target.key" :to="target.element"><mentionThumbnail v-bind="mentionThumbnailProps(target.mention)" :directory="directory"><icon-photo :size="14" /></mentionThumbnail></teleport>
     <mentionContent ref="draftMentionPreview" :mentions="draftMentions" :directory="directory" removable @remove="removeDraftMention" />
     <div class="senderActions">
-      <modelPopover v-model="selectedModel" v-model:reasoningEffort="reasoningEffort" :active="active" :disabled="disabled || running || submitting || voiceActive" />
+      <div class="addMenuWrap">
+        <el-button text circle :disabled="locked || running" :aria-label="translate('添加内容')" :title="translate('添加内容')" :aria-expanded="plusOpen" aria-haspopup="menu" @mousedown.prevent @click="plusOpen = !plusOpen"><icon-plus :size="18" /></el-button>
+        <div v-if="plusOpen" class="addMenu" role="menu" :aria-label="translate('添加内容')">
+          <button class="addMenuItem" type="button" role="menuitem" @click="chooseAttachment">
+            <icon-paperclip :size="16" aria-hidden="true" />
+            <span>{{ translate('上传附件') }}</span>
+            <em>{{ translate('图片、视频、文档') }}</em>
+          </button>
+          <button class="addMenuItem" type="button" role="menuitem" @mousedown.prevent @click="openResourceMenu('mention')">
+            <icon-at :size="16" aria-hidden="true" />
+            <span>{{ translate('引用素材或画布') }}</span>
+            <em>@</em>
+          </button>
+          <button class="addMenuItem" type="button" role="menuitem" @mousedown.prevent @click="openResourceMenu('skill')">
+            <icon-sparkles :size="16" aria-hidden="true" />
+            <span>{{ translate('使用技能') }}</span>
+            <em>/</em>
+          </button>
+          <template v-if="workflows?.length">
+            <div class="addMenuDivider" role="separator" />
+            <button v-for="workflow in workflows" :key="workflow.id" class="addMenuItem" type="button" role="menuitem" @mousedown.prevent @click="runWorkflow(workflow)">
+              <icon-sparkles :size="16" aria-hidden="true" />
+              <span>{{ translate(workflow.label) }}</span>
+            </button>
+          </template>
+        </div>
+      </div>
       <input ref="attachmentInput" type="file" :accept="attachmentAccept" multiple hidden :disabled="locked || running" @change="selectAttachments" />
-      <el-button text circle :disabled="locked || running" aria-label="添加附件" :title="running ? '生成期间仅支持发送文字' : '添加附件'" @click="attachmentInput?.click()"><icon-paperclip :size="16" /></el-button>
       <mentionMenu ref="mentionMenuRef" :directory="directory" :active="active" :disabled="locked || running || !directory" :query="mentionQuery" :editor="senderElement" :currentCanvasId="createCanvasContext?.()?.id" @open="captureMentionPosition" @select="insertMentions" @dismiss="mentionQuery = undefined" />
       <skillMenu ref="skillMenuRef" :directory="directory" :active="active" :disabled="locked || running || !directory" :query="skillQuery" :editor="senderElement" @select="selectSkill" @dismiss="skillQuery = undefined" />
-      <el-button class="voiceButton" :class="{ voiceActive }" text circle :disabled="!voiceSupported || (!voiceActive && locked)" :aria-label="voiceButtonLabel" :aria-pressed="voiceActive" :title="voiceButtonLabel" @click="voiceActive ? cancelVoiceInput() : startVoiceInput()"><icon-microphone :size="18" /></el-button>
       <contextUsagePopover v-model:visible="contextMenuVisible" :usage="contextUsage" :stats="stats" :contextWindow="contextWindow" :disabled="voiceActive" />
+      <el-button class="voiceButton" :class="{ voiceActive }" text circle :disabled="!voiceSupported || (!voiceActive && locked)" :aria-label="voiceButtonLabel" :aria-pressed="voiceActive" :title="voiceButtonLabel" @click="voiceActive ? cancelVoiceInput() : startVoiceInput()"><icon-microphone :size="18" /></el-button>
       <el-button v-if="running" class="stopButton" text circle :disabled="stopping" aria-label="停止生成" title="停止生成" @click="emit('stop')"><icon-player-stop-filled :size="14" /></el-button>
+      <modelPopover v-model="selectedModel" v-model:reasoningEffort="reasoningEffort" :active="active" :showReasoning="false" :disabled="disabled || running || submitting || voiceActive" />
       <el-button class="sendButton" type="primary" circle :disabled="locked || (running && !!editingId)" :aria-label="sendLabel" :title="sendTitle" @click="submitDraft()"><icon-arrow-up :size="16" /></el-button>
     </div>
   </div>
@@ -53,8 +79,8 @@
 
 <script setup lang="ts">
 import { locale, t, translate } from "@lumo/i18n/vue";
-import { computed, inject, ref, shallowRef, watch } from "vue";
-import { IconArrowUp, IconMicrophone, IconPaperclip, IconPhoto, IconPlayerStopFilled } from "@tabler/icons-vue";
+import { computed, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
+import { IconArrowUp, IconAt, IconMicrophone, IconPaperclip, IconPhoto, IconPlayerStopFilled, IconPlus, IconSparkles } from "@tabler/icons-vue";
 import { ElMessage } from "element-plus";
 import { getReadableFileMimeType, readableFileAccept } from "@lumo/server/documentFormats";
 import type { AgentContext, AgentMention, AgentStats } from "@lumo/server/agent/types";
@@ -102,11 +128,17 @@ const senderHeight = ref(44);
 const senderMaxHeight = ref(Math.max(44, window.innerHeight / 2));
 let senderResize: { pointerId: number; y: number; height: number } | undefined;
 const contextMenuVisible = ref(false);
+const plusOpen = ref(false);
+const workflows = inject<{ id: string; label: string; run: () => void }[] | undefined>("agentWorkflows", undefined);
+function runWorkflow(workflow: { run: () => void }) {
+  plusOpen.value = false;
+  workflow.run();
+}
 const running = computed(() => props.busy || props.remoteRunning);
 const locked = computed(() => props.disabled || props.submitting || props.stopping || props.deletingId !== undefined || restoringAttachment.value || voiceActive.value);
 const sendLabel = computed(() => running.value ? "排队发送" : editingId.value ? "重发消息" : "发送消息");
 const sendTitle = computed(() => running.value ? "排队发送，本轮完成后处理（Enter）；Ctrl/Cmd + Enter 引导当前任务" : `${sendLabel.value}（Enter）`);
-const placeholder = computed(() => running.value ? translate("输入文字，Enter 排队，Ctrl/Cmd + Enter 引导…") : voiceSupported ? translate("输入消息，长按语音输入，@ 提及节点输出或全局素材…") : translate("输入消息，@ 提及节点输出或全局素材…"));
+const placeholder = computed(() => running.value ? translate("输入文字，Enter 排队，Ctrl/Cmd + Enter 引导…") : voiceSupported ? translate("随心输入，@ 引用素材，/ 使用技能…") : translate("随心输入，@ 引用素材，/ 使用技能…"));
 const { voiceSupported, voiceState, voiceText, voiceActive, voiceButtonLabel, voiceLevel, armVoiceInput, startVoiceInput, clearVoicePress, cancelVoiceInput } = useVoiceInput({
   getSender: () => sender,
   active: () => props.active,
@@ -129,12 +161,18 @@ watch([locale, placeholder], () => {
   }
 });
 watch([locked, () => props.active], ([locked, active]) => {
-  if (!active || locked) resetAttachmentDrag();
+  if (!active || locked) {
+    resetAttachmentDrag();
+    plusOpen.value = false;
+  }
   if (!active || locked) sender?.disable();
   else sender?.enable();
 });
 watch(() => props.active, active => {
-  if (!active) contextMenuVisible.value = false;
+  if (!active) {
+    contextMenuVisible.value = false;
+    plusOpen.value = false;
+  }
 }, { flush: "sync" });
 watch(running, value => {
   if (!value) return;
@@ -142,7 +180,9 @@ watch(running, value => {
   mentionQuery.value = undefined;
   skillQuery.value = undefined;
   mentionPosition = undefined;
+  plusOpen.value = false;
   mentionMenuRef.value?.closeMenu();
+  skillMenuRef.value?.closeMenu();
 });
 
 function submitDraft(mode: "steer" | "followUp" = "followUp") {
@@ -220,6 +260,35 @@ async function insertMentions(mentions: AgentMention[]) {
   }
 }
 
+// 加号菜单：把「上传附件 / 引用素材或画布 / 使用技能」收进一个入口，并复用既有的 @ 与 / 解析。
+function chooseAttachment() {
+  plusOpen.value = false;
+  if (locked.value || running.value) return;
+  attachmentInput.value?.click();
+}
+
+function openResourceMenu(kind: "mention" | "skill") {
+  plusOpen.value = false;
+  if (!sender || locked.value || running.value || !props.active || !props.directory) return;
+  if (kind === "mention") {
+    skillMenuRef.value?.closeMenu();
+    mentionMenuRef.value?.openMenu();
+  } else {
+    mentionMenuRef.value?.closeMenu();
+    skillMenuRef.value?.openMenu();
+  }
+}
+
+function closePlusMenu(event: PointerEvent) {
+  if (!plusOpen.value) return;
+  const target = event.target;
+  if (target instanceof Element && target.closest(".addMenuWrap")) return;
+  plusOpen.value = false;
+}
+
+onMounted(() => document.addEventListener("pointerdown", closePlusMenu, true));
+onBeforeUnmount(() => document.removeEventListener("pointerdown", closePlusMenu, true));
+
 async function removeDraftMention(id: string) {
   if (!locked.value) await sender?.removeMention([id]);
 }
@@ -251,6 +320,19 @@ async function fillPrompt(prompt: string, attachments?: AgentAttachment[]) {
   if (sender !== instance) return false;
   instance.focus("last");
   return true;
+}
+
+async function appendPrompt(prompt: string) {
+  const instance = sender;
+  if (!instance || locked.value || !props.active) return;
+  const model = instance.getModel().map((line, lineIndex) => line.map((tag, tagIndex) => {
+    if (tag.type !== "Write") return tag;
+    const element = instance.chatEditor.NODES[lineIndex]?.children[tagIndex]?.$el;
+    return { ...tag, text: (element?.textContent ?? tag.text).replace(/[\ufeff\u200b]/g, "") };
+  }));
+  const lines: AnyTagProps[][] = prompt.split("\n").map(text => [{ type: "Write", text }]);
+  await instance.reset({ clearHistory: false, chatNode: getDraftContent().trim() ? [...model, ...lines] : lines });
+  if (sender === instance) instance.focus("last");
 }
 
 async function fillQueuedMessage(prompt: string) {
@@ -517,7 +599,7 @@ async function clearDraft() {
   await sender?.reset();
 }
 
-defineExpose({ getDraft, clearDraft, fillPrompt, fillQueuedMessage, editMessage, cancelEdit, restoreEditingDraft });
+defineExpose({ getDraft, clearDraft, fillPrompt, appendPrompt, fillQueuedMessage, editMessage, cancelEdit, restoreEditingDraft });
 </script>
 
 <style lang="scss">
@@ -529,11 +611,11 @@ defineExpose({ getDraft, clearDraft, fillPrompt, fillQueuedMessage, editMessage,
     --chat-mention-text: var(--el-color-primary);
     position: relative;
     flex-shrink: 0;
-    margin: 0 12px 8px;
-    border: 1px solid var(--el-border-color-light);
-    border-radius: calc(var(--ui-radius) * 2.75);
+    margin: 0 12px 10px;
+    border: 1px solid var(--el-border-color);
+    border-radius: 18px;
     background: var(--el-bg-color);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 5%);
 
     &:focus-within {
       border-color: var(--el-color-primary-light-5);
@@ -704,8 +786,28 @@ defineExpose({ getDraft, clearDraft, fillPrompt, fillQueuedMessage, editMessage,
       }
 
       .modelPopover {
-        flex: 1;
-        margin-right: auto;
+        flex: 0 1 auto;
+        min-width: 0;
+        margin-inline-start: auto;
+
+        .modelButton {
+          height: auto;
+          min-height: 28px;
+          padding-block: 4px;
+
+          .modelName {
+            overflow: visible;
+            text-align: end;
+            font-size: 12px;
+
+            .labelText {
+              overflow: visible;
+              overflow-wrap: anywhere;
+              white-space: normal;
+              line-height: 1.3;
+            }
+          }
+        }
       }
 
       .contextButton {
@@ -751,5 +853,55 @@ defineExpose({ getDraft, clearDraft, fillPrompt, fillQueuedMessage, editMessage,
       }
     }
   }
+  .mentionMenu .mentionButton, .skillMenu .skillButton { display: none; }
+
+  .addMenuWrap {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+
+    .addMenu {
+      position: absolute;
+      inset-block-end: calc(100% + 8px);
+      inset-inline-start: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      min-width: 232px;
+      padding: 6px;
+      background: var(--el-bg-color-overlay);
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgb(0 0 0 / 16%);
+
+      .addMenuDivider { height: 1px; margin: 4px 6px; background: var(--el-border-color-lighter); }
+
+      .addMenuItem {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 9px 10px;
+        color: var(--el-text-color-primary);
+        font: inherit;
+        font-size: 13px;
+        text-align: start;
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:hover, &:focus-visible { background: var(--el-fill-color-light); outline: none; }
+
+        span { flex: 1; }
+
+        em {
+          color: var(--el-text-color-secondary);
+          font-size: 11px;
+          font-style: normal;
+        }
+      }
+    }
+  }
+
 }
 </style>

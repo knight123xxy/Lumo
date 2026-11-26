@@ -19,6 +19,8 @@ setLocale(detectLocale(navigator.languages));
 document.documentElement.classList.toggle("dark", window.matchMedia("(prefers-color-scheme: dark)").matches);
 document.documentElement.lang = locale.value;
 document.documentElement.dir = isRtlLocale(locale.value) ? "rtl" : "ltr";
+// ACT: 桌面端 macOS 使用 hiddenInset 标题栏，页面需要为红绿灯按钮预留顶部内边距。
+if (actualPlatform.isDesktop && actualPlatform.isMac) document.documentElement.classList.add("hiddenTitlebar");
 let app: App<Element> | undefined;
 const requiresWebView2Update = actualPlatform.isDesktop && actualPlatform.isWindows
   && [Map.groupBy, URL.canParse, Promise.withResolvers].some(method => typeof method !== "function");
@@ -45,10 +47,7 @@ async function initialize() {
   isMounted = true;
   if (!actualPlatform.isDesktop || session.publicWeb) return;
   await nextTick();
-  // ACT: 隐藏的 WebView 不依赖 requestAnimationFrame；等待首页挂载和页面资源就绪。
-  if (document.readyState !== "complete") {
-    await new Promise<void>((resolve) => window.addEventListener("load", () => resolve(), { once: true }));
-  }
+  // ACT: 页面挂载后即可显示，首页的视频封面等资源继续异步加载。
   await notifyDesktopReady();
 }
 

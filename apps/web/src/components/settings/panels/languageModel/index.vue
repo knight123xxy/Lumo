@@ -1,7 +1,6 @@
 <template>
   <div class="providerList">
     <div class="itemList">
-      <lumoProviderCard scope="text" :provider="customProviders.find(item => item.id.toLowerCase() === 'lumo')" />
       <el-card v-for="item in visibleProviders" :key="item.id" class="providerItem" shadow="never">
         <div class="providerHeader">
           <div v-if="item.icon" class="providerMark" aria-hidden="true">
@@ -45,7 +44,6 @@ import { ElMessage } from "element-plus";
 import { customProviders, saveSettings, type CustomProvider } from "@/stores/settings";
 import { IconPlus, IconEdit, IconTrash, IconArrowUp } from "@tabler/icons-vue";
 import { getBuiltinSource, useBuiltinUpgrades, type BuiltinLanguageProvider } from "@/lib/builtinProviders";
-import lumoProviderCard from "../../lumoProviderCard.vue";
 
 defineProps<{ visible?: boolean }>();
 const upgradeVersion = useBuiltinUpgrades("language");
@@ -55,7 +53,7 @@ const editingProvider = ref<CustomProvider>();
 const deletingId = ref("");
 const upgradingId = ref("");
 const busy = computed(() => !!deletingId.value || !!upgradingId.value);
-const visibleProviders = computed(() => customProviders.value.filter(item => item.id.toLowerCase() !== "lumo"));
+const visibleProviders = computed(() => customProviders.value.filter(item => !["lumo", "ideaminetext"].includes(item.id.toLowerCase())));
 
 function getProviderVersion(provider: CustomProvider) {
   const version = provider.version;

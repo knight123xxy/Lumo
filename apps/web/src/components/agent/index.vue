@@ -15,9 +15,12 @@
       @select="selectConversation"
       @rename="renameConversation"
       @remove="removeConversation"
+      @command="emit('command', $event)"
       @close="visible = false">
       <template #actions><slot name="menuActions" /></template>
+      <template #menuItems><slot name="menuItems" /></template>
     </agentMenu>
+    <slot name="actions" />
     <conversation
       v-for="item in conversations"
       v-show="item.key === conversationKey"
@@ -42,7 +45,7 @@ import axios from "axios";
 import { translate } from "@lumo/i18n/vue";
 import { ElMessage } from "element-plus";
 import { useWorkspaceStore } from "@/stores/workspace";
-import useWorkspaceFiles from "@/lib/workspaceFiles";
+import http from "@/lib/http";
 import { stopAgent } from "@/lib/agentControl";
 import type { AgentConversation, AgentHistory, AgentMessage } from "./types";
 import type { AgentEvent, AgentSubAgent } from "@lumo/server/agent/types";
@@ -50,6 +53,7 @@ import agentMenu from "./menu.vue";
 import conversation from "./conversation.vue";
 
 const visible = defineModel<boolean>({ default: false });
+const emit = defineEmits<{ command: [value: string] }>();
 type OpenConversation = { key: number; name: string; file?: string; parentFile?: string; runId?: string; retiredRunIds: Set<string>; subAgents: AgentSubAgent[]; session: AgentConversation | null; initialModel?: string };
 // ACT: 会话实例保留到工作区关闭，让切换后的回复继续接收流式内容。
 const conversations = ref<OpenConversation[]>([]);
@@ -320,7 +324,7 @@ async function removeConversation(file: string) {
   const currentRequest = ++requestId;
   loading.value = true;
   try {
-    await useWorkspaceFiles(directory).remove(`.agent/sessions/${file}`);
+    await http({ method: "DELETE", url: "/api/agent/remove", data: { directory, sessionFile: file } });
     if (currentRequest !== requestId) return;
     history.value = history.value.filter(item => item.file !== file);
     if (file === sessionFile.value) {
@@ -328,6 +332,7 @@ async function removeConversation(file: string) {
       initialized.value = true;
     }
     conversations.value = conversations.value.filter(item => item.file !== file);
+    notifyHistoryChange();
   } catch (error) {
     if (currentRequest === requestId) ElMessage.error(axios.isAxiosError(error)
       ? error.response?.data?.message || "移除历史对话失败"
@@ -377,6 +382,26 @@ watch([visible, loading, historyLoading, () => workspaceStore.project?.directory
   workspaceStore.pendingAgentSession = null;
   void selectConversation(pending.file);
 });
+watch(() => workspaceStore.sidebarSessionChange, change => {
+  if (!change || change.directory !== projectDirectory) return;
+  const opened = conversations.value.find(item => item.file === change.file);
+  const entry = history.value.find(item => item.file === change.file);
+  if (change.removed) {
+    if (sessionFile.value === change.file) showConversation(null);
+    conversations.value = conversations.value.filter(item => item.file !== change.file);
+    history.value = history.value.filter(item => item.file !== change.file);
+  } else if (change.name) {
+    if (opened) opened.name = change.name;
+    if (entry) entry.name = change.name;
+  }
+});
+
+const canFillPrompt = computed(() => initialized.value && !loading.value);
+function appendPrompt(text: string) {
+  return conversationRefs.get(conversationKey.value)?.appendPrompt(text);
+}
+defineExpose({ canFillPrompt, appendPrompt });
+
 window.addEventListener("pagehide", pageHide);
 onBeforeUnmount(() => {
   workspaceStore.activeAgentSession = null;

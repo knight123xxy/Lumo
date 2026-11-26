@@ -39,15 +39,9 @@
     </el-card>
     <div class="menuExtension"><slot /></div>
   </panel>
-  <panel v-if="showLumoBalance || otherProviderBalances.length" class="balanceMenuPanel" position="top-right">
-    <div class="balanceList" tabindex="0" aria-label="供应商余额">
-      <lumoBalance v-if="showLumoBalance" :token="lumoAccountToken" />
-      <el-card v-for="item in otherProviderBalances" :key="item.id" class="balanceCard" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
-        <el-button class="balanceTrigger" text :loading="item.loading" :title="item.error || `点击刷新 ${item.label} 余额`" :aria-label="`刷新 ${item.label} 余额`" @click="refreshProviderBalance(item.id)">
-          <span class="providerLabel">{{ item.label }}</span>
-          <span>{{ item.balance ? `${balanceFormat.format(Math.min(item.balance.balance, item.balance.keyBalance ?? Infinity))} ${item.balance.unit}` : '—' }}</span>
-        </el-button>
-      </el-card>
+  <panel v-if="showLumoBalance" class="balanceMenuPanel" position="top-right">
+    <div class="balanceList" tabindex="0" aria-label="账户余额">
+      <lumoBalance :token="lumoAccountToken" />
     </div>
   </panel>
   <el-dropdown ref="itemMenu" trigger="contextmenu" virtualTriggering :virtualRef="menuAnchor" placement="bottom-start" :showArrow="false" :hideOnClick="false" :appendTo="canvasPicker" popperClass="canvasActionMenu" @command="handleItemCommand" @visibleChange="(opened: boolean) => { if (!opened) moveVisible = false; }">
@@ -82,7 +76,6 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { getCanvasAssetDirectories, isCanvasFile } from "@/pages/workspace/canvasFile";
 import { findRemainingCanvas } from "../canvasFiles";
-import { providerBalances, refreshProviderBalance } from "@/lib/providerBilling";
 import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
 import lumoBalance from "./lumoBalance.vue";
 
@@ -94,7 +87,6 @@ const props = defineProps<{
 }>();
 const workspaceStore = useWorkspaceStore();
 const showLumoBalance = computed(() => !multiTenantEnabled.value && !!lumoAccountToken.value);
-const otherProviderBalances = computed(() => providerBalances.value.filter(item => item.id !== "lumo"));
 const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 6 }));
 const workspaceName = computed(() => workspaceStore.project?.name || translate("未命名工作区"));
 const projectNameDraft = ref("");

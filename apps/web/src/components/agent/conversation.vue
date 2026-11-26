@@ -204,7 +204,7 @@ function receiveEvent(event: AgentEvent) {
   }
 }
 
-defineExpose({ receiveEvent, beginProjectStop, getRunId: () => runId, getSelectedModel: () => selectedModel.value });
+defineExpose({ receiveEvent, beginProjectStop, getRunId: () => runId, getSelectedModel: () => selectedModel.value, appendPrompt: (text: string) => input.value?.appendPrompt(text) });
 
 function submitMessage(mode?: "steer" | "followUp") {
   if (busy.value || remoteRunning.value) return sendQueuedMessage(mode ?? "followUp");

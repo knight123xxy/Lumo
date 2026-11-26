@@ -1,6 +1,6 @@
 <template>
   <div v-click-outside:[editor]="closeMenu" class="skillMenu" @keydown.capture="handleKeydown">
-    <el-button class="skillButton" text circle :disabled="disabled" :aria-expanded="visible" :aria-controls="listId" aria-label="选择技能" title="选择技能" @click="visible ? closeMenu() : buttonVisible = true"><icon-book :size="16" /></el-button>
+    <el-button class="skillButton" text circle :disabled="disabled" :aria-expanded="visible" :aria-controls="listId" aria-label="选择技能" title="选择技能" @click="visible ? closeMenu() : openMenu()"><icon-book :size="16" /></el-button>
     <el-card v-if="visible" class="skillPopup" shadow="always" :bodyStyle="{ padding: '6px' }">
       <el-scrollbar maxHeight="min(320px, 50dvh)">
         <div :id="listId" class="skillList" role="listbox" aria-label="技能指令" :aria-busy="loading">
@@ -40,6 +40,10 @@ const filteredSkills = computed(() => {
   const query = (props.query ?? "").toLowerCase();
   return skills.value.filter(skill => `skill:${skill.name} ${skill.displayName} ${skill.description}`.toLowerCase().includes(query));
 });
+
+function openMenu() {
+  if (props.active && !props.disabled) buttonVisible.value = true;
+}
 
 function closeMenu() {
   buttonVisible.value = false;
@@ -99,7 +103,7 @@ watch(visible, async (open, _previous, onCleanup) => {
   }
 });
 
-defineExpose({ handleKeydown });
+defineExpose({ handleKeydown, openMenu, closeMenu });
 </script>
 
 <style lang="scss" scoped>

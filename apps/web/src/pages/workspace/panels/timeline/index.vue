@@ -465,8 +465,9 @@ defineExpose({ flushSave: timeline.flushSave, ready: timeline.ready, appendCanva
     display: flex;
     align-items: center;
     gap: 12px;
-    flex: 0 0 48px;
-    padding: 0 14px;
+    flex: 0 0 calc(48px + var(--titlebarInset, 0px));
+    // 桌面端 macOS 隐藏标题栏时，顶栏为红绿灯按钮让出空间。
+    padding: var(--titlebarInset, 0px) 14px 0;
     border-bottom: 1px solid var(--el-border-color-lighter);
 
     .backButton {

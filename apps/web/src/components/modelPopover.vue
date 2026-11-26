@@ -13,7 +13,7 @@
         <el-button class="modelButton" text :disabled="disabled" aria-label="模型与思考强度设置">
           <modelIcon v-if="selectedModelChoice" :model="selectedModelChoice.modelId" :size="14" />
           <modelLabel class="modelName" :label="selectedModelChoice?.label ?? '选择模型'" :providerId="selectedModelChoice?.providerId" />
-          <template v-if="reasoningLevels.length">
+          <template v-if="showReasoning && reasoningLevels.length">
             ·
             <span class="reasoningLabel">{{ reasoningLabel }}</span>
           </template>
@@ -38,7 +38,7 @@
             </el-option-group>
           </el-select>
         </el-form-item>
-        <el-form-item v-if="reasoningLevels.length" label="思考强度">
+        <el-form-item v-if="showReasoning && reasoningLevels.length" label="思考强度">
           <div class="reasoningSettings">
             <div class="reasoningGrid" role="radiogroup" aria-label="思考强度" :aria-describedby="`${reasoningId}Hint`" :style="{ gridTemplateColumns: `repeat(${reasoningColumns}, minmax(0, 1fr))` }">
               <label v-for="option in reasoningOptions" :key="option.value" class="reasoningOption">
@@ -66,7 +66,7 @@ import modelLoginGuide from "./modelLoginGuide.vue";
 
 const selectedModel = defineModel<string>({ default: "" });
 const reasoningEffort = defineModel<string>("reasoningEffort", { default: "" });
-const props = withDefaults(defineProps<{ active?: boolean; disabled?: boolean }>(), { active: true, disabled: false });
+const props = withDefaults(defineProps<{ active?: boolean; disabled?: boolean; showReasoning?: boolean }>(), { active: true, disabled: false, showReasoning: true });
 const visible = ref(false);
 const openSettingsPanel = inject<(id: string) => void>("openSettingsPanel");
 const reasoningId = useId();

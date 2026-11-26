@@ -1,6 +1,39 @@
 <template>
-  <div class="workspaceLayout">
-  <main class="workspacePage" :inert="workspaceStore.projectLoadingVisible" :style="{ '--agentWidth': `${agentVisible ? agentWidth : 0}px` }">
+  <div class="workspaceLayout" :class="{ agentOpen: agentVisible }">
+    <appSidebar
+      v-model:collapsed="railCollapsed"
+      :disabled="workspaceStore.projectLoadingVisible || switchingProject"
+      @create="selectConversationProject()"
+      @createProject="creationVisible = true"
+      @createChat="selectConversationProject"
+      @section="goHomeSection"
+      @openProject="project => openSidebarProject(project)"
+      @openChat="openSidebarProject"
+      @settings="settingsVisible = true"
+      @account="settingsDialog?.openPanel('account')"
+      @update="settingsDialog?.openPanel('about')"
+      @deviceLink="settingsDialog?.openPanel('deviceLink')" />
+    <aside v-show="agentVisible" :inert="workspaceStore.projectLoadingVisible" id="agentDock" class="agentDock" :aria-label="translate('Lumo Agent')">
+      <agent ref="agentRef" v-model="agentVisible" @command="runCanvasCommand">
+        <template #menuItems>
+          <template v-if="activePanel === 'canvas'">
+            <el-dropdown-item divided command="add" :disabled="!canvasPanelRef?.canvasReady || settingsVisible">{{ translate('添加节点') }}</el-dropdown-item>
+            <el-dropdown-item command="search" :disabled="!canvasPanelRef?.canvasReady || settingsVisible">{{ translate('搜索节点') }}</el-dropdown-item>
+            <el-dropdown-item command="hand">{{ selectedTool === 'hand' ? translate('切换为移动工具') : translate('切换为抓手') }}</el-dropdown-item>
+            <el-dropdown-item command="sendTimeline" :disabled="!canvasPanelRef?.selectedVideoOutput || sendingVideo">{{ translate('发送到剪辑') }}</el-dropdown-item>
+            <el-dropdown-item command="previs" :disabled="!!previs || !canvasPanelRef?.canvasListReady">{{ translate('白模预演') }}</el-dropdown-item>
+            <el-dropdown-item divided command="wf-drama">{{ translate('短剧工作流表单') }}</el-dropdown-item>
+            <el-dropdown-item command="wf-template">{{ translate('整集模板表单') }}</el-dropdown-item>
+            <el-dropdown-item command="wf-marketing">{{ translate('营销脚本表单') }}</el-dropdown-item>
+            <el-dropdown-item command="wf-film">{{ translate('一键成片表单') }}</el-dropdown-item>
+            <el-dropdown-item command="previsScene" v-if="selectedDramaScene" :disabled="openingPrevis || !!previs || settingsVisible">{{ translate('预演当前场景') }}</el-dropdown-item>
+            <el-dropdown-item command="shot" v-if="selectedDramaShot" :disabled="preparingShot || settingsVisible || !canvasPanelRef?.canvasReady">{{ translate('转为视频生成节点') }}</el-dropdown-item>
+            <el-dropdown-item command="help">{{ translate('帮助与反馈') }}</el-dropdown-item>
+          </template>
+        </template>
+      </agent>
+    </aside>
+  <main class="workspacePage" :inert="workspaceStore.projectLoadingVisible">
     <canvasPanel
       :key="workspaceStore.project?.directory"
       v-model:selectedTool="selectedTool"
@@ -36,99 +69,13 @@
         @automaticFilmOpened="consumeAutomaticFilm"
         @send-to-canvas="sendClipToCanvas" />
     </keep-alive>
-    <workspaceMenu class="workspaceMenu" @openSettings="settingsVisible = true" />
-    <div class="workspaceTools">
-
-      <div class="bottomTools">
-        <el-card v-if="activePanel === 'canvas'" class="toolMenu" shadow="never" :bodyStyle="{ padding: '2px 4px' }">
-          <div class="toolMenuContent" role="toolbar" aria-label="画布工具">
-            <el-button :disabled="!canvasPanelRef?.canvasListReady" @click="dramaVisible = true">{{ translate('短剧工作流') }}</el-button>
-            <el-button :disabled="!canvasPanelRef?.canvasReady" :loading="openingTemplate" @click="openCanvasTemplate">{{ translate('整集模板') }}</el-button>
-            <el-button :disabled="!canvasPanelRef?.canvasListReady" @click="marketingVisible = true">{{ translate('营销脚本') }}</el-button>
-            <el-button :disabled="!canvasPanelRef?.canvasListReady" @click="canvasFilmVisible = true">{{ translate('一键成片') }}</el-button>
-            <el-button v-if="!selectedDramaScene" :disabled="!!previs || !canvasPanelRef?.canvasListReady" @click="previsInputVisible = true">{{ translate('白模预演') }}</el-button>
-            <el-button v-if="selectedDramaScene" :disabled="openingPrevis || !!previs || settingsVisible" :loading="openingPrevis" @click="openScenePrevis">
-              {{ translate('白模预演') }}
-            </el-button>
-            <el-button v-if="selectedDramaShot" :disabled="preparingShot || settingsVisible || !canvasPanelRef?.canvasReady" :loading="preparingShot" @click="prepareShotVideo">
-              {{ translate('转为视频生成节点') }}
-            </el-button>
-            <el-button v-if="canvasPanelRef?.selectedVideoOutput" :loading="sendingVideo" :disabled="sendingVideo || settingsVisible" @click="sendVideoToTimeline">
-              {{ translate('发送到剪辑') }}
-            </el-button>
-            <el-tooltip content="添加节点" placement="top" :showArrow="false" :hideAfter="0" :enterable="false" :triggerKeys="[]">
-              <el-button class="toolButton addNodeButton" :disabled="!canvasPanelRef?.canvasReady || settingsVisible" aria-label="添加节点" aria-haspopup="menu" @click="canvasPanelRef?.addNodeAtPointer()">
-                <icon-plus :size="18" aria-hidden="true" />
-              </el-button>
-            </el-tooltip>
-            <el-tooltip :content="selectedTool === 'move' ? '移动工具，点击切换为抓手' : '抓手工具，点击切换为移动'" placement="top" :showArrow="false" :hideAfter="0" :enterable="false" :triggerKeys="[]">
-              <el-button
-                class="toolButton"
-                text
-                :type="selectedTool === 'hand' ? 'primary' : 'default'"
-                :aria-pressed="selectedTool === 'hand'"
-                aria-label="切换抓手/移动工具"
-                @click="selectedTool = selectedTool === 'move' ? 'hand' : 'move'">
-                <component :is="selectedTool === 'move' ? IconPointer : IconHandStop" :size="18" aria-hidden="true" />
-              </el-button>
-            </el-tooltip>
-            <el-tooltip content="搜索节点" placement="top" :showArrow="false" :hideAfter="0" :enterable="false" :triggerKeys="[]">
-              <el-button class="toolButton" text :disabled="!canvasPanelRef?.canvasReady || settingsVisible" aria-label="搜索节点" @click="canvasPanelRef?.openNodeSearch()">
-                <icon-search :size="18" aria-hidden="true" />
-              </el-button>
-            </el-tooltip>
-            <el-tooltip :showArrow="false" content="帮助" placement="top" :hideAfter="0" :enterable="false" :triggerKeys="[]" :disabled="helpVisible">
-              <span class="toolTrigger">
-                <el-popover v-model:visible="helpVisible" trigger="click" placement="top-end" :width="196">
-                  <template #reference>
-                    <el-button class="toolButton" text aria-label="帮助">
-                      <icon-help :size="18" />
-                    </el-button>
-                  </template>
-                  <div class="helpMenu">
-                    <el-button
-                      class="helpAction"
-                      tag="a"
-                      text
-                      :icon="IconBook"
-                      href="https://qcn7xdsqgc4z.feishu.cn/docx/RXFqdgR2Xo0dXZxGfd0cZCGgnwf"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      @click="helpVisible = false">
-                      使用教程
-                    </el-button>
-                    <el-button
-                      class="helpAction"
-                      tag="a"
-                      text
-                      :icon="IconBug"
-                      href="https://docs.qq.com/smartsheet/form/EmvmQBrmlPmr%2Fss_vsqk2v%2FvhiGzE?tab=ss_vsqk2v"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Lumo 需求/BUG反馈表"
-                      @click="helpVisible = false">
-                      汇报 BUG
-                    </el-button>
-                    <el-button class="helpAction" text :icon="IconBrandWechat" @click="showContact('community')">加入交流群</el-button>
-                    <el-button class="helpAction" text :icon="IconBriefcase" @click="showContact('business')">商务合作</el-button>
-                  </div>
-                </el-popover>
-              </span>
-            </el-tooltip>
-          </div>
-        </el-card>
-        <el-tooltip v-if="!agentVisible" content="Lumo Agent" placement="top" :showArrow="false" :hideAfter="0">
-          <el-button
-            class="agentButton"
-            :class="{ standalone: activePanel !== 'canvas' }"
-            :aria-expanded="agentVisible"
-            aria-label="Lumo Agent"
-            aria-controls="agentPanel"
-            @click="agentVisible = !agentVisible"></el-button>
-        </el-tooltip>
-      </div>
+    <div v-if="!agentVisible" class="panelReopen">
+      <el-tooltip v-if="!agentVisible" :content="translate('展开 Lumo Agent')" placement="bottom" :showArrow="false">
+      <el-button class="agentReopen" :aria-expanded="false" :aria-label="translate('展开 Lumo Agent')" aria-controls="agentDock" @click="agentVisible = true">
+          <icon-layout-sidebar-left-expand :size="17" aria-hidden="true" />
+        </el-button>
+      </el-tooltip>
     </div>
-    <floatingAgent v-model="agentVisible" :inert="workspaceStore.projectLoadingVisible" @resize="agentWidth = $event" />
     <sceneProject v-if="previs" :directory="previs.directory" :projectPath="previs.path" :script="previs.script" @close="previs = undefined" />
     <el-dialog v-model="dramaVisible" :title="translate('短剧工作流')" width="min(620px, calc(100vw - 32px))"
       :closeOnClickModal="!dramaBusy" :closeOnPressEscape="!dramaBusy" :showClose="!dramaBusy">
@@ -153,6 +100,9 @@
     </el-dialog>
     <templateDialog v-if="canvasTemplate" :modelValue="true" canvas :directory="canvasTemplate.directory" :assets="canvasTemplate.timeline.assets.value"
       :busy="canvasTemplate.timeline.busy.value" :importFiles="canvasTemplate.timeline.importFiles" :saveVideo="saveCanvasTemplateVideo" @update:modelValue="closeCanvasTemplate" />
+    <creationDialog v-model="conversationCreationVisible" v-model:directory="conversationDirectory" conversation
+      :projects="workspaceStore.projectList" :busy="creatingConversation" @select="createConversation" />
+    <creationDialog v-model="creationVisible" :busy="switchingProject" @select="createProjectHere" />
     <settings ref="settingsDialog" v-model="settingsVisible" />
     <el-dialog v-model="contactVisible" :title="contactInfo.title" width="min(360px, calc(100vw - 32px))" alignCenter appendToBody>
       <div class="contactContent">
@@ -177,14 +127,18 @@ import { translate } from "@lumo/i18n/vue";
 import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import axios from "axios";
+import http from "@/lib/http";
+import { createEmptyProject, timelineProjectFile } from "./panels/timeline/timelineModel";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
-import { IconVector, IconFileText, IconMovie, IconPointer, IconHandStop, IconPlus, IconSearch, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
+import appSidebar from "@/pages/home/components/appSidebar.vue";
+import { IconVector, IconFileText, IconMovie, IconLayoutSidebarLeftExpand } from "@tabler/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
+import creationDialog from "@/pages/home/components/creationDialog.vue";
 import settings from "@/components/settings/index.vue";
 import modelLoginGuide from "@/components/modelLoginGuide.vue";
 import { multiTenantEnabled, lumoAccountToken } from "@/stores/settings";
-import { useWorkspaceStore, type Project } from "@/stores/workspace";
+import { useWorkspaceStore, type Project, type ProjectMode } from "@/stores/workspace";
 import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
 import { useProviderBalances } from "@/lib/providerBilling";
@@ -194,8 +148,7 @@ import filmDraft from "@/pages/home/pages/agentWorkspace/filmDraft.vue";
 import dramaDraft from "@/pages/home/pages/agentWorkspace/dramaDraft.vue";
 import marketingDraft from "@/pages/home/pages/agentWorkspace/marketingDraft.vue";
 import type { DocumentNodeOptions } from "./panels/canvas/canvasFiles";
-import workspaceMenu from "./components/workspaceMenu.vue";
-import floatingAgent from "./components/floatingAgent.vue";
+import agent from "@/components/agent/index.vue";
 import templateDialog from "./panels/timeline/components/templateDialog.vue";
 import { useTimeline } from "./panels/timeline/useTimeline";
 
@@ -208,7 +161,7 @@ const openAutomaticFilm = ref(route.query.automaticFilm === "1");
 // 直接用 useWorkspaceStore()，避免在 workspaceStore 常量初始化前触发 TDZ。
 const projectMode = () => useWorkspaceStore().project?.mode;
 const activePanel = ref<"canvas" | "document" | "timeline">(
-  openAutomaticFilm.value || route.query.panel === "timeline" || projectMode() === "edit" ? "timeline" : "canvas",
+  openAutomaticFilm.value || route.query.panel === "timeline" || route.query.panel !== "canvas" && projectMode() === "edit" ? "timeline" : "canvas",
 );
 function consumeAutomaticFilm() {
   openAutomaticFilm.value = false;
@@ -237,11 +190,92 @@ const panelOptions = [
   { label: "文档", value: "document", icon: IconFileText },
 ];
 // ACT: Agent 面板默认收起，避免遮住预览与属性面板；一键成片流程仍自动展开。
-const agentVisible = ref(openAutomaticFilm.value);
+// ACT: 直接带 ?agent=1 打开工作区时不会触发下面的 watch，需要在初始化时就读一次查询参数。
+const railCollapsed = ref(false);
+const agentVisible = ref(route.query.agent !== "0");
 watch(() => route.query.agent, value => {
   if (value === "1") agentVisible.value = true;
 });
-const agentWidth = ref(0);
+const agentRef = ref<InstanceType<typeof agent>>();
+// 快捷创作：把画布上原来的表单入口收进对话，点击后把任务写进输入框，由 Agent 继续追问与执行。
+const agentChips = [
+  { id: "drama", label: "短剧工作流", prompt: "用短剧工作流做一条短剧：先按「剧本 → 分镜 → 关键画面 → 分镜视频」拆解，先给方案再逐镜生成。\n主题与要求：" },
+  { id: "template", label: "整集模板", prompt: "用整集模板做一条成片。先和我确认模板结构、主题、文案与素材，再开始渲染。\n内容主题：" },
+  { id: "marketing", label: "营销脚本", prompt: "写一条营销脚本。先问清产品、目标人群、卖点和投放平台，再输出脚本与分镜。\n产品与卖点：" },
+  { id: "film", label: "一键成片", prompt: "用一键成片做一条 15–30 秒的短视频。先确认主题、素材与成片风格，再开始生成草稿。\n主题：" },
+  { id: "previs", label: "白模预演", prompt: "把下面这段剧本做成白模预演：先拆分场景、机位和镜头时长，再生成预演。\n剧本：" },
+] as const;
+function runCanvasCommand(command: string) {
+  if (command.startsWith("wf-")) return openWorkflowSettings(command.slice(3));
+  switch (command) {
+    case "add": canvasPanelRef.value?.addNodeAtPointer(); break;
+    case "search": canvasPanelRef.value?.openNodeSearch(); break;
+    case "hand": selectedTool.value = selectedTool.value === "move" ? "hand" : "move"; break;
+    case "sendTimeline": void sendVideoToTimeline(); break;
+    case "previs": previsInputVisible.value = true; break;
+    case "previsScene": void openScenePrevis(); break;
+    case "shot": void prepareShotVideo(); break;
+    case "help": helpVisible.value = true; break;
+  }
+}
+
+function openWorkflowSettings(id: string) {
+  switch (id) {
+    case "drama": dramaVisible.value = true; break;
+    case "template": void openCanvasTemplate(); break;
+    case "marketing": marketingVisible.value = true; break;
+    case "film": canvasFilmVisible.value = true; break;
+    case "previs": previsInputVisible.value = true; break;
+  }
+}
+// 创作流程收进输入框的加号菜单，面板本身只保留对话与输入。
+provide("agentWorkflows", agentChips.map(chip => ({
+  id: chip.id,
+  label: chip.label,
+  run: () => useAgentChip(chip),
+})));
+function useAgentChip(chip: (typeof agentChips)[number]) {
+  agentVisible.value = true;
+  void agentRef.value?.appendPrompt(chip.prompt);
+}
+const conversationCreationVisible = ref(false);
+const conversationDirectory = ref("");
+const creatingConversation = ref(false);
+function selectConversationProject(project?: Project) {
+  if (!workspaceStore.projectList.length && !project) return void (creationVisible.value = true);
+  conversationDirectory.value = (project ?? workspaceStore.project ?? workspaceStore.projectList[0])?.directory ?? "";
+  conversationCreationVisible.value = true;
+}
+async function createConversation(mode: ProjectMode) {
+  const project = workspaceStore.projectList.find(item => item.directory === conversationDirectory.value);
+  if (!project || creatingConversation.value) return;
+  creatingConversation.value = true;
+  try {
+    const result = await http<{ file: string }>({ method: "POST", url: "/api/agent/create", data: { directory: project.directory, mode } });
+    workspaceStore.agentHistoryChange = { directory: project.directory };
+    conversationCreationVisible.value = false;
+    await openSidebarProject(project, result.file, mode);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("新建对话失败"));
+  } finally { creatingConversation.value = false; }
+}
+const creationVisible = ref(false);
+async function createProjectHere(mode: ProjectMode) {
+  if (switchingProject.value) return;
+  switchingProject.value = true;
+  try {
+    const name = mode === "edit" ? translate("未命名剪辑") : translate("未命名画布");
+    const project = await http<{ directory: string; name: string }>({ method: "POST", url: "/api/workspaces/create", data: { name } });
+    const files = useWorkspaceFiles(project.directory);
+    if (mode === "edit") await files.writeJson(timelineProjectFile, createEmptyProject(), true);
+    else await files.writeJson("画布1.json", { lumoCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
+    switchingProject.value = false;
+    await openSidebarProject({ ...project, lastOpenedAt: Date.now(), mode });
+    creationVisible.value = false;
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : translate("无法新建项目，请重试"));
+  } finally { switchingProject.value = false; }
+}
 const settingsVisible = ref(false);
 const settingsDialog = ref<InstanceType<typeof settings>>();
 provide("openSettingsPanel", (id: string) => settingsDialog.value?.openPanel(id));
@@ -471,9 +505,7 @@ watch([() => route.query.template, () => canvasPanelRef.value?.canvasReady], asy
     await router.replace({ query });
   }
 }, { flush: "post" });
-watch(() => canvasPanelRef.value?.canvasListReady, ready => {
-  workspaceStore.projectLoading = !ready;
-}, { immediate: true });
+// ACT: 画布自身的加载态就地显示，不再触发全屏加载页遮挡侧栏与对话框。
 onScopeDispose(() => { workspaceStore.projectLoading = false; });
 const documentPanelCache = shallowRef<{ directory: string; instance: InstanceType<typeof documentPanel> }>();
 const documentPanelRef = computed(() => documentPanelCache.value?.directory === workspaceStore.project?.directory ? documentPanelCache.value?.instance : undefined);
@@ -558,7 +590,14 @@ async function flushSave() {
 }
 
 const switchingProject = ref(false);
-async function openSidebarProject(project: Project, file?: string) {
+function goHome() {
+  void router.push("/home");
+}
+
+function goHomeSection(section: string) {
+  void router.push({ path: "/home", query: { section } });
+}
+async function openSidebarProject(project: Project, file?: string, sessionMode?: ProjectMode) {
   if (switchingProject.value) return;
   switchingProject.value = true;
   try {
@@ -575,6 +614,11 @@ async function openSidebarProject(project: Project, file?: string) {
       await router.replace({ query: { panel } });
     }
     const directory = workspaceStore.project?.directory;
+    if (directory && file && sessionMode) {
+      const panel = sessionMode === "edit" ? "timeline" : "canvas";
+      if (!await switchPanel(panel)) return;
+      await router.replace({ query: { panel } });
+    }
     if (directory && file) {
       workspaceStore.pendingAgentSession = { directory, file };
       agentVisible.value = true;
@@ -720,7 +764,24 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
 
 <style scoped lang="scss">
 .workspaceLayout {
+  position: relative;
+  display: flex;
   height: 100dvh;
+
+  .agentDock {
+    display: flex;
+    flex: 0 0 clamp(320px, 26vw, 400px);
+    flex-direction: column;
+    min-width: 0;
+    height: 100dvh;
+    padding-block-start: var(--titlebarInset, 0px);
+    overflow: hidden;
+    background: var(--el-bg-color);
+    border-inline-end: 1px solid var(--el-border-color-light);
+
+    :deep(.agent) { flex: 1; min-height: 0; }
+  }
+
   .workspacePage { flex: 1; min-width: 0; }
 }
 .workspacePage {
@@ -732,8 +793,7 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
   :deep(.workspaceMenu > .el-card),
   :deep(.canvasMenu),
   :deep(.balanceCard),
-  :deep(.canvasControlsCard),
-  .toolMenu {
+  :deep(.canvasControlsCard) {
     background: color-mix(in srgb, var(--el-bg-color-overlay) 70%, transparent);
     backdrop-filter: blur(6px);
     border-color: var(--el-border-color-light);
@@ -743,7 +803,7 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
   .canvasPanel {
     position: absolute;
     inset: 0;
-    width: calc(100% - var(--agentWidth, 0px));
+    width: 100%;
     container: canvasWorkspace / inline-size;
 
     &.backgroundPanel {
@@ -753,111 +813,20 @@ function saveDocumentNode(directory: string, canvasPath: string, nodeId: string,
     }
   }
 
-  .workspaceMenu {
+  // 侧栏/Agent 收起后，统一在画布左上角提供展开入口，避开画布菜单。
+  .panelReopen {
     position: absolute;
-    top: 15px;
+    top: calc(59px + var(--titlebarInset, 0px));
     left: 15px;
-    z-index: 5;
-  }
+    z-index: 6;
+    display: flex;
+    gap: 6px;
 
-  .workspaceTools {
-    position: absolute;
-    inset: 0;
-    width: calc(100% - var(--agentWidth, 0px));
-    container: workspaceTools / inline-size;
-    pointer-events: none;
-
-    .bottomTools {
-      position: absolute;
-      bottom: 15px;
-      left: 50%;
-      z-index: 5;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transform: translateX(-50%);
-      pointer-events: auto;
-
-      .toolMenu {
-        flex-shrink: 0;
-        transition: none;
-
-        .toolMenuContent {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-
-          .toolButton {
-            width: 28px;
-            height: 28px;
-            margin: 0;
-            padding: 0;
-
-            &.addNodeButton {
-              margin-right: 6px;
-              color: var(--el-bg-color);
-              background: var(--el-text-color-primary);
-              border-color: transparent;
-
-              &:hover { opacity: 0.85; }
-              &.is-disabled { opacity: 0.45; }
-            }
-          }
-
-          .toolTrigger { display: inline-flex; }
-
-          .el-divider { margin: 0; }
-        }
-      }
-
-      .agentButton {
-        position: absolute;
-        left: calc(100% + 8px);
-        width: 34px;
-        height: 34px;
-        flex-shrink: 0;
-        margin: 0;
-        padding: 0;
-        border: 1px solid var(--color-border-2);
-        border-radius: 50%;
-        background: var(--color-panel-2);
-        color: var(--color-accent);
-        transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
-
-        &.standalone {
-          position: relative;
-          left: auto;
-        }
-
-        &:hover {
-          transform: translateY(-1px);
-          border-color: var(--color-accent);
-          background: var(--color-accent-soft);
-        }
-
-        &:active {
-          transform: scale(0.95);
-        }
-
-        &:focus-visible {
-          outline: 2px solid var(--el-color-primary);
-          outline-offset: 3px;
-        }
-
-        .agentLogo {
-          width: 24px;
-          height: 24px;
-          flex-shrink: 0;
-          background: currentColor;
-          mask-size: contain;
-          mask-position: center;
-          mask-repeat: no-repeat;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          transition: none;
-        }
-      }
+    .el-button {
+      width: 32px;
+      height: 32px;
+      margin: 0;
+      padding: 0;
     }
   }
 }
