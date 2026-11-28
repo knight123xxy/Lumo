@@ -3,7 +3,7 @@
     <agentMenu
       :key="conversationKey"
       :name="name"
-      :history="history"
+      :history="modeHistory"
       :sessionFile="sessionFile"
       :parentFile="selectedConversation?.parentFile"
       :subAgents="selectedConversation?.subAgents"
@@ -26,8 +26,9 @@
       v-show="item.key === conversationKey"
       :key="item.key"
       :ref="instance => setConversationRef(item, instance)"
-      :active="visible && item.key === conversationKey"
+      :active="workspaceActive && visible && item.key === conversationKey"
       :initialSession="item.session"
+      :conversationMode="item.mode"
       :initialModel="item.initialModel"
       :sessionFile="item.file"
       :disabled="loading || !initialized"
@@ -52,13 +53,19 @@ import type { AgentEvent, AgentSubAgent } from "@lumo/server/agent/types";
 import agentMenu from "./menu.vue";
 import conversation from "./conversation.vue";
 
+const { mode, workspaceActive = true } = defineProps<{ mode?: "canvas" | "edit"; workspaceActive?: boolean }>();
 const visible = defineModel<boolean>({ default: false });
 const emit = defineEmits<{ command: [value: string] }>();
-type OpenConversation = { key: number; name: string; file?: string; parentFile?: string; runId?: string; retiredRunIds: Set<string>; subAgents: AgentSubAgent[]; session: AgentConversation | null; initialModel?: string };
-// ACT: 会话实例保留到工作区关闭，让切换后的回复继续接收流式内容。
+type OpenConversation = { mode?: "canvas" | "edit"; key: number; name: string; file?: string; parentFile?: string; runId?: string; retiredRunIds: Set<string>; subAgents: AgentSubAgent[]; session: AgentConversation | null; initialModel?: string };
+// ACT: 同一项目的会话跨页面保留，切项目时停止旧项目的运行并清空会话。
 const conversations = ref<OpenConversation[]>([]);
 const conversationKey = ref(0);
+const conversationByMode = new Map<"canvas" | "edit", number>();
 const selectedConversation = computed(() => conversations.value.find(item => item.key === conversationKey.value));
+watch(conversationKey, key => {
+  const selectedMode = selectedConversation.value?.mode;
+  if (selectedMode) conversationByMode.set(selectedMode, key);
+}, { flush: "sync" });
 // ACT: 新对话是现有自动命名逻辑使用的保留值；仅翻译显示，不改变存储或比较值。
 const name = computed(() => {
   const value = selectedConversation.value?.name;
@@ -68,6 +75,7 @@ const sessionFile = computed(() => selectedConversation.value?.file);
 const workspaceStore = useWorkspaceStore();
 let projectDirectory = workspaceStore.project?.directory;
 const history = ref<AgentHistory[]>([]);
+const modeHistory = computed(() => history.value.filter(item => !mode || (item.mode ?? workspaceStore.project?.mode ?? "canvas") === mode));
 watch([sessionFile, () => workspaceStore.project?.directory], ([file, directory]) => {
   workspaceStore.activeAgentSession = file && directory ? { directory, file } : null;
 });
@@ -90,7 +98,7 @@ function showConversation(session: AgentConversation | null, activate = true) {
     return existing;
   }
   const key = ++nextConversationKey;
-  const item = { key, name: session?.name || "新对话", file: session?.file, parentFile: session?.parentFile, runId: session?.runId, retiredRunIds: new Set<string>(), subAgents: session?.subAgents ?? [], session };
+  const item = { mode: session ? history.value.find(entry => entry.file === session.file)?.mode ?? mode : mode, key, name: session?.name || "新对话", file: session?.file, parentFile: session?.parentFile, runId: session?.runId, retiredRunIds: new Set<string>(), subAgents: session?.subAgents ?? [], session };
   conversations.value.push(item);
   if (activate) conversationKey.value = key;
   return conversations.value[conversations.value.length - 1]!;
@@ -182,7 +190,7 @@ function setSessionFile(item: OpenConversation, file: string) {
   if (runId) setConversationRun(item, runId);
   if (item.parentFile) return;
   if (!history.value.some(entry => entry.file === file)) {
-    history.value.unshift({ file, name: item.name, modified: new Date().toISOString(), messageCount: 0 });
+    history.value.unshift({ file, name: item.name, modified: new Date().toISOString(), messageCount: 0, mode: item.mode });
     notifyHistoryChange();
   }
 }
@@ -207,12 +215,12 @@ async function newConversation(source?: { file?: string; message: AgentMessage }
   try {
     const { data } = await axios.post<{ code: number; data: AgentConversation; message?: string }>(source ? "/api/agent/branch" : "/api/agent/create", {
       directory,
-      ...(source ? { sessionFile: source.file, ...(source.message.entryId ? { entryId: source.message.entryId } : { replyTo: source.message.replyTo }) } : {}),
+      ...(source ? { sessionFile: source.file, ...(source.message.entryId ? { entryId: source.message.entryId } : { replyTo: source.message.replyTo }) } : { mode }),
     }, { headers: { "x-lumo-workspace": "1" } });
     if (data.code !== 200) throw new Error(data.message || errorMessage);
     if (currentRequest !== requestId) return;
     const session = data.data;
-    history.value.unshift({ file: session.file, name: session.name, modified: new Date().toISOString(), messageCount: session.messages.length });
+    history.value.unshift({ file: session.file, name: session.name, modified: new Date().toISOString(), messageCount: session.messages.length, mode });
     showConversation(session).initialModel = initialModel;
     notifyHistoryChange();
     initialized.value = true;
@@ -236,6 +244,11 @@ async function readConversation(directory: string, file: string) {
   return data.data;
 }
 
+function hasPendingSession(directory: string) {
+  const pending = workspaceStore.pendingAgentSession;
+  return pending?.directory === directory && pending.mode === mode;
+}
+
 async function loadHistory(openLatest = false) {
   const directory = workspaceStore.project?.directory;
   if (!directory || loading.value || historyLoading.value) return;
@@ -252,8 +265,9 @@ async function loadHistory(openLatest = false) {
     // 首条回复结束前会话可能尚未落盘，仍允许从历史菜单切回。
     for (const item of conversations.value) if (item.file) setSessionFile(item, item.file);
     if (openLatest) {
-      const session = !workspaceStore.pendingAgentMessage && data.data[0] ? await readConversation(directory, data.data[0].file) : null;
-      if (currentRequest !== requestId) return;
+      if (hasPendingSession(directory)) return;
+      const session = !workspaceStore.pendingAgentMessage && modeHistory.value[0] ? await readConversation(directory, modeHistory.value[0].file) : null;
+      if (currentRequest !== requestId || hasPendingSession(directory)) return;
       showConversation(session);
       initialized.value = true;
     }
@@ -362,6 +376,7 @@ watch(() => workspaceStore.project?.directory, directory => {
   projectDirectory = directory;
   requestId++;
   history.value = [];
+  conversationByMode.clear();
   conversations.value = [];
   conversationRefs.clear();
   pendingEvents.clear();
@@ -370,18 +385,41 @@ watch(() => workspaceStore.project?.directory, directory => {
   branchingId.value = undefined;
   historyLoading.value = false;
   showConversation(null);
-  if (visible.value && directory) void loadHistory(!workspaceStore.pendingAgentSession);
 }, { immediate: true, flush: "sync" });
-watch(visible, active => {
-  // 从首页对话列表跳转时保留目标会话，不先打开最新一条。
-  if (active && !initialized.value) void loadHistory(!workspaceStore.pendingAgentSession);
+watch(() => mode, nextMode => {
+  if (!nextMode || selectedConversation.value?.mode === nextMode) return;
+  requestId++;
+  loading.value = false;
+  historyLoading.value = false;
+  branchingId.value = undefined;
+  const previousKey = conversationByMode.get(nextMode);
+  const existing = conversations.value.find(item => item.key === previousKey);
+  if (existing) conversationKey.value = existing.key;
+  else showConversation(null);
+  initialized.value = Boolean(existing);
 });
+watch([visible, () => workspaceActive, () => mode, () => workspaceStore.project?.directory], ([expanded, active, , directory]) => {
+  // ACT: 等同一轮项目与目标会话都更新后再读历史，避免先打开另一条对话。
+  if (expanded && active && directory && !initialized.value) void loadHistory(!hasPendingSession(directory));
+}, { immediate: true, flush: "post" });
 // 首页侧栏选中某条对话后，面板就绪时切到该会话一次。
-watch([visible, loading, historyLoading, () => workspaceStore.project?.directory, () => workspaceStore.pendingAgentSession], ([active, busy, reading, directory, pending]) => {
-  if (!active || busy || reading || !pending || pending.directory !== directory) return;
+watch([visible, () => workspaceActive, loading, historyLoading, () => workspaceStore.project?.directory, () => mode, () => workspaceStore.pendingAgentSession], ([expanded, active, busy, reading, directory, currentMode, pending]) => {
+  if (!expanded || !active || busy || reading || !pending || pending.directory !== directory || pending.mode !== currentMode) return;
   workspaceStore.pendingAgentSession = null;
   void selectConversation(pending.file);
-});
+}, { flush: "post" });
+// ACT: Agent 一启动就落盘会话，侧栏项目下立即出现该 Agent 的索引，关闭后可从侧栏重新打开。
+// 每个项目与模式只尝试一次，创建失败不反复重试。
+const autoIndexAttempted = ref("");
+watch([visible, () => workspaceActive, initialized, loading, historyLoading, sessionFile, () => workspaceStore.project?.directory], ([expanded, active, ready, busy, reading, file, directory]) => {
+  if (!expanded || !active || !ready || busy || reading || file || !directory) return;
+  if (workspaceStore.pendingAgentMessage || workspaceStore.pendingAgentSession) return;
+  const key = `${directory}|${mode}`;
+  if (autoIndexAttempted.value === key) return;
+  autoIndexAttempted.value = key;
+  void newConversation();
+}, { flush: "post" });
+
 watch(() => workspaceStore.sidebarSessionChange, change => {
   if (!change || change.directory !== projectDirectory) return;
   const opened = conversations.value.find(item => item.file === change.file);

@@ -7,6 +7,9 @@ import { modelGateway } from "./gateway";
 import { hosting } from "@/utils/channel";
 import { assertAppRequest } from "@/utils/mcp/control";
 
+// 2 元体验额度为 142857，按同一比例换算人民币到上游 quota。
+const quotaPerCny = 71429;
+
 export async function getModelRouting(req: Request) {
   await authorize(req);
   return modelGateway.read();
@@ -60,7 +63,7 @@ export async function releaseUserReservation(req: Request, userId: string, reque
 export async function readOwnBalance(req: Request) {
   assertAppRequest(req);
   const user = requestIdentity(req);
-  if (!user) throw Object.assign(new Error("请先登录 算力汇"), { status: 401 });
+  if (!user) throw Object.assign(new Error("请先登录 Lumo"), { status: 401 });
   if (user.role !== "user") return { wallets: [], transactions: [] };
   return modelGateway.readBalance(user.id);
 }
@@ -74,7 +77,16 @@ export async function redeemRechargeCard(req: Request, code: string) {
   assertAppRequest(req);
   const user = requestIdentity(req);
   if (user?.role !== "user") throw Object.assign(new Error("请使用普通账号兑换充值卡"), { status: 403 });
-  return modelGateway.redeemCard(user.id, code);
+  const before = await modelGateway.readBalance(user.id);
+  const snapshot = await modelGateway.redeemCard(user.id, code);
+  const available = (balance: typeof before) => Number(balance.wallets.find(wallet => wallet.currency === "CNY")?.available ?? 0);
+  const credited = available(snapshot) - available(before);
+  // ACT: 卡密同时对齐 Lumo 钱包和上游子额度；上游失败不回滚已入账的钱包，交由对账补齐。
+  if (credited > 0) {
+    try { await hosting.addSubAccountQuota(user.id, Math.floor(credited * quotaPerCny)); }
+    catch (error) { console.error("Lumo 上游额度对齐失败", error instanceof Error ? error.message : String(error)); }
+  }
+  return snapshot;
 }
 
 // 托管充值：Lumo 内支付成功后由服务端调用，调大该用户算力汇子账号 remain_quota。

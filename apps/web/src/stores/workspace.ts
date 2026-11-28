@@ -26,8 +26,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
   const projectLoadingDrawn = ref(false);
   const projectLoadingVisible = ref(false);
   const pendingAgentMessage = ref<{ directory: string; prompt: string; attachments?: AgentAttachment[]; model: string; reasoningEffort: string } | null>(null);
-  // ACT: 从首页对话列表跳转时，只记录目标会话文件；工作区打开后由 Agent 面板消费一次并清空。
-  const pendingAgentSession = ref<{ directory: string; file: string } | null>(null);
+  const pendingAgentDraft = ref<{ directory: string; text: string; mode?: ProjectMode; images?: File[] } | null>(null);
+  // 等工作区切到目标工具后，由 Agent 栏消费打开请求。
+  const pendingAgentSession = ref<{ directory: string; file: string; mode: ProjectMode } | null>(null);
   const activeAgentSession = ref<{ directory: string; file: string } | null>(null);
   const sidebarSessionChange = ref<{ directory: string; file: string; removed: boolean; name?: string }>();
   const agentHistoryChange = ref<{ directory: string }>();
@@ -69,10 +70,9 @@ export const useWorkspaceStore = defineStore("workspace", () => {
       mode,
       category: existing?.category ?? metadata?.category ?? (mode === "edit" ? "videoEditing" : mode === "canvas" ? "aiCreation" : undefined),
     };
-    projectList.value = [
-      added,
-      ...projectList.value.filter(item => item.directory !== previousDirectory && item.directory !== checkedDirectory),
-    ];
+    projectList.value = existing
+      ? projectList.value.flatMap(item => item === existing ? [added] : item.directory === checkedDirectory ? [] : [item])
+      : [added, ...projectList.value];
     return added;
   }
 
@@ -80,18 +80,24 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     const savedMode = mode ?? projectList.value.find(item => item.directory === previousDirectory)?.mode;
     const projectMode = savedMode ?? ((await useWorkspaceFiles(path).list("", signal)).entries.some(entry => entry.type === "file" && entry.name === timelineProjectFile) ? "edit" : "canvas");
     const opened = await addProject(path, undefined, signal, previousDirectory, { mode: projectMode });
-    pendingAgentMessage.value = null;
-    pendingAgentSession.value = null;
+    if (project.value?.directory !== opened.directory) {
+      pendingAgentMessage.value = null;
+      pendingAgentDraft.value = null;
+      pendingAgentSession.value = null;
+    }
     project.value = opened;
     return opened;
   }
 
-  async function createProject(mode: ProjectMode, signal: AbortSignal) {
-    const name = mode === "edit" ? translate("未命名剪辑") : translate("未命名画布");
-    const { directory } = await http<{ directory: string }>({ method: "POST", url: "/api/workspaces/create", data: { name }, signal });
+  async function createProject(mode: ProjectMode, signal: AbortSignal, directory?: string) {
+    if (!directory) {
+      const name = mode === "edit" ? translate("未命名剪辑") : translate("未命名画布");
+      ({ directory } = await http<{ directory: string }>({ method: "POST", url: "/api/workspaces/create", data: { name }, signal }));
+    }
     signal.throwIfAborted();
     const { directory: canonical, empty } = await useWorkspaceFiles(directory).list("", signal);
-    if (!empty) throw new Error(translate("该文件夹不为空，请重新选择空文件夹"));
+    signal.throwIfAborted();
+    if (!empty) throw new Error(translate("该文件夹不为空，请重新选择空文件夹；已有项目请从项目列表打开。"));
     const files = useWorkspaceFiles(canonical);
     if (mode === "edit") await files.writeJson(timelineProjectFile, createEmptyProject(), true);
     else await files.writeJson("画布1.json", { lumoCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
@@ -116,7 +122,7 @@ export const useWorkspaceStore = defineStore("workspace", () => {
     if (project.value?.directory === path) project.value = null;
   }
 
-  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentSession, activeAgentSession, sidebarSessionChange, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, createProject, renameProject, updateProjectMetadata, removeProject };
+  return { project, projectList, sceneList, projectLoading, projectLoadingDrawn, projectLoadingVisible, pendingAgentMessage, pendingAgentDraft, pendingAgentSession, activeAgentSession, sidebarSessionChange, agentHistoryChange, addProject, addScene, renameScene, removeScene, openProject, createProject, renameProject, updateProjectMetadata, removeProject };
 }, {
   persist: {
     key: "lumo.projectList",

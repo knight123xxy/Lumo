@@ -1,4 +1,5 @@
 import express from "express";
+import { createAccountServiceRouter } from "./accountService";
 import { once } from "node:events";
 import { hostname } from "node:os";
 import { posix } from "node:path";
@@ -10,9 +11,10 @@ import { initializeMcpRuntime, stopMcpRuntime } from "@lumo/server/mcp";
 import { languageRequest, translateError, translateMessage } from "@lumo/server/i18n";
 import { isEnabled, startMultiTenantRuntime, stopMultiTenantRuntime } from "@lumo/server/multiTenant";
 
-export default async function createDesktopConnection(app: express.Express, directory: string, mcpEntry: string,
+export default async function createDesktopConnection(app: express.Express, directory: string, mcpEntry: string, accountRestoreSecret: string,
   onNavigate: (port: number, remote: boolean, hostMode: boolean) => void, onError: (error: unknown) => void) {
   let current: { connection: Awaited<ReturnType<typeof createRemoteConnection>>; server: Server; sockets: Set<Socket>; port: number };
+  const { accountServiceRouter, officialTextRouter } = createAccountServiceRouter(directory, accountRestoreSecret);
   let switching = false;
   let closed = false;
   // ACT: 首次开启后主窗口固定为后台直到退出，关闭开关不恢复本进程的创作入口。
@@ -109,6 +111,14 @@ export default async function createDesktopConnection(app: express.Express, dire
       next();
     });
     gateway.use("/api/connection", connection.router);
+    gateway.use("/api/desktop/account", (req, res, next) => {
+      if (connection.remote || localOnly()) return void res.sendStatus(403);
+      accountServiceRouter(req, res, next);
+    });
+    gateway.use((req, res, next) => {
+      if (connection.remote || localOnly()) return next();
+      officialTextRouter(req, res, next);
+    });
     gateway.use((req, res, next) => {
       if (!connection.remote) return app(req, res, next);
       // ACT: 远端页面不能把原生握手凭据经代理发送到其他主机。
@@ -124,7 +134,10 @@ export default async function createDesktopConnection(app: express.Express, dire
     });
     gateway.use((error: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
       if (res.headersSent) return next(error);
-      res.status(500).json({ message: error instanceof Error ? translateError(error) : translateMessage("设备连接失败") });
+      const requestedStatus = (error as { status?: number } | null)?.status;
+      const status = typeof requestedStatus === "number" && Number.isInteger(requestedStatus)
+        && requestedStatus >= 400 && requestedStatus <= 599 ? requestedStatus : 500;
+      res.status(status).json({ code: status, message: error instanceof Error ? translateError(error) : translateMessage("设备连接失败") });
     });
     const server = gateway.listen(0, "127.0.0.1");
     const sockets = new Set<Socket>();

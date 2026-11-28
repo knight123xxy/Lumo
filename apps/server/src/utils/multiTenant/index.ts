@@ -2,7 +2,7 @@ import { dirname } from "node:path";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { Application, Request, Response } from "express";
-import { createMultiTenant } from "@lumo/multi-tenant-auth";
+import { createMultiTenant, registrationEmailSchema } from "@lumo/multi-tenant-auth";
 import type { AuthIdentity, ListUserOptions } from "@lumo/multi-tenant-auth";
 import { createSourceMapping } from "@lumo/multi-tenant-source-mapping";
 import type { SourceMapping } from "@lumo/multi-tenant-source-mapping/config";
@@ -12,6 +12,9 @@ import { assertAppRequest } from "@/utils/mcp/control";
 import { isMobileLinkRequest } from "@/utils/mobileLink";
 import { changeMultiTenantEnabled } from "./runtime";
 import { isEnabled } from "./mode";
+import { isPasswordResetEnabled, isRegistrationEmailRequired, registrationCodeSchema, sendPasswordResetEmail, sendRegistrationEmail, verifyPasswordResetEmail, verifyRegistrationEmail } from "./registrationEmail";
+
+export { registrationCodeSchema, registrationEmailSchema };
 
 export { startMultiTenantRuntime, stopMultiTenantRuntime } from "./runtime";
 export { creationPort, isEnabled } from "./mode";
@@ -160,12 +163,50 @@ export async function userSession(req: Request) {
       if ((error as { status?: number }).status !== 401) throw error;
     }
   }
-  return { user, publicWeb, enabled: isEnabled(), host, registrationEnabled: await accessControl(() => control.getRegistrationEnabled()) };
+  return {
+    user, publicWeb, enabled: isEnabled(), host,
+    registrationEnabled: await accessControl(() => control.getRegistrationEnabled()),
+    passwordResetEnabled: publicWeb && isPasswordResetEnabled(),
+    ...(isRegistrationEmailRequired() ? { emailVerificationRequired: true } : {}),
+  };
 }
 
-export async function registerUser(req: Request, res: Response, userName: string, password: string, referralCode?: string) {
+async function assertRegistrationEnabled() {
+  if (!await accessControl(() => control.getRegistrationEnabled())) {
+    throw Object.assign(new Error("当前已关闭注册，请联系管理员创建账号"), { status: 403 });
+  }
+}
+
+export async function sendRegistrationCode(req: Request, email: string) {
   assertUserRequest(req);
-  const result = await accessControl(() => control.register(userName, password, referralCode));
+  await assertRegistrationEnabled();
+  if (!isRegistrationEmailRequired()) throw Object.assign(new Error("当前未启用邮箱注册验证"), { status: 403 });
+  const account = registrationEmailSchema.parse(email);
+  return sendRegistrationEmail(account, () => accessControl(() => control.checkRegistrationAccount(account)));
+}
+
+function assertPasswordResetRequest(req: Request) {
+  if (req.res?.locals.multiTenantWeb !== true) throw Object.assign(new Error("请通过端口 10888 访问创作功能"), { status: 403 });
+  assertUserRequest(req);
+  if (!isPasswordResetEnabled()) throw Object.assign(new Error("当前未启用邮箱密码重置"), { status: 403 });
+}
+
+export function sendPasswordResetCode(req: Request, email: string) {
+  assertPasswordResetRequest(req);
+  const account = registrationEmailSchema.parse(email);
+  return sendPasswordResetEmail(account, () => control.getPasswordRecoveryAccount(account));
+}
+
+export async function resetPassword(req: Request, email: string, code: string, password: string) {
+  assertPasswordResetRequest(req);
+  const account = registrationEmailSchema.parse(email);
+  await accessControl(() => control.recoverPassword(account, password, recovery => verifyPasswordResetEmail(account, code, recovery)));
+}
+
+export async function registerUser(req: Request, res: Response, userName: string, password: string, referralCode?: string, code?: string) {
+  assertUserRequest(req);
+  const verifyEmail = isRegistrationEmailRequired() ? (email: string) => verifyRegistrationEmail(email, code) : undefined;
+  const result = await accessControl(() => control.register(userName, password, referralCode, verifyEmail));
   try {
     // 静默建算力汇子账号（name=lumo-<uid>）；失败不阻断注册，后续按 name 反查补齐（S2 对账）。
     await hosting.createSubAccount(result.user.id);

@@ -1,6 +1,11 @@
 <template>
   <component v-if="renderer" :is="renderer" :tool="tool" :directory="directory" :toolSessionId="toolSessionId" @copy="emit('copy', $event)" />
   <el-text v-if="rendererError" type="danger">工具界面加载失败，请停止后重试：{{ rendererError }}</el-text>
+  <el-button v-if="tool.name === 'createAutomaticFilm' && tool.status === 'success' && openFilmTimeline && directory"
+    text size="small" @click="openFilmTimeline(directory)">{{ translate('查看成片时间线') }}</el-button>
+  <div v-if="marketCases.length" class="marketCaseLinks">
+    <router-link v-for="item in marketCases" :key="item.id" :to="{ name: 'marketCase', params: { caseId: item.id } }">{{ item.name }}</router-link>
+  </div>
   <chat-reasoning v-model:collapsed="collapsed" class="messageReasoning toolCall" expandIconPlacement="left">
     <template #expandIcon><component :is="collapsed ? IconChevronRight : IconChevronDown" :size="14" aria-hidden="true" /></template>
     <template #header>
@@ -26,16 +31,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, shallowRef, watch, type Component } from "vue";
+import { computed, inject, onErrorCaptured, ref, shallowRef, watch, type Component } from "vue";
+import { translate } from "@lumo/i18n/vue";
 import { getCachedToolComponent, loadToolComponent } from "@lumo/tools-scaffold/client";
 import { IconChevronDown, IconChevronRight, IconCopy, IconTool } from "@tabler/icons-vue";
 import chatReasoning from "@tdesign-vue-next/chat/es/chat-reasoning";
 import type { AgentToolCall } from "@lumo/server/agent/types";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 import marketInstallApproval from "./marketInstallApproval.vue";
+import { projectCase, templateCatalog } from "@lumo/server/templateCatalog";
 
 const { tool, directory, toolSessionId } = defineProps<{ tool: AgentToolCall; directory?: string; toolSessionId?: string }>();
 const emit = defineEmits<{ copy: [content: string] }>();
+const openFilmTimeline = inject<(directory: string) => Promise<void>>("openFilmTimeline");
 const renderer = shallowRef<Component>();
 const rendererError = ref("");
 watch(() => [tool.name, tool.question?.callId] as const, async ([name], previous, onCleanup) => {
@@ -74,6 +82,14 @@ const toolStatusLabels = { running: "调用中…", success: "已完成", error:
 const toolCodeOptions = { maxHeight: 240, lineNumbers: false };
 const args = computed(() => formatToolData(tool.args));
 const result = computed(() => formatToolData(tool.result));
+const marketCases = computed(() => {
+  if (tool.name !== "listMarketCases" || tool.status !== "success" || typeof tool.result !== "string") return [];
+  try {
+    const matches: unknown = JSON.parse(tool.result);
+    if (!Array.isArray(matches)) return [];
+    return [...templateCatalog, projectCase].filter(item => matches.some(match => match?.id === item.id));
+  } catch { return []; }
+});
 
 function formatToolData(value: unknown) {
   if (value === undefined) return;

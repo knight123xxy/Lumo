@@ -326,7 +326,8 @@ export function createModelGateway<Upstreams extends ModelMap, Catalogs extends 
         const attributes = await routeAccess(() => adapter.publicModel(execution));
         if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) fail("平台模型能力配置无效", 503);
         catalog.push({ ...attributes, providerId: "multiTenant", providerLabel: "Lumo", routeId: route.id, modelId: getPublicModelId(route),
-          label: `${route.label} · ${label}`, salePrice: route.salePrice, priceLabel: label });
+          label: `${route.label} · ${label}`, displayName: route.label, discountPercent: route.discountPercent,
+          salePrice: route.salePrice, priceLabel: label });
       }
       return catalog;
     },

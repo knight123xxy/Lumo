@@ -49,7 +49,7 @@ const contextSchema: z.ZodType<Context> = z.object({
       z.object({ type: z.literal("json_schema"), strict: z.enum(["prefer", "require"]) }),
       z.object({ type: z.literal("grammar"), variants: z.object({ openai_lark: z.string().optional(), openai_regex: z.string().optional() }) }),
     ]).optional(),
-  })).max(32).refine(tools => new Set(tools.map(tool => tool.name)).size === tools.length, "工具名称不能重复").optional(),
+  })).max(128).refine(tools => new Set(tools.map(tool => tool.name)).size === tools.length, "工具名称不能重复").optional(),
 }).refine(context => Buffer.byteLength(JSON.stringify(context)) <= 8000000, "模型上下文不能超过 8 MB");
 
 const inputSchema = z.object({

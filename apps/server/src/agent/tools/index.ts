@@ -1,3 +1,4 @@
+import { caseThemes, projectCase, templateCatalog } from "@/lib/templateCatalog";
 import { t } from "@/lib/i18n";
 import { listMediaModels, generateMedia } from "@/utils/media/generation";
 import { createWorkspaceFfmpeg, executeWorkspaceFfmpeg } from "@/utils/ffmpeg";
@@ -24,6 +25,9 @@ import { readDocument } from "@/utils/documents";
 import { createMcpAgentTools } from "@/utils/mcp/servers";
 import { currentIdentity } from "@/utils/multiTenant/context";
 import { modelGateway, requireDirectModelAccess } from "@/utils/multiTenant/gateway";
+import { z } from "zod";
+import { studioVolumeSchema, studioSpeedSchema, studioTrimSchema, studioDisabledSchema, automaticFilmSchema, timelineOperations } from "@/agent/bridge/canvas";
+import { renderTemplate, templateSlotsSchema } from "@/utils/showcase";
 import * as mediaTasks from "@/utils/media/tasks";
 
 export function createAgentToolContext(cwd: string, config: Record<string, unknown> = {}, canvas?: CanvasContext, question?: QuestionContext, workspaceAvailable = true): ToolContext {
@@ -169,7 +173,108 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
 
 export async function createAgentTools(cwd: string, canvas?: CanvasContext, question?: QuestionContext, includeMcp = true): Promise<ToolDefinition[]> {
   const tools: ToolDefinition[] = [];
-  const names = new Set<string>();
+  if (canvas?.embeddedTimeline) {
+    const descriptions = {
+      readTimeline: { label: "读取内置时间线", description: "读取当前项目内置时间线的播放头、所选片段与其区间，以及按起点排列的片段列表。时间单位为秒，使用 nextOffset 读取下一页。", },
+      trimTimelineClip: { label: "裁切内置时间线片段", description: "用读取结果返回的片段 ID 裁切视频或音频。start 和 end 是保留的源素材秒数，必须在当前源入点与出点内。保留时间线起点，其他片段不移动。页面确认后保存，可在时间线撤销。" },
+      tightenTimelineSpeech: { label: "处理口播停顿", description: "处理内置时间线中一段未裁切且未变速的音视频。tighten 缩短沉默，speedUp 加速停顿。页面确认后另存媒体并更新片段，可撤销。已有字幕或会碰到下一段时须先手动处理。" },
+      subtitleTimelineSpeech: { label: "识别口播字幕", description: "在支持音频识别的浏览器里为指定音视频片段按句或短语生成多条可编辑字幕，每条有独立起止时间，可逐条修改。先完成停顿处理，确保字幕跟随最终片段。需要页面确认。" },
+      exportTimelineMp4: { label: "导出时间线 MP4", description: "经页面确认，将当前内置时间线导出到项目内，保留可编辑工程，有字幕时使用可切换字幕轨。" },
+      subtitleTimelineFromScript: { label: "按文稿生成字幕", description: "识别服务不可用或用户已有文稿时，按文稿断句生成多条独立字幕条并对齐到指定片段区间，可逐条修改。需要页面确认。" },
+      setTimelineClipVolume: { label: "调整内置时间线片段音量", description: "用读取结果返回的视频或音频片段 ID 调整音量。0 为静音，1 为原音量，2 为两倍音量。页面确认后保存，可在时间线撤销。" },
+    };
+    for (const name of Object.keys(timelineOperations) as (keyof typeof timelineOperations)[]) {
+      const schema = timelineOperations[name];
+      tools.push({
+        name, ...descriptions[name], parameters: z.toJSONSchema(schema), executionMode: "sequential",
+        ...(name === "readTimeline" ? { promptGuidelines: ["用户要求局部剪辑时先读取当前时间线。优先根据当前选区或用户指定的顺序、轨道和时间定位片段；有歧义则询问。用原生剪辑工具执行并以实际结果为准，不直接写时间线 JSON。"] } : {}),
+        async execute(_id, input, signal) {
+          const result = await canvas.call({ name, args: schema.parse(input) }, signal);
+          return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+        },
+      });
+    }
+  }
+  if (canvas?.studioSelection) tools.push({
+    name: "setStudioClipVolume", label: "调整 Studio 片段音量",
+    description: "根据用户要求调整本次引用的 Studio 视频片段音量。使用草稿里的项目和片段 ID，1 为原音量，0 为静音。操作需要用户在页面确认。",
+    parameters: z.toJSONSchema(studioVolumeSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "setStudioClipVolume", args: studioVolumeSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.studioSelection) tools.push({
+    name: "setStudioClipSpeed", label: "调整 Studio 片段速度",
+    description: "按用户要求调整引用的 Studio 视频片段播放倍速。使用草稿里的项目和片段 ID。修改保留素材入出点和片段起点，其他片段保持原位。操作需要页面确认。",
+    parameters: z.toJSONSchema(studioSpeedSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "setStudioClipSpeed", args: studioSpeedSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.studioSelection) tools.push({
+    name: "trimStudioClip", label: "裁切 Studio 视频片段",
+    description: "裁切用户引用的 Studio 视频片段。start 和 end 是源素材秒数，需要根据片段起点、源入点和倍速换算用户指定的时间线区间。保留片段在时间线的起点，其他片段保持原位。用户须在页面确认。",
+    parameters: z.toJSONSchema(studioTrimSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "trimStudioClip", args: studioTrimSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.studioSelection) tools.push({
+    name: "setStudioClipDisabled", label: "停用或恢复 Studio 视频片段",
+    description: "停用或恢复用户引用的 Studio 视频片段。停用保留位置和素材，播放与导出时跳过该片段。需要用户在页面确认。",
+    parameters: z.toJSONSchema(studioDisabledSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "setStudioClipDisabled", args: studioDisabledSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  if (canvas?.automaticFilm) tools.push({
+    name: "createAutomaticFilm", label: "一键成片",
+    description: "按已确认主题和当前项目内 1–8 段视频制作 15–30 秒草稿，写入时间线。视频总时长至少 15 秒。先在对话中核对素材和主题。点击页面中的用量确认后才开始生成。",
+    parameters: z.toJSONSchema(automaticFilmSchema), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const result = await canvas.call({ name: "createAutomaticFilm", args: automaticFilmSchema.parse(input) }, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  const caseQuerySchema = z.strictObject({ query: z.string().trim().min(1).max(80).optional() });
+  tools.push({
+    name: "listMarketCases", label: "查找应用市场案例",
+    description: "按题材、风格或模板名查找应用市场案例。返回详情与成片路径、所需素材及可传给 renderProjectTemplate 的模板 ID。",
+    parameters: z.toJSONSchema(caseQuerySchema),
+    async execute(_id, input) {
+      const { query } = caseQuerySchema.parse(input);
+      const terms = query?.toLowerCase().split(/\s+/) ?? [];
+      const result = templateCatalog.flatMap(({ cover: _cover, ...item }) => {
+        const themes = item.id === "vertical-beat" ? caseThemes : [];
+        const searchable = [...Object.values(item).flatMap(value => typeof value === "string" ? [value] : Object.values(value)),
+          ...themes.flatMap(theme => [theme.id, theme.name])];
+        if (!terms.every(term => searchable.some(value => value.toLowerCase().includes(term)))) return [];
+        return [{ ...item, detail: `#/home/cases/${item.id}`, preview: `/cases/${item.id}.mp4`,
+          themes: themes.map(theme => ({ ...theme, preview: `/cases/${theme.id}.mp4` })) }];
+      });
+      const projects = terms.every(term => Object.values(projectCase).some(value => (typeof value === "string" ? value : Object.values(value).join(" ")).toLowerCase().includes(term)))
+        ? [{ ...projectCase, detail: `#/home/cases/${projectCase.id}`, copyFromDetail: true }]
+        : [];
+      const matches = [...result, ...projects];
+      return { content: [{ type: "text", text: JSON.stringify(matches) }], details: matches };
+    },
+  });
+  const templateInput = templateSlotsSchema.extend({ title: z.string().trim().min(1).max(200) });
+  tools.push({
+    name: "renderProjectTemplate", label: "渲染项目整集模板",
+    description: "在当前项目渲染已确认的竖屏模板，返回 MP4 相对路径和时长。模板有竖屏卡点、产品三段、知识问答和数据简报。素材参数仅使用项目内已核对的路径。",
+    parameters: z.toJSONSchema(templateInput), executionMode: "sequential",
+    async execute(_id, input, signal) {
+      const slots = templateInput.parse(input);
+      const result = await renderTemplate(cwd, `exports/模板成片-${crypto.randomUUID()}.mp4`, slots, signal);
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+  });
+  const names = new Set(tools.map(tool => tool.name));
   const context = createAgentToolContext(cwd, {}, canvas, question);
   function appendTools(definitions: ToolDefinition[], prompt: string, label: string) {
     for (const tool of definitions) {

@@ -1,6 +1,6 @@
 <template>
   <el-dialog :modelValue="modelValue" :title="translate('整集模板')" width="min(560px, calc(100vw - 32px))"
-    :closeOnClickModal="!working" :closeOnPressEscape="!working" :showClose="!working" @update:modelValue="emit('update:modelValue', $event)">
+    :closeOnClickModal="!working" :closeOnPressEscape="!working" :showClose="!working" @update:modelValue="emit('update:modelValue', $event)" @closed="emit('closed')">
     <div class="templateForm">
       <p class="templateTip">{{ translate('竖屏模板固定镜头顺序与版式，只需换文案和素材。') }}</p>
       <label :for="`${formId}Template`">{{ translate('模板结构') }}</label>
@@ -59,6 +59,7 @@ import { ElButton, ElCheckbox, ElDialog, ElInput, ElOption, ElSelect } from "ele
 import { translate } from "@lumo/i18n/vue";
 import http from "@/lib/http";
 import { templateCatalog } from "@/pages/home/pages/skills/templateCatalog";
+import type { CaseThemeId } from "@lumo/server/templateCatalog";
 import type { AssetItem } from "../timelineTypes";
 
 const props = defineProps<{
@@ -67,13 +68,15 @@ const props = defineProps<{
   assets: AssetItem[];
   busy: boolean;
   canvas?: boolean;
+  initialTheme?: CaseThemeId;
+  initialTemplate?: (typeof templateCatalog)[number]["id"];
   saveVideo?: (video: { path: string; name: string; mimeType: string }) => Promise<void>;
   importFiles: (files: File[], allowedKinds: readonly AssetItem["kind"][]) => Promise<AssetItem[]>;
 }>();
-const emit = defineEmits<{ "update:modelValue": [value: boolean]; generated: [video: { path: string; name: string; mimeType: string }] }>();
+const emit = defineEmits<{ "update:modelValue": [value: boolean]; closed: []; generated: [video: { path: string; name: string; mimeType: string }] }>();
 const formId = useId();
 const templates = templateCatalog;
-const templateId = ref<(typeof templates)[number]["id"]>("vertical-beat");
+const templateId = ref<(typeof templates)[number]["id"]>(props.initialTemplate ?? "vertical-beat");
 const activeTemplate = computed(() => templates.find(item => item.id === templateId.value) ?? templates[0]);
 const themes = [
   { id: "coral-noir", name: "珊瑚暗夜" },
@@ -83,7 +86,7 @@ const themes = [
   { id: "celadon-paper", name: "青瓷白" },
   { id: "graphite-signal", name: "石墨信号" },
 ] as const;
-const themeId = ref<(typeof themes)[number]["id"]>("coral-noir");
+const themeId = ref<(typeof themes)[number]["id"]>(props.initialTheme ?? "coral-noir");
 const title = ref("");
 const subtitle = ref("");
 const claim = ref("");

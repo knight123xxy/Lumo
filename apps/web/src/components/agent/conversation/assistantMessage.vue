@@ -6,22 +6,18 @@
       <li v-for="(step, index) in plan" :key="index">{{ step }}</li>
     </ol>
   </details>
-  <el-button v-if="showTemplateAction && openTemplate" class="templateAction" size="small" @click="openTemplate()">{{ translate('打开整集模板') }}</el-button>
   <messageMarkdown v-if="after" :content="after" :streaming="streaming" :directory="directory" />
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from "vue";
-import { ElButton } from "element-plus";
+import { computed } from "vue";
 import { translate } from "@lumo/i18n/vue";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 
 const { content, streaming, directory } = defineProps<{ content: string; streaming: boolean; directory?: string }>();
-const openTemplate = inject<(() => void | Promise<void>) | undefined>("openWorkspaceTemplate", undefined);
 const templateMarker = /(?:^|\r?\n)\[\[lumo-open-template\]\][\t \r\n]*$/;
-const showTemplateAction = computed(() => !!openTemplate && !streaming && templateMarker.test(content));
 const parsed = computed(() => {
-  const text = showTemplateAction.value ? content.replace(templateMarker, "").trimEnd() : content;
+  const text = content.replace(templateMarker, "");
   const match = /^(?:\uFEFF)?[\t\r\n ]*(`{3,}|~{3,})lumo-plan[\t ]*\r?\n([\s\S]*?)^\1[\t ]*(?:\r?\n|$)/m.exec(text);
   if (!match || match.index !== 0) return { before: text, plan: [], after: "" };
   const lines = match[2]!.trim().split(/\r?\n/).map(line => line.trim());

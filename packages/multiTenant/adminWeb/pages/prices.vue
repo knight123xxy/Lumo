@@ -3,7 +3,7 @@
     <header class="pageHeading">
       <div>
         <h1>{{ translate("价格配置") }}</h1>
-        <p>{{ translate("按对外模型配置用户售价与上游成本，路由映射在模型路由中维护。") }}</p>
+        <p>{{ translate("按对外模型配置用户售价与上游成本，路由映射在模型管理中维护。") }}</p>
       </div>
       <el-button :disabled="busy" :loading="loading" @click="reload">{{ translate("重新加载") }}</el-button>
     </header>

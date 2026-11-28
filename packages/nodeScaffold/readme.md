@@ -187,7 +187,7 @@ await ai.generate({
 文本 AI 只提供 `generate({ ...input, onEvent, signal })`；服务端只接收 `Context` 请求并返回 SSE，不保留旧调用格式。
 
 
-- `useNodeModelMemory(type)`：读写该类型节点上次手动选择的模型键，返回 `{ get(), set(key) }`。宿主通过 `provide("nodeModelMemory", { get(type), set(type, key) })` 提供；图片、视频、音频生成节点分别使用 `image`、`video`、`audio`，仅在模型为空时优先采用仍可用的记忆值。未提供宿主能力时读取为空、写入忽略。
+- `useNodeModelMemory(type)` 返回 `{ get(), getDefault(), set(key) }`。宿主通过 `provide("nodeModelMemory", { get(type), getDefault?(type), set(type, key) })` 提供。文本、图片、视频、音频节点使用 `text`、`image`、`video`、`audio`。仅在节点尚未选模型时采用仍可用的设置默认值，媒体节点随后回退到上次手动选择，最后取目录中的首个可用模型。宿主未提供相应能力时读取为空、写入忽略。
 - `ai.getMediaModels(signal?)`：读取已安装供应商声明的图片、视频模型，返回供应商与模型 ID、名称、类型及模式参数。图片模型可通过 `imageSizes`、`imageRatios` 声明支持的分辨率与比例选项，节点生成时使用 `size`、`ratio` 传入选择值。
 - `ai.generateImage(input, signal?)`：非流式生成并落盘，返回 `{ path, mimeType, mediaType: "image" }[]`。`input` 包含工作区绝对路径 `directory`、`providerId`、`modelId`、`prompt`、工作区相对目录 `outputDirectory`；可传 `images: { path, mimeType }[]`、`ratio`、`size`。图片参考只传工作区相对路径，由后端读取。
 - `ai.generateVideo(input, signal?)`：视频生成并落盘，返回 `{ path, mimeType, mediaType: "video" }[]`。基础字段同图片生成；使用 `duration`、`resolution`、`ratio`、`generateAudio`、`mode` 配置视频，可传 `images`、`videos`、`audios` 和 `firstFrame`、`lastFrame`，素材均为工作区内 `{ path, mimeType }` 引用。

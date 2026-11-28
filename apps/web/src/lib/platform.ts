@@ -13,7 +13,8 @@ export const actualPlatform = {
   isLocalDesktop: desktop && !remoteConnection,
   isLocalMobile: mobile && !remoteConnection,
   isWindows: /Windows/i.test(navigator.userAgent),
-  isMac: navigator.platform.includes("Mac"),
+  // ACT: Chromium 会清空 navigator.platform，回退到 UA 才能识别 macOS 窗口。
+  isMac: /mac/i.test(navigator.platform || navigator.userAgent),
 } as const;
 
 export const platformSimulation = platformSimulationValues.find(value => value === parameters.get("simulatePlatform")) ?? "actual";

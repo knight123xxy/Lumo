@@ -166,7 +166,14 @@ internal static class checkWebView2
             {
                 try
                 {
-                    if (eventArgs.TryGetWebMessageAsString() != nonce) return;
+                    string message = eventArgs.TryGetWebMessageAsString();
+                    if (message == nonce + ":unsupported")
+                    {
+                        log("Runtime is missing required JavaScript APIs", 0);
+                        completion.TrySetResult(3);
+                        return;
+                    }
+                    if (message != nonce) return;
                     scriptCompleted = true;
                     if (navigationCompleted) completion.TrySetResult(0);
                 }
@@ -182,7 +189,10 @@ internal static class checkWebView2
                 completion.TrySetResult(4);
             };
             stage = "navigationAndScript";
-            webView.NavigateToString("<!doctype html><meta charset=\"utf-8\"><script>window.chrome.webview.postMessage(\"" + nonce + "\");</script>");
+            // ACT: 与桌面页面启动检查一致，避免预检通过后才提示更新 WebView2。
+            webView.NavigateToString("<!doctype html><meta charset=\"utf-8\"><script>"
+                + "var supported = typeof Map.groupBy === 'function' && typeof URL.canParse === 'function' && typeof Promise.withResolvers === 'function';"
+                + "window.chrome.webview.postMessage('" + nonce + "' + (supported ? '' : ':unsupported'));</script>");
             result = await completion.Task;
             if (result == 0) log("Runtime startup, local navigation and JavaScript passed", 0);
         }

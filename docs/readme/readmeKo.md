@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="스타 배지" />
   </a>
-  <a href="../../licenses/toonflow.txt">
+  <a href="../../LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License 배지" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ QR 코드를 스캔하여 그룹 초대 도우미에게 연락하세요.
 
 ## 8. 📜 오픈 소스 라이선스
 
-Toonflow는 [MIT License](../../licenses/toonflow.txt)로 배포됩니다. 타사 의존성과 자산에는 각각의 라이선스와 저작권 고지가 적용됩니다.
+Toonflow는 [MIT License](../../LICENSE)로 배포됩니다. 타사 의존성과 자산에는 각각의 라이선스와 저작권 고지가 적용됩니다.
 
 [![Toonflow 스타 기록](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

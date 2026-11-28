@@ -5,8 +5,8 @@ import { validateFields } from "@/lib/middleware";
 
 const router = Router();
 
-export default router.post("/", validateFields({ failed: z.boolean().optional() }), async (req, res) => {
+export default router.post("/", validateFields({ failed: z.boolean().optional(), awaitingAccount: z.boolean().optional() }), async (req, res) => {
   const runtime = u.desktop.getDesktopRuntime(req);
-  await runtime.ready(req.body.failed);
+  await runtime.ready(req.body.failed, req.body.awaitingAccount);
   res.sendStatus(204);
 });

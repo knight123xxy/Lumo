@@ -184,6 +184,7 @@ import { useNodeToolsContext } from "@lumo/nodes-scaffold/nodeTools";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { currentUser } from "@/stores/multiTenant";
 import { generalSettings, settingsStorage } from "@/stores/settings";
+import { readDefaultModel } from "@/components/settings/panels/model/defaultModels";
 import { getShortcutBindings, shortcutLabel, shortcutMatches, shortcutPressed } from "@/lib/canvasShortcuts";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import anonymousData from "@/lib/anonymousData";
@@ -1350,6 +1351,7 @@ function readModelMemory(): Record<string, unknown> {
   } catch { return {}; }
 }
 provide("nodeModelMemory", {
+  getDefault: (type: string) => type === "text" || type === "image" || type === "video" || type === "audio" ? readDefaultModel(type) : "",
   get: (type: string) => {
     const value = readModelMemory()[type];
     return typeof value === "string" ? value : "";

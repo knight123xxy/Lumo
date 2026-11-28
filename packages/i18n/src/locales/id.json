@@ -1613,6 +1613,7 @@
   "模型与连接配置已保存，读取最新模型失败：{0}。请重新打开编辑。": "Model dan konfigurasi koneksi disimpan, tetapi gagal mengambil model terbaru: {0}. Buka ulang editor.",
   "模型与思考强度设置": "Pengaturan model dan intensitas penalaran",
   "默认": "Bawaan",
+  "默认模型": "Model bawaan",
   "默认 10588，占用时自动顺延。保存后自动切换 MCP 端口，地址变化后请重新复制客户端配置。": "Port bawaan adalah 10588; jika terpakai, port berikutnya yang tersedia dipilih otomatis. Port MCP berubah setelah disimpan. Salin ulang konfigurasi klien saat alamat berubah.",
   "默认包含": "Disertakan secara default",
   "默认打开方式": "Cara membuka bawaan",

@@ -48,7 +48,7 @@ const lifetime = new AbortController();
 const workspaceStore = useWorkspaceStore();
 const pendingUpload = providePluginUpload();
 const canvases = shallowRef<{ id: string; name: string }[]>([]);
-let fileActionBusy = false;
+let pendingFileAction: Promise<void> | undefined;
 provide("canvasList", canvases);
 provide("canvasFolders", shallowRef([]));
 provide("canvasLoadedDirectories", shallowRef<string[]>([]));
@@ -122,12 +122,12 @@ async function ensureCanvas(fileName: string, signal?: AbortSignal, activate = f
 }
 
 async function activateCanvas(fileName: string, signal?: AbortSignal) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   await ensureCanvas(fileName, signal, true);
 }
 
 async function focusDocumentNode(directory: string, canvasPath: string, nodeId: string) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   checkDirectory(directory);
   const panel = await ensureCanvas(canvasPath, undefined, true);
   checkDirectory(directory);
@@ -144,7 +144,7 @@ async function focusDocumentNode(directory: string, canvasPath: string, nodeId: 
 }
 
 async function mountDocumentNode(directory: string, canvasPath: string, nodeId: string, target: HTMLElement) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   if (!directory || workspaceStore.project?.directory !== directory) throw new Error("工作目录已切换，请重新打开节点");
   const panel = await ensureCanvas(canvasPath);
   if (workspaceStore.project?.directory !== directory) throw new Error("工作目录已切换，请重新打开节点");
@@ -152,7 +152,7 @@ async function mountDocumentNode(directory: string, canvasPath: string, nodeId: 
 }
 
 async function observeDocumentNode(directory: string, canvasPath: string, nodeId: string, onState: (state: NodeDocumentState) => void) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   checkDirectory(directory);
   const panel = await ensureCanvas(canvasPath);
   checkDirectory(directory);
@@ -256,7 +256,7 @@ function checkNodeResources(path: string) {
 
 async function performFileAction(directory: string, action: "copy" | "rename" | "move" | "mkdir" | "delete", path: string, target?: string, nodeId?: string) {
   checkDirectory(directory);
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   path = relativePath(path);
   if (!["copy", "rename", "move", "mkdir", "delete"].includes(action)) throw new Error("不支持的文件操作");
   if (nodeId && action !== "delete") throw new Error("此操作不支持画布节点");
@@ -266,7 +266,8 @@ async function performFileAction(directory: string, action: "copy" | "rename" | 
     if (target === path) return;
   }
   if (target) target = relativePath(target);
-  fileActionBusy = true;
+  const actionFinished = Promise.withResolvers<void>();
+  pendingFileAction = actionFinished.promise;
   try {
     if (nodeId) {
       const panel = await ensureCanvas(path);
@@ -338,11 +339,14 @@ async function performFileAction(directory: string, action: "copy" | "rename" | 
         await nextTick();
       }
     });
-  } finally { fileActionBusy = false; }
+  } finally {
+    pendingFileAction = undefined;
+    actionFinished.resolve();
+  }
 }
 
 async function readDocumentNode(...args: Parameters<CanvasInstance["readDocumentNode"]>) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   checkDirectory(args[0]);
   const instance = await ensureCanvas(args[1]);
   checkDirectory(args[0]);
@@ -351,7 +355,7 @@ async function readDocumentNode(...args: Parameters<CanvasInstance["readDocument
 }
 
 async function saveDocumentNode(...args: Parameters<CanvasInstance["saveDocumentNode"]>) {
-  if (fileActionBusy) throw new Error("工作区文件正在操作，请稍后重试");
+  if (pendingFileAction) throw new Error("工作区文件正在操作，请稍后重试");
   checkDirectory(args[0]);
   const instance = await ensureCanvas(args[1]);
   checkDirectory(args[0]);
@@ -407,7 +411,7 @@ const mentionSource: MentionCanvasSource = {
   },
 };
 
-defineExpose({ canvasId, canvasReady, canvasListReady, activateCanvas, getCanvasContext, readDocumentNode, readDocumentNodes, focusDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, resolveDocumentNodeFile, performFileAction, flushSave, cancelSave,
+defineExpose({ canvasId, canvasReady, canvasListReady, activeKey, activateCanvas, getCanvasContext, readDocumentNode, readDocumentNodes, focusDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, resolveDocumentNodeFile, performFileAction, flushSave, cancelSave,
   addGenerationNode: (kind: "image" | "video") => activeInstance.value?.addGenerationNode(kind),
   addNodeAtPointer: () => activeInstance.value?.addNodeAtPointer(),
   openNodeSearch: () => activeInstance.value?.openNodeSearch(),
@@ -415,9 +419,30 @@ defineExpose({ canvasId, canvasReady, canvasListReady, activateCanvas, getCanvas
     if (!activeInstance.value) throw new Error("画布尚未就绪");
     return activeInstance.value.addShotVideoNode(...args);
   },
-  addTemplateVideo: (...args: Parameters<CanvasInstance["addTemplateVideo"]>) => {
-    if (!activeInstance.value) throw new Error("画布尚未就绪");
-    return activeInstance.value.addTemplateVideo(...args);
+  addTemplateVideo: (directory: string, canvasPath: string, video: Parameters<CanvasInstance["addTemplateVideo"]>[2]) => {
+    checkDirectory(directory);
+    const target = [...instances.values()].find(panel => panel.canvasId === canvasPath);
+    if (!target?.canvasReady) throw new Error("目标画布不可用，请打开后重试");
+    return target.addTemplateVideo(directory, canvasPath, video);
+  },
+  addStudioVideo: async (directory: string, canvasKey: string, video: Parameters<CanvasInstance["addTemplateVideo"]>[2]) => {
+    checkDirectory(directory);
+    // 改名完成后再读取原画布实例的路径。
+    while (pendingFileAction) {
+      await pendingFileAction;
+      checkDirectory(directory);
+    }
+    const target = entries.value.some(entry => entry.key === canvasKey) ? instances.get(canvasKey) : undefined;
+    if (!target?.canvasId || !target.canvasReady) throw new Error("目标画布不可用，请打开后重试");
+    // 节点保存期间占用同一文件操作锁，避免改名或移动抢在保存前执行。
+    const saveFinished = Promise.withResolvers<void>();
+    pendingFileAction = saveFinished.promise;
+    try {
+      await target.addTemplateVideo(directory, target.canvasId, video);
+    } finally {
+      pendingFileAction = undefined;
+      saveFinished.resolve();
+    }
   },
   get selectedVideoOutput() {
     const selected = activeInstance.value?.getMentionNodes().filter(node => node.selected);
@@ -433,7 +458,7 @@ defineExpose({ canvasId, canvasReady, canvasListReady, activateCanvas, getCanvas
     return selected?.length === 1 && selected[0]?.type === "remote-textNode" ? selected[0] : undefined;
   },
   mentionSource,
-  get saveBusy() { return fileActionBusy || [...instances.values()].some(panel => panel.saveBusy); },
+  get saveBusy() { return Boolean(pendingFileAction) || [...instances.values()].some(panel => panel.saveBusy); },
 });
 </script>
 

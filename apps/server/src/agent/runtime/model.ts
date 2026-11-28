@@ -4,6 +4,7 @@ import type { ThinkingLevel } from "@/lib/modelReasoning";
 import { getConfiguredModel } from "@/utils/ai";
 import { currentIdentity } from "@/utils/multiTenant/context";
 import { t } from "@/lib/i18n";
+import type { AgentTextTransport } from "@/agent/runtime/types";
 
 export async function getAgentModelConfiguration(providerId: string, modelId: string, thinkingLevel?: ThinkingLevel) {
   const configured = await getConfiguredModel(providerId, modelId);
@@ -21,6 +22,43 @@ const runtimeConfigurations = new WeakMap<ModelRuntime, Awaited<ReturnType<typeo
 
 export function getRuntimeModelConfiguration(runtime: ModelRuntime) {
   return runtimeConfigurations.get(runtime);
+}
+
+const textTransports = new WeakMap<ModelRuntime, AgentTextTransport>();
+
+export function getRuntimeTextTransport(runtime: ModelRuntime) {
+  return textTransports.get(runtime);
+}
+
+export function getAgentTextModel(transport: AgentTextTransport, providerId: string, modelId: string, thinkingLevel?: ThinkingLevel) {
+  const model = transport.models.find(item => item.providerId === providerId && item.modelId === modelId)
+    ?? transport.models.find(item => item.providerId === providerId && item.routeId === modelId);
+  if (!model) throw Object.assign(new Error("所选模型不存在，请重新选择"), { status: 400 });
+  if (thinkingLevel && thinkingLevel !== "off" && !model.reasoningLevels.includes(thinkingLevel)) {
+    throw Object.assign(new Error(t`模型 ${model.label} 不支持推理等级 ${thinkingLevel}`), { status: 400, code: "UNSUPPORTED_REASONING_EFFORT" });
+  }
+  return model;
+}
+
+export async function createTransportAgentModel(transport: AgentTextTransport, providerId: string, modelId: string, thinkingLevel?: ThinkingLevel) {
+  const model = getAgentTextModel(transport, providerId, modelId, thinkingLevel);
+  const runtime = await ModelRuntime.create({ credentials: new InMemoryCredentialStore(), modelsPath: null, refreshOnCreate: false });
+  for (const id of new Set(transport.models.map(item => item.providerId))) {
+    runtime.registerProvider(id, {
+      api: "openai-completions", baseUrl: "https://agent-text.invalid",
+      models: transport.models.filter(item => item.providerId === id).map(item => ({
+        id: item.modelId, name: item.label, reasoning: false, input: ["text", "image"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: item.contextWindow, maxTokens: item.maxOutputTokens,
+      })),
+    });
+    // SDK 在调用自定义流前仍检查认证；真实云会话只由请求级 transport 持有。
+    await runtime.setRuntimeApiKey(id, "agent-text-transport");
+  }
+  const runtimeModel = runtime.getModel(providerId, model.modelId);
+  if (!runtimeModel) throw Object.assign(new Error("模型运行时初始化失败"), { status: 503 });
+  textTransports.set(runtime, transport);
+  return { runtime, runtimeModel, effectiveThinkingLevel: "off" as const };
 }
 
 export async function createAgentModel(providerId: string, modelId: string, thinkingLevel?: ThinkingLevel) {

@@ -70,81 +70,12 @@
     <el-card class="infoCard" shadow="never">
       <div class="cardHeader">
         <div class="cardLabel">
-          <icon-brand-wechat :size="20" aria-hidden="true" />
-          <span>微信交流群</span>
-        </div>
-        <el-popover trigger="click" placement="top" title="微信扫码加入交流群" :width="196">
-          <template #reference>
-            <el-button size="small" :icon="IconQrcode">展示二维码</el-button>
-          </template>
-          <q-r-code
-            :value="communityUrl"
-            :size="168"
-            type="svg"
-            color="#000000"
-            bgColor="#ffffff"
-            borderless
-            role="img"
-            aria-label="Lumo 交流群二维码" />
-          <div class="tips">
-            Lumo 是为爱发电的开源项目。欢迎文明交流、友善反馈；回复可能需要一些时间，请避免责问或命令式沟通，感谢你的理解与尊重。
-          </div>
-        </el-popover>
-      </div>
-    </el-card>
-
-    <el-card class="infoCard" shadow="never">
-      <div class="cardHeader">
-        <div class="cardLabel">
           <icon-shield-lock :size="20" aria-hidden="true" />
           <span>隐私</span>
         </div>
         <el-button size="small" aria-haspopup="dialog" @click="privacyVisible = true">查看</el-button>
       </div>
     </el-card>
-
-    <section class="sponsorPanel" aria-label="赞助商">
-      <h3 class="sponsorTitle">
-        <icon-gift :size="20" aria-hidden="true" />
-        赞助商
-        <span class="sponsorHint">排名不分先后</span>
-        <el-popover trigger="click" placement="top" title="微信扫码洽谈商务合作" :width="196">
-          <template #reference>
-            <el-button class="sponsorContact" size="small" type="primary" link>成为赞助商</el-button>
-          </template>
-          <q-r-code
-            value="https://work.weixin.qq.com/u/vc66e4c7f8432af0d8?v=5.0.13.84802&bb=c03c3ad130"
-            :size="168"
-            type="svg"
-            color="#000000"
-            bgColor="#ffffff"
-            borderless
-            role="img"
-            aria-label="Lumo 商务合作二维码" />
-        </el-popover>
-      </h3>
-      <div v-if="sponsors.length" class="sponsorGrid" @keydown.esc="closeSponsor">
-        <el-popover
-          v-for="sponsor in sponsors"
-          :key="sponsor.id"
-          role="dialog"
-          placement="top-start"
-          :title="sponsor.name"
-          width="min(360px, calc(100vw - 32px))"
-          :visible="activeSponsorId === sponsor.id"
-          :hideAfter="0"
-          :persistent="false"
-          @update:visible="(visible) => setSponsorVisible(sponsor.id, visible)">
-          <template #reference>
-            <button class="sponsorEntry" type="button" :aria-label="`查看 ${sponsor.name} 详情`">
-              <span v-if="sponsor.logoUrl" class="sponsorLogo"><img :src="sponsor.logoUrl" :alt="`${sponsor.name} logo`" /></span>
-              <span class="sponsorName">{{ sponsor.name }}</span>
-            </button>
-          </template>
-          <messageMarkdown v-if="sponsor.readme.trim()" class="sponsorReadme" :content="sponsor.readme" @keydown.esc="closeSponsor" />
-        </el-popover>
-      </div>
-    </section>
 
     <el-dialog v-model="privacyVisible" title="隐私" width="min(660px, calc(100vw - 32px))" alignCenter appendToBody destroyOnClose>
       <privacy />
@@ -223,7 +154,6 @@ import { publicWeb } from "@/stores/multiTenant";
 import axios from "axios";
 import { ElMessage } from "element-plus";
 import { actualPlatform, isMobile, isLocalDesktop, isRemoteConnection } from "@/lib/platform";
-import { QRCode } from "tdesign-vue-next";
 import {
   IconRefresh,
   IconBrandGithub,
@@ -232,13 +162,8 @@ import {
   IconArrowUpCircle,
   IconCircleCheck,
   IconArrowRight,
-  IconGift,
-  IconBrandWechat,
-  IconQrcode,
 } from "@tabler/icons-vue";
 import logoUrl from "@lumo/assets/logo.svg";
-import type { Sponsor } from "@lumo/server/channel";
-import http from "@/lib/http";
 import { saveSettings } from "@/stores/settings";
 import {
   desktopAutoUpdate,
@@ -253,10 +178,8 @@ import {
   startDesktopUpdate,
 } from "@/stores/desktopUpdate";
 
-const messageMarkdown = defineAsyncComponent(() => import("@/components/messageMarkdown.vue"));
 const privacy = defineAsyncComponent(() => import("./privacy.vue"));
 const repositoryUrl = "https://github.com/knight123xxy/Lumo";
-const communityUrl = "https://work.weixin.qq.com/u/vc66e4c7f8432af0d8?v=5.0.13.84802&bb=c03c3ad130";
 const clientBuild = ref<{ version: string; channel: string }>();
 const currentVersion = computed(() => actualPlatform.isDesktop && actualPlatform.isRemoteConnection
   ? clientBuild.value?.version || "" : snapshot.value?.version || import.meta.env.appVersion);
@@ -271,7 +194,6 @@ const updatePercentage = computed(() => !updateInProgress.value && snapshot.valu
   : updateProgress.value?.total ? Math.min(100, Math.floor(updateProgress.value.received / updateProgress.value.total * 100)) : 0);
 const resultVisible = ref(false);
 const privacyVisible = ref(false);
-const activeSponsorId = ref<number>();
 const controller = new AbortController();
 const resultTitle = computed(() => {
   if (snapshot.value?.installFailure) return translate("上次更新未成功");
@@ -296,16 +218,6 @@ const resultMessage = computed(() => {
   return snapshot.value.canUpdate ? translate("有新的版本可用，下载完成后可重启更新。") : translate("当前客户端不支持应用内更新，请下载安装包。");
 });
 
-const sponsors = ref<Sponsor[]>([]);
-
-onMounted(async () => {
-  try {
-    sponsors.value = await http<Sponsor[]>({ method: "GET", url: "/api/channel/community/getSponsorList", signal: controller.signal });
-  } catch (error) {
-    if (!controller.signal.aborted) ElMessage.error(getUpdateError(error));
-  }
-});
-
 onMounted(async () => {
   if (!actualPlatform.isDesktop) return;
   try {
@@ -321,15 +233,6 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => controller.abort());
 
-function setSponsorVisible(id: number, visible: boolean) {
-  if (visible || activeSponsorId.value === id) activeSponsorId.value = visible ? id : undefined;
-}
-
-function closeSponsor(event: KeyboardEvent) {
-  if (!activeSponsorId.value) return;
-  event.stopPropagation();
-  activeSponsorId.value = undefined;
-}
 
 function openUpdate() {
   resultVisible.value = true;
@@ -571,92 +474,7 @@ async function runUpdate(nextAction: "read" | "check" | "download" | "apply") {
     }
   }
 
-  .sponsorPanel {
-    margin-top: 8px;
-    min-width: 0;
 
-    .sponsorTitle {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 0 0 8px;
-      color: var(--el-text-color-primary);
-      font-size: 16px;
-      font-weight: 600;
-
-      .sponsorHint {
-        color: var(--el-text-color-secondary);
-        font-size: 12px;
-        font-weight: 400;
-      }
-
-      .sponsorContact {
-        margin-left: auto;
-      }
-    }
-
-    .sponsorGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(min(100%, 110px), 1fr));
-      gap: 6px;
-
-      .sponsorEntry {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
-        height: 48px;
-        padding: 7px 8px;
-        border: 1px solid var(--el-border-color-lighter);
-        border-radius: var(--ui-radius);
-        background: var(--el-bg-color);
-        color: var(--el-text-color-primary);
-        font: inherit;
-        text-align: left;
-        cursor: pointer;
-
-        &:hover,
-        &[aria-expanded="true"] {
-          border-color: var(--el-border-color-darker);
-          background: var(--el-fill-color-light);
-        }
-
-        &:focus-visible {
-          outline: 2px solid var(--el-color-primary);
-          outline-offset: 2px;
-        }
-
-        .sponsorLogo {
-          display: block;
-          flex-shrink: 0;
-          width: 32px;
-          height: 32px;
-          padding: 4px;
-          box-sizing: border-box;
-          border-radius: var(--ui-radius);
-          background: #fff;
-
-          img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-          }
-        }
-
-        .sponsorName {
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          font-size: 13px;
-          font-weight: 500;
-        }
-      }
-    }
-  }
 }
 
 .tips {
@@ -666,11 +484,7 @@ async function runUpdate(nextAction: "read" | "check" | "download" | "apply") {
   line-height: 1.7;
 }
 
-.sponsorReadme {
-  max-height: min(320px, 50vh);
-  overflow-y: auto;
-  overflow-wrap: anywhere;
-}
+
 
 .updateResult {
   padding: 8px 0;

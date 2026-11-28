@@ -93,8 +93,8 @@
 
     <section v-else-if="!multiTenantEnabled" class="localSection" aria-label="本地模式">
       <h3>{{ translate('本地模式') }}</h3>
-      <p>{{ translate('当前未启用云端账号，生成直接使用本机配置的模型，因此这里没有余额与充值入口。') }}</p>
-      <p class="localHint">{{ translate('余额与充值请到算力汇查看；如需云端同步与在线充值，开启多租户能力后这里会显示账号信息。') }}</p>
+      <p>{{ translate('本地项目使用此设备配置的模型。Lumo 账号、积分及消费记录由正式创作服务管理。') }}</p>
+      <p class="localHint">{{ translate('当前客户端尚未配置 Lumo 账号服务。') }}</p>
     </section>
 
     <section v-else class="authSection" aria-label="登录与注册">

@@ -23,6 +23,15 @@ if (mode === "typecheck") {
 if (!["darwin", "win32", "linux"].includes(process.platform) || !["x64", "arm64"].includes(process.arch)) {
   throw new Error("桌面构建需要 Windows、macOS 或 Linux 的 x64/arm64 环境。");
 }
+// ACT: 本机打包与 CI 共用账号服务配置。开发模式仍允许未配置时启动本地版。
+if (isWindows && mode !== "dev") {
+  const address = process.env.VITE_LUMO_ACCOUNT_SERVICE_URL?.trim() || "https://lumoai.pro/";
+  const url = URL.canParse(address) ? new URL(address) : undefined;
+  if (url?.protocol !== "https:" || !url.hostname || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+    throw new Error("VITE_LUMO_ACCOUNT_SERVICE_URL 必须是 Lumo 账号服务的 HTTPS 根地址。");
+  }
+  process.env.VITE_LUMO_ACCOUNT_SERVICE_URL = url.href;
+}
 if (mode === "dev") process.env.LUMO_DATA_DIR = resolve(projectDir, "data");
 if (isMac) {
   const startupTarget = process.arch === "x64" ? "macX64" : "macArm64";

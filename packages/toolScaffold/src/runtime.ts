@@ -69,6 +69,9 @@ export interface CanvasToolCall {
 
 export interface CanvasInfo {
   id: string;
+  studioSelection?: boolean;
+  embeddedTimeline?: boolean;
+  automaticFilm?: boolean;
   tools: NodeToolInfo[];
 }
 

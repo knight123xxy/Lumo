@@ -2,6 +2,7 @@
   <div class="agentConversation">
     <messageList
       :messages="messages"
+      :conversationMode="conversationMode"
       :directory="directory"
       :active="active"
       :disabled="disabled"
@@ -73,6 +74,8 @@ import { onAgentStopped, stopAgent } from "@/lib/agentControl";
 import { writeClipboardText } from "@/lib/clipboard";
 import { showNotification } from "@/lib/notification";
 import anonymousData from "@/lib/anonymousData";
+import { desktopAccountUser } from "@/lib/lumoAccountService";
+import { getDefaultModelKey } from "@/components/settings/panels/model/defaultModels";
 import { modelChoices, refreshModelChoices } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
 import type { AgentAttachment, AgentConversation, AgentMessage } from "./types";
@@ -83,7 +86,7 @@ import type { CanvasContext } from "@lumo/tool-canvas/runtime";
 import messageList from "./conversation/messageList.vue";
 import messageInput from "./conversation/messageInput.vue";
 
-const props = defineProps<{ active: boolean; initialSession: AgentConversation | null; initialModel?: string; sessionFile?: string; disabled: boolean; branchingId?: string }>();
+const props = defineProps<{ active: boolean; conversationMode?: "canvas" | "edit"; initialSession: AgentConversation | null; initialModel?: string; sessionFile?: string; disabled: boolean; branchingId?: string }>();
 const emit = defineEmits<{ session: [file: string]; sent: [prompt: string]; event: [event: AgentEvent]; branch: [message: AgentMessage] }>();
 const workspaceStore = useWorkspaceStore();
 const directory = workspaceStore.project?.directory;
@@ -231,8 +234,9 @@ async function sendQueuedMessage(streamingBehavior: "steer" | "followUp") {
   let accepted = false;
   try {
     await refreshModelChoices(true, requestController.signal);
+    if (desktopAccountUser.value && !selectedModelChoice.value) selectedModel.value = getDefaultModelKey("text", modelChoices.value);
     const currentModel = selectedModelChoice.value;
-    if (!currentModel) throw new Error("请先选择模型");
+    if (!currentModel) throw new Error(desktopAccountUser.value ? "平台尚未发布文本模型，请联系管理员" : "请先选择模型");
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
@@ -527,14 +531,15 @@ async function sendMessage(source?: AgentMessage) {
     requestController.signal.throwIfAborted();
     await uploadAttachments(attachments, directory, requestController.signal);
     await refreshModelChoices(true, requestController.signal);
+    if (desktopAccountUser.value && !selectedModelChoice.value) selectedModel.value = getDefaultModelKey("text", modelChoices.value);
     const currentModel = selectedModelChoice.value;
-    if (!currentModel) throw new Error("请先选择模型");
+    if (!currentModel) throw new Error(desktopAccountUser.value ? "平台尚未发布文本模型，请联系管理员" : "请先选择模型");
     if (!isSuperseded()) remoteRunning.value = true;
     pendingRunIds.add(requestRunId);
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-lumo-workspace": "1" },
-      body: JSON.stringify({ prompt, mentions, attachments: attachments.map(({ name, path, mimeType }) => ({ name, path, mimeType })), directory, runId: requestRunId, providerId: currentModel.providerId, modelId: currentModel.modelId, thinkingLevel: reasoningEffort.value || undefined, sessionFile: props.sessionFile, resendFrom, canvas: canvasContext ? { id: canvasContext.id, tools: canvasContext.tools } : undefined }),
+      body: JSON.stringify({ prompt, mentions, attachments: attachments.map(({ name, path, mimeType }) => ({ name, path, mimeType })), directory, runId: requestRunId, conversationMode: props.conversationMode, providerId: currentModel.providerId, modelId: currentModel.modelId, thinkingLevel: reasoningEffort.value || undefined, sessionFile: props.sessionFile, resendFrom, canvas: canvasContext ? { id: canvasContext.id, tools: canvasContext.tools, studioSelection: canvasContext.studioSelection, embeddedTimeline: canvasContext.embeddedTimeline, automaticFilm: canvasContext.automaticFilm } : undefined }),
       signal: requestController.signal,
     });
     connected = response.ok;
@@ -699,7 +704,8 @@ async function sendMessage(source?: AgentMessage) {
   }
 }
 
-watch(() => !props.initialSession?.parentFile && props.active && !locked.value && !!input.value && !!createCanvasContext?.()
+const canDispatchPendingMessage = inject<() => boolean>("canDispatchPendingAgentMessage", () => !!createCanvasContext?.());
+watch(() => !props.initialSession?.parentFile && props.active && !locked.value && !!input.value && canDispatchPendingMessage()
   && (!(busy.value || remoteRunning.value) || !workspaceStore.pendingAgentMessage?.attachments?.length) ? workspaceStore.pendingAgentMessage : null, async message => {
   const instance = input.value;
   if (!message || !instance || message.directory !== directory) return;
@@ -707,6 +713,13 @@ watch(() => !props.initialSession?.parentFile && props.active && !locked.value &
   if (!filled || input.value !== instance || !props.active || workspaceStore.pendingAgentMessage !== message) return;
   workspaceStore.pendingAgentMessage = null;
   void submitMessage();
+}, { flush: "post" });
+
+watch(() => props.active && !locked.value && !remoteRunning.value && !editingId.value && input.value ? workspaceStore.pendingAgentDraft : null, async draft => {
+  const instance = input.value;
+  if (!draft || !instance || draft.directory !== directory || (draft.mode && draft.mode !== props.conversationMode)) return;
+  const added = await instance.appendPrompt(draft.text, draft.images);
+  if (added && workspaceStore.pendingAgentDraft === draft) workspaceStore.pendingAgentDraft = null;
 }, { flush: "post" });
 
 onBeforeUnmount(abortRequest);

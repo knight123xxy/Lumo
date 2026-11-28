@@ -25,6 +25,8 @@ export type PublicModel = {
   routeId: string;
   modelId: string;
   label: string;
+  displayName?: string;
+  discountPercent?: number;
   salePrice: ModelPrice;
   priceLabel: string;
 };

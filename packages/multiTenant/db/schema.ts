@@ -34,6 +34,7 @@ export const sqliteUser = sqliteTable("multiTenantUser", {
   settingsRevision: integer("settingsRevision").notNull().default(0),
   disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
   authVersion: integer("authVersion").notNull().default(0),
+  emailVerifiedAt: integer("emailVerifiedAt"),
   createdAt: integer("createdAt").notNull().default(0),
   lastLoginAt: integer("lastLoginAt").notNull().default(0),
 });
@@ -49,6 +50,7 @@ export const mysqlUser = mysqlTable("multiTenantUser", {
   settingsRevision: int("settingsRevision").notNull().default(0),
   disabled: boolean("disabled").notNull().default(false),
   authVersion: int("authVersion").notNull().default(0),
+  emailVerifiedAt: bigint("emailVerifiedAt", { mode: "number" }),
   createdAt: bigint("createdAt", { mode: "number" }).notNull().default(0),
   lastLoginAt: bigint("lastLoginAt", { mode: "number" }).notNull().default(0),
 });
@@ -185,12 +187,12 @@ export type AdminDatabase = {
   getUser(userNameKey: string): Promise<UserRecord | undefined>;
   getUserById(id: string): Promise<UserRecord | undefined>;
   createReferralCode(code: ReferralCodeRecord): Promise<boolean>;
-  createUser(user: Pick<UserRecord, "id" | "userName" | "userNameKey" | "passwordHash" | "createdAt">, referralCodeHash?: string): Promise<boolean>;
+  createUser(user: Pick<UserRecord, "id" | "userName" | "userNameKey" | "passwordHash" | "createdAt" | "emailVerifiedAt">, referralCodeHash?: string): Promise<boolean>;
   updateUser(id: string, values: UserUpdate, expectedAuthVersion?: number): Promise<void>;
   completeUserLogin(id: string, expectedAuthVersion: number, at: number): Promise<boolean>;
   listUsers(options: ListUserOptions): Promise<{ items: ManagedUser[]; total: number }>;
   setUserDisabled(id: string, disabled: boolean): Promise<boolean>;
-  resetUserPassword(id: string, passwordHash: string): Promise<boolean>;
+  resetUserPassword(id: string, passwordHash: string, recovery?: { userNameKey: string; authVersion: number; emailVerifiedAt: number }): Promise<boolean>;
   createWebSession(session: WebSessionRecord): Promise<void>;
   getWebSession(tokenHash: string): Promise<WebSessionRecord | undefined>;
   expireWebSession(tokenHash: string): Promise<void>;

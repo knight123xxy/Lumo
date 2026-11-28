@@ -2,7 +2,7 @@ import { createBrowserFfmpeg } from "@lumo/ffmpeg/browser";
 import { translate } from "@lumo/i18n/vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { uid } from "./timelineModel";
-import { probeMedia, runCommand } from "./timelineMedia";
+import { atempoChain, probeMedia, runCommand } from "./timelineMedia";
 import type { StockCredit, TimelineClip, TimelineProject, TimelineTrack } from "./timelineTypes";
 
 export interface ExportOptions {
@@ -25,16 +25,6 @@ interface InputSpec {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
-}
-
-export function atempoChain(speed: number) {
-  const parts: string[] = [];
-  let remaining = speed;
-  // ffmpeg atempo 稳定区间为 0.5~2.0，超出时串联多个滤镜。
-  while (remaining > 2) { parts.push("atempo=2.0"); remaining /= 2; }
-  while (remaining < 0.5) { parts.push("atempo=0.5"); remaining /= 0.5; }
-  parts.push(`atempo=${remaining.toFixed(4)}`);
-  return parts.join(",");
 }
 
 function escapeDrawtext(text: string) {

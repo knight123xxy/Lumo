@@ -28,6 +28,7 @@ export const modelRouteSchema = z.strictObject({
   upstreamModelId: z.string().trim().min(1).max(256),
   salePrice: modelPriceSchema,
   costPrice: modelPriceSchema.nullable(),
+  discountPercent: z.number().int().min(1).max(100).optional(),
 }).refine(route => [route.salePrice, route.costPrice].filter(price => price !== null).every(price =>
   route.type === "text" ? price.mode === "perMillionTokens"
     : route.type === "video" ? price.mode !== "perMillionTokens" : price.mode === "perRequest"),

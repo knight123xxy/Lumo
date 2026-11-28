@@ -53,7 +53,7 @@ const editingProvider = ref<CustomProvider>();
 const deletingId = ref("");
 const upgradingId = ref("");
 const busy = computed(() => !!deletingId.value || !!upgradingId.value);
-const visibleProviders = computed(() => customProviders.value.filter(item => !["lumo", "ideaminetext"].includes(item.id.toLowerCase())));
+const visibleProviders = computed(() => customProviders.value.filter(item => item.id.toLowerCase() !== "lumo"));
 
 function getProviderVersion(provider: CustomProvider) {
   const version = provider.version;

@@ -6,6 +6,7 @@
         ref="videoRef"
         class="previewVideo"
         :src="src"
+        :volume="Math.min(1, currentClip.volume)"
         :style="{ transform: `scale(${zoom})` }"
         @loadedmetadata="seekToPlayhead"
         @timeupdate="onTimeUpdate"
@@ -45,8 +46,10 @@ export interface PreviewClip {
   id: string;
   source: string;
   inPoint: number;
+  outPoint: number;
   timelineStart: number;
   speed: number;
+  volume: number;
 }
 
 const props = defineProps<{
@@ -90,11 +93,14 @@ watch(previewSpeed, value => {
 watch(() => props.playing, playing => {
   const video = videoRef.value;
   if (!video || !currentClip.value) return;
-  if (playing) void video.play();
-  else video.pause();
+  if (playing) {
+    const { inPoint, outPoint } = currentClip.value;
+    if (video.currentTime < inPoint || video.currentTime >= outPoint) video.currentTime = inPoint;
+    void video.play();
+  } else video.pause();
 });
 
-watch(() => props.playhead, () => {
+watch([() => props.playhead, () => currentClip.value?.inPoint], () => {
   const video = videoRef.value;
   const clip = currentClip.value;
   if (!video || !clip || props.playing) return;
@@ -114,7 +120,9 @@ function onTimeUpdate() {
   const video = videoRef.value;
   const clip = currentClip.value;
   if (!video || !clip || !props.playing) return;
-  emit("updatePlayhead", clip.timelineStart + (video.currentTime - clip.inPoint) / clip.speed);
+  const sourceTime = Math.min(video.currentTime, clip.outPoint);
+  if (video.currentTime >= clip.outPoint) video.pause();
+  emit("updatePlayhead", clip.timelineStart + (sourceTime - clip.inPoint) / clip.speed);
 }
 
 function togglePlay() {

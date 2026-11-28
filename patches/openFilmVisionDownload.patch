@@ -1,0 +1,54 @@
+--- a/packages/openfilm/src/vision-assets.mjs
++++ b/packages/openfilm/src/vision-assets.mjs
+@@ -2,6 +2,7 @@
+ import { createReadStream, existsSync, readFileSync } from 'node:fs';
+ import { mkdir, rename, rm, open } from 'node:fs/promises';
+ import { createRequire } from 'node:module';
++import { spawn } from 'node:child_process';
+ import { dirname, join, sep } from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ import { createHash, randomUUID } from 'node:crypto';
+@@ -43,6 +44,28 @@
+     ]),
+   );
+ }
++async function* modelBytes(url, signal) {
++  if (process.env.OPENFILM_VISION_CURL === '1') {
++    const child = spawn('/usr/bin/curl', ['-q', '--fail', '--silent', '--location', '--max-redirs', '8',
++      '--proto', '=https', '--proto-redir', '=https', '--connect-timeout', '20', '--max-time', '600', '--', url],
++      { stdio: ['ignore', 'pipe', 'ignore'], signal });
++    const completed = new Promise((resolve) => {
++      child.once('error', () => resolve(false));
++      child.once('close', (code) => resolve(code === 0));
++    });
++    try {
++      yield* child.stdout;
++      signal.throwIfAborted();
++      if (!await completed) throw new Error('Could not download the vision model');
++    } finally {
++      if (child.exitCode === null && child.signalCode === null) child.kill();
++    }
++    return;
++  }
++  const res = await fetch(url, { signal });
++  if (!res.ok) throw new Error(`Could not download the vision model (${res.status})`);
++  yield* res.body;
++}
+ export async function visionModel(name) {
+   const model = Object.hasOwn(VISION_MODELS, name) ? VISION_MODELS[name] : null;
+   if (!model) throw new Error('Unknown vision model');
+@@ -60,12 +83,11 @@
+         let handle;
+         try {
+           await mkdir(dirname(file), { recursive: true });
+-          const res = await fetch(model.url, { signal: AbortSignal.any([controller.signal,AbortSignal.timeout(600000)]) });
+-          if (!res.ok) throw new Error(`Could not download the vision model (${res.status})`);
++          const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(600000)]);
+           handle = await open(temporary, 'wx');
+           const hash = createHash('sha256');
+           let size = 0;
+-          for await (const chunk of res.body) {
++          for await (const chunk of modelBytes(model.url, signal)) {
+             size += chunk.length;
+             if (size > model.bytes + 1024) throw new Error('Vision model exceeds its download limit');
+             hash.update(chunk);

@@ -5,14 +5,15 @@ import {
   createAgentSession,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
+import type { Context, ImageContent, TextContent } from "@earendil-works/pi-ai";
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 import type { CanvasContext, QuestionContext } from "@lumo/tools-scaffold/runtime";
-import type { AgentEvent, AgentMention, AgentPeerMessage, AgentToolCall } from "@/agent/runtime/types";
+import type { AgentEvent, AgentMention, AgentPeerMessage, AgentTextTransport, AgentToolCall } from "@/agent/runtime/types";
 import { agentMentionsSchema, mentionPrompt, snapshotMentions, validateMentionTokens } from "@/agent/runtime/mentions";
 import { readAiReferences, referenceContent } from "@/utils/ai";
 import { createAgentTools } from "@/agent/tools";
 import { createAgentResources } from "@/agent/runtime/resources";
-import { createAgentModel, getAgentModelConfiguration } from "@/agent/runtime/model";
+import { createAgentModel, createTransportAgentModel, getAgentModelConfiguration, getAgentTextModel } from "@/agent/runtime/model";
 import { configureAgentRequests } from "@/agent/runtime/requests";
 import { configureAgentDelivery } from "@/agent/runtime/delivery";
 import { getAgentImageReference, getOffloadedImageText, readAgentImage } from "@/agent/runtime/imageAttachments";
@@ -40,10 +41,12 @@ type AgentOptions = {
   providerId: string;
   modelId: string;
   thinkingLevel?: ThinkingLevel;
+  textTransport?: AgentTextTransport;
   sessionFile?: string;
   runId?: string;
   expectedRunId?: string;
   resendFrom?: string;
+  conversationMode?: "canvas" | "edit";
   streamingBehavior?: "steer" | "followUp";
   canvas?: CanvasContext;
   question?: QuestionContext;
@@ -61,11 +64,13 @@ export async function run(
     providerId,
     modelId,
     thinkingLevel,
+    textTransport,
     sessionFile,
     runId,
     expectedRunId,
     resendFrom,
     streamingBehavior,
+    conversationMode,
     canvas,
     question,
     signal,
@@ -80,7 +85,8 @@ export async function run(
   mentions = agentMentionsSchema.parse(mentions);
   validateMentionTokens(prompt, mentions);
   if (!prompt.trim() && !attachments.length && !mentions.length) throw Object.assign(new Error("请输入消息、提及或添加附件"), { status: 400 });
-  await getAgentModelConfiguration(providerId, modelId, thinkingLevel);
+  if (textTransport) modelId = getAgentTextModel(textTransport, providerId, modelId, thinkingLevel).modelId;
+  else await getAgentModelConfiguration(providerId, modelId, thinkingLevel);
   const attachmentContents: (z.infer<typeof agentAttachmentsSchema>[number] & { content?: string })[] = [];
   for (const attachment of attachments) {
     const { path } = await resolveWorkspacePath(cwd, attachment.path);
@@ -129,7 +135,10 @@ export async function run(
     send({ type: "accepted", runId: active.runId, message: { id: queueId, content: prompt.trim(), mode } });
     return;
   }
-  const { provider, runtime, runtimeModel, effectiveThinkingLevel } = await createAgentModel(providerId, modelId, thinkingLevel);
+  const modelConfig = textTransport
+    ? await createTransportAgentModel(textTransport, providerId, modelId, thinkingLevel)
+    : await createAgentModel(providerId, modelId, thinkingLevel);
+  const { runtime, runtimeModel, effectiveThinkingLevel } = modelConfig;
   if (sessionPath) {
     const file = await stat(sessionPath).catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") throw Object.assign(new Error("会话不存在，请重新打开对话"), { status: 404 });
@@ -139,6 +148,7 @@ export async function run(
   }
   // ACT: SDK 新会话先分配文件名、首条回复才落盘；只锁所属文件，允许不同对话同时运行。
   const newHistory = sessionPath ? undefined : SessionManager.create(cwd, sessionsDir);
+  if (newHistory && conversationMode) newHistory.appendCustomEntry("lumoConversationMode", { mode: conversationMode });
   const release = lockWorkspaceFiles([sessionPath ?? newHistory!.getSessionFile()!]);
   const controller = new AbortController();
   signal = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
@@ -188,7 +198,7 @@ export async function run(
         return await runDelegatedAgent({
           cwd, parentFile: member.parentFile, name: member.name, task: message.content, message,
           providerId: member.providerId, modelId: member.modelId, thinkingLevel: member.thinkingLevel,
-          canvas, signal: taskSignal, send, onReady,
+          canvas, signal: taskSignal, send, onReady, textTransport,
           onCanvasCancel: reason => { controller.abort(reason); onCanvasCancel?.(reason); },
         });
       } finally { active.waitingForAgent = undefined; }
@@ -200,7 +210,7 @@ export async function run(
     tools.push(await createSubAgentTool({
       cwd, tools, canvas, modelRuntime: runtime, model: runtimeModel, thinkingLevel: effectiveThinkingLevel,
       runTask: (name, task, taskSignal, onProgress) => runDelegatedAgent({
-        cwd, parentFile: file, name, task, providerId, modelId, thinkingLevel, canvas, signal: taskSignal, send, onProgress,
+        cwd, parentFile: file, name, task, providerId, modelId, thinkingLevel, canvas, signal: taskSignal, send, onProgress, textTransport,
         onCanvasCancel: reason => { controller.abort(reason); onCanvasCancel?.(reason); },
       }),
     }));
@@ -238,7 +248,7 @@ export async function run(
       })),
     });
     let messageIndex = 0;
-    configureAgentRequests(session, undefined, signal, replyTo => send({ type: "retry", blockPrefix: `${messageIndex}:`, replyTo }));
+    configureAgentRequests(session, undefined, signal, replyTo => send({ type: "retry", blockPrefix: `${messageIndex}:`, replyTo }), prepareTextContext);
     const delivery = configureAgentDelivery(session, peerMessage ? undefined : {
       content: prompt.trim(), attachments, mentions, delivery: originalMessage?.delivery,
     }, peerMessage?.id);
@@ -261,10 +271,8 @@ export async function run(
 
     // ACT: 历史和本轮引用共用文件能力判断与协议转换，会话只保存工作区快照路径。
     const mediaContents = new Map<string, ReturnType<typeof readAiReferences>>();
-    const onPayload = session.agent.onPayload;
-    session.agent.onPayload = async (payload, requestModel) => {
-      const body = (await onPayload?.(payload, requestModel) ?? payload) as Record<string, unknown>;
-      sendUserMessage();
+    const provider = "provider" in modelConfig ? modelConfig.provider : undefined;
+    function getMediaMessages() {
       const imageReferences = new Map(history.getBranch().flatMap(entry => {
         const reference = entry.type === "custom" && entry.customType === "lumoImageAttachment"
           ? getAgentImageReference({ type: "text", text: "", lumoImage: entry.data }) : undefined;
@@ -292,6 +300,48 @@ export async function run(
           if (part.type === "text") mediaMessages.set(part.text, { id: entry.id, references });
         }
       }
+      return { mediaMessages, imageReferences, offloadedImages };
+    }
+    async function prepareTextContext(context: Context, requestSignal: AbortSignal): Promise<Context> {
+      sendUserMessage();
+      const { mediaMessages, imageReferences, offloadedImages } = getMediaMessages();
+      if (!mediaMessages.size) return context;
+      return { ...context, messages: await Promise.all(context.messages.map(async message => {
+        if (message.role !== "user") return message;
+        const parts = typeof message.content === "string" ? [{ type: "text" as const, text: message.content }] : message.content;
+        const content: (TextContent | ImageContent)[] = [];
+        for (const [partIndex, part] of parts.entries()) {
+          content.push(part);
+          const source = part.type === "text" ? mediaMessages.get(part.text) : undefined;
+          if (!source) continue;
+          for (const [index, media] of source.references.entries()) {
+            const label = `{{ref ${index + 1}}}`;
+            if (media.dataType !== "IMAGE") {
+              // ACT: 云端 Context 只接收图片和文本，视频保留工作区路径引用。
+              content.push({ type: "text", text: `${label} 视频位于工作区 ${typeof media.value === "string" ? media.value : media.value.url}` });
+              continue;
+            }
+            const saved = imageReferences.get(`user:${source.id}:${partIndex}:${index}`);
+            if (saved && offloadedImages.has(saved.id)) {
+              content.push({ type: "text", text: `${label} ${getOffloadedImageText(saved)}` });
+              continue;
+            }
+            content.push({ type: "text", text: label });
+            if (saved) { content.push(await readAgentImage(cwd, saved, requestSignal)); continue; }
+            const [image] = await readAiReferences(cwd, [media], requestSignal);
+            const match = /^data:(image\/[^;]+);base64,([\s\S]+)$/.exec(image.value);
+            if (!match) throw new Error("图片参考内容无效");
+            content.push({ type: "image", mimeType: match[1]!, data: match[2]! });
+          }
+        }
+        return { ...message, content };
+      })) };
+    }
+    const onPayload = session.agent.onPayload;
+    if (provider) session.agent.onPayload = async (payload, requestModel) => {
+      const body = (await onPayload?.(payload, requestModel) ?? payload) as Record<string, unknown>;
+      sendUserMessage();
+      const { mediaMessages, imageReferences, offloadedImages } = getMediaMessages();
       if (!mediaMessages.size) return body;
       const field = provider.protocol === "openai-responses" ? "input" : "messages";
       const textType = provider.protocol === "openai-responses" ? "input_text" : "text";

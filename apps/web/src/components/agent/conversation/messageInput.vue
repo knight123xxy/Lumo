@@ -322,9 +322,9 @@ async function fillPrompt(prompt: string, attachments?: AgentAttachment[]) {
   return true;
 }
 
-async function appendPrompt(prompt: string) {
+async function appendPrompt(prompt: string, images: File[] = []) {
   const instance = sender;
-  if (!instance || locked.value || !props.active) return;
+  if (!instance || locked.value || !props.active || instance.chatEditor.isComposition || (images.length && (running.value || editingId.value))) return false;
   const model = instance.getModel().map((line, lineIndex) => line.map((tag, tagIndex) => {
     if (tag.type !== "Write") return tag;
     const element = instance.chatEditor.NODES[lineIndex]?.children[tagIndex]?.$el;
@@ -332,7 +332,10 @@ async function appendPrompt(prompt: string) {
   }));
   const lines: AnyTagProps[][] = prompt.split("\n").map(text => [{ type: "Write", text }]);
   await instance.reset({ clearHistory: false, chatNode: getDraftContent().trim() ? [...model, ...lines] : lines });
-  if (sender === instance) instance.focus("last");
+  if (sender !== instance || !props.active) return false;
+  if (images.length) addAttachments(images);
+  instance.focus("last");
+  return true;
 }
 
 async function fillQueuedMessage(prompt: string) {

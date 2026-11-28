@@ -57,9 +57,9 @@
               <icon-plug-connected :size="20" aria-hidden="true" />
               <span class="sidebarText">{{ translate("供应商管理") }}</span>
             </router-link>
-            <router-link class="sidebarItem" :class="{ active: route.name === 'multiTenantModels' }" :to="{ name: 'multiTenantModels' }" :title="translate('模型路由')" :aria-label="translate('模型路由')">
+            <router-link class="sidebarItem" :class="{ active: route.name === 'multiTenantModels' }" :to="{ name: 'multiTenantModels' }" :title="translate('模型管理')" :aria-label="translate('模型管理')">
               <icon-route :size="20" aria-hidden="true" />
-              <span class="sidebarText">{{ translate("模型路由") }}</span>
+              <span class="sidebarText">{{ translate("模型管理") }}</span>
             </router-link>
             <router-link class="sidebarItem" :class="{ active: route.name === 'multiTenantPrices' }" :to="{ name: 'multiTenantPrices' }" :title="translate('价格配置')" :aria-label="translate('价格配置')">
               <icon-coins :size="20" aria-hidden="true" />
@@ -135,7 +135,7 @@ const pageTitle = computed(() => {
   if (route.name === "multiTenantConfiguration") return translate("系统配置");
   if (route.name === "multiTenantSourceMapping") return translate("数据源映射");
   if (route.name === "multiTenantProviders") return translate("供应商管理");
-  if (route.name === "multiTenantModels") return translate("模型路由");
+  if (route.name === "multiTenantModels") return translate("模型管理");
   if (route.name === "multiTenantPrices") return translate("价格配置");
   return translate("总览");
 });

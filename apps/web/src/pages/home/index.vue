@@ -5,14 +5,12 @@
     <el-scrollbar v-show="activeSection !== 'assets'" ref="pageScroll" class="pageScroll" @scroll="backgroundScrollTop = $event.scrollTop">
       <div class="pageBody">
         <el-main class="pageContent">
-          <skillsPage v-show="activeSection === 'skills'" :active="activeSection === 'skills'" :disabled="creating || opening" @start="startPipeline" @openTemplate="enterDestination('template')" @manage="settingsDialog?.openPanel('pluginMarket')" />
+          <skillsPage v-show="activeSection === 'skills'" :active="activeSection === 'skills'" :disabled="creating || opening" @start="startPipeline" @openTemplate="openCaseTemplate" @copyProjectCase="copyProjectCase" @manage="openSettingsPanel?.('pluginMarket')" />
         </el-main>
       </div>
     </el-scrollbar>
     <!-- 素材库自带内部滚动，需要确定高度，所以与滚动区占同一格，而不放进滚动区。 -->
     <assetsPage v-if="currentUser?.role !== 'user'" v-show="activeSection === 'assets'" :active="activeSection === 'assets'" />
-    <settings ref="settingsDialog" v-model="settingsVisible" />
-    <mobileConnect v-if="!publicWeb" v-model="mobileConnectVisible" />
     <el-dialog v-model="filmProjectVisible" :title="`${translate(destinationLabels[workspaceDestination])} · ${translate('选择工作区')}`" width="min(440px, calc(100vw - 32px))">
       <el-select v-if="workspaceStore.projectList.length" v-model="filmProjectDirectory" :placeholder="translate('选择已有项目')" :aria-label="translate('选择已有项目')">
         <el-option v-for="project in workspaceStore.projectList" :key="project.directory" :label="project.name" :value="project.directory" />
@@ -29,34 +27,29 @@
 <script setup lang="ts">
 import { translate } from "@lumo/i18n/vue";
 import axios from "axios";
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, provide, ref, watch } from "vue";
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type ScrollbarInstance } from "element-plus";
 import type { HomeAdvertisement, HomeAdvertisements } from "@lumo/server/channel";
 import { useWorkspaceStore, type Project, type ProjectMode } from "@/stores/workspace";
-import { createEmptyProject, timelineProjectFile } from "@/pages/workspace/panels/timeline/timelineModel";
-import { currentUser, publicWeb } from "@/stores/multiTenant";
-import useWorkspaceFiles from "@/lib/workspaceFiles";
+import { currentUser } from "@/stores/multiTenant";
 import http from "@/lib/http";
-import settings from "@/components/settings/index.vue";
 import bg from "./bg.vue";
 import workspacePicker from "./workspacePicker.vue";
 import homeAdvertisementCarousel from "./homeAdvertisementCarousel.vue";
 import assetsPage from "./pages/assets/index.vue";
 import skillsPage from "./pages/skills/index.vue";
+import { projectCase, type CaseThemeId, type TemplateStructure } from "@lumo/server/templateCatalog";
 import { modelChoices, saveSettings } from "@/stores/settings";
+import { getDefaultModelKey } from "@/components/settings/panels/model/defaultModels";
 
-const settingsVisible = ref(false);
-const settingsDialog = ref<InstanceType<typeof settings>>();
-provide("openSettingsPanel", (id: string) => settingsDialog.value?.openPanel(id));
+const openSettingsPanel = inject<(id: string) => boolean>("openSettingsPanel");
 const advertisements = ref<HomeAdvertisements>({ banner: null, banners: [], bannerMode: "carousel", bannerInterval: 5, sidebar: [] });
-const mobileConnectVisible = ref(false);
 const pageScroll = ref<ScrollbarInstance>();
 const backgroundScrollTop = ref(0);
 const activeSection = ref("skills");
 const homeSectionIds = ["skills", "assets"];
 
-const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
 const route = useRoute();
 const pageLifetime = new AbortController();
@@ -64,6 +57,25 @@ const creating = ref(false);
 const opening = ref(false);
 const filmProjectVisible = ref(false);
 const filmProjectDirectory = ref("");
+let marketTemplate: { item: TemplateStructure; theme?: CaseThemeId } | undefined;
+function openCaseTemplate(item: TemplateStructure, theme?: CaseThemeId) {
+  marketTemplate = { item, theme };
+  return enterDestination("template");
+}
+async function copyProjectCase() {
+  if (creating.value || opening.value) return;
+  creating.value = true;
+  try {
+    const { directory } = await http<{ directory: string }>({ method: "POST", url: "/api/workspaces/copyCase", data: { caseId: projectCase.id }, signal: pageLifetime.signal });
+    await workspaceStore.openProject(directory, directory, pageLifetime.signal, "edit");
+    await nextTick();
+    await saveSettings();
+    await enterWorkspace("timeline");
+  } catch (error) {
+    if (!pageLifetime.signal.aborted) ElMessage.error(error instanceof Error ? error.message : translate("无法新建项目，请重试"));
+  } finally { creating.value = false; }
+}
+
 type WorkspaceDestination = "canvas" | "timeline" | "agent" | "template";
 async function createWorkspaceProject(mode: ProjectMode, destination?: WorkspaceDestination) {
   if (creating.value || opening.value) return;
@@ -102,12 +114,13 @@ function startWorkspace(directory?: string) {
   filmProjectVisible.value = false;
   const project = workspaceStore.projectList.find(item => item.directory === directory);
   if (project) return openProject(project, workspaceDestination.value);
-  if (!directory) return createWorkspaceProject(workspaceDestination.value === "timeline" ? "edit" : "canvas", workspaceDestination.value);
+  if (!directory) return createWorkspaceProject(workspaceDestination.value === "timeline" || marketTemplate ? "edit" : "canvas", workspaceDestination.value);
 }
 const relocationPicker = ref<InstanceType<typeof workspacePicker>>();
 const workspaceStore = useWorkspaceStore();
 onMounted(() => { void loadAdvertisements(); });
-watch(() => route.query.section, section => {
+watch([() => route.query.section, () => route.name], ([section, name]) => {
+  if (name === "marketCase") return showSection("skills");
   if (route.path !== "/home") return;
   showSection(section === "assets" && currentUser.value?.role !== "user" ? "assets" : "skills");
 }, { immediate: true });
@@ -200,7 +213,7 @@ async function loadAdvertisements() {
 
 async function activateAdvertisement(advertisement: HomeAdvertisement) {
   if (advertisement.actionType === "settings") {
-    if (!settingsDialog.value?.openPanel(advertisement.actionTarget)) ElMessage.warning("当前设备不支持该设置项");
+    if (!openSettingsPanel?.(advertisement.actionTarget)) ElMessage.warning("当前设备不支持该设置项");
     return;
   }
   if (advertisement.actionType !== "path") return;
@@ -234,15 +247,24 @@ function showSection(section: string) {
 async function enterWorkspace(destination?: WorkspaceDestination, sessionMode?: ProjectMode) {
   // ACT: 直接切换路由，由工作区自行渲染骨架，不再用全屏加载页挡住房型结构。
   if (pageLifetime.signal.aborted) return;
+  const directory = workspaceStore.project?.directory;
   await router.push({
     path: "/workspace",
-    query: destination === "template" ? { panel: "canvas", template: "1" }
+    query: destination === "template" ? marketTemplate ? { panel: "timeline", template: marketTemplate.item.id, theme: marketTemplate.theme } : { panel: "canvas", agent: "1" }
       : destination === "agent" ? { panel: (sessionMode ?? workspaceStore.project?.mode) === "edit" ? "timeline" : "canvas", agent: "1" }
       : destination ? { panel: destination } : {},
   });
+  if (destination === "template" && directory && router.currentRoute.value.path === "/workspace" && workspaceStore.project?.directory === directory) {
+    const pending = workspaceStore.pendingAgentDraft;
+    if (marketTemplate) { marketTemplate = undefined; return; }
+    const text = translate("我想用整集模板做一条视频。请先帮我确认主题、文案和已有素材，再推荐合适的结构。");
+    workspaceStore.pendingAgentDraft = pending?.directory === directory && pending.mode === "canvas"
+      ? { ...pending, text: `${pending.text}\n\n${text}` }
+      : { directory, mode: "canvas", text };
+  }
 }
 
-async function openProject(project: Project, destination?: WorkspaceDestination, sessionFile?: string, sessionMode?: ProjectMode) {
+async function openProject(project: Project, destination?: WorkspaceDestination, sessionMode?: ProjectMode) {
   if (creating.value || opening.value) return;
   opening.value = true;
   try {
@@ -259,8 +281,8 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
       await workspaceStore.openProject(directory, project.directory, pageLifetime.signal, project.mode);
     }
     const opened = workspaceStore.project;
-    workspaceStore.pendingAgentSession = opened && sessionFile ? { directory: opened.directory, file: sessionFile } : null;
-    await enterWorkspace(destination ?? (opened?.mode === "edit" ? "timeline" : "canvas"), sessionMode);
+    await enterWorkspace(destination ?? ((sessionMode ?? opened?.mode) === "edit" ? "timeline" : "canvas"));
+    if (router.currentRoute.value.path === "/workspace") return opened ?? undefined;
   } catch (err) {
     ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
       ? err.response?.data.message || "无法打开项目，请重试"
@@ -271,63 +293,27 @@ async function openProject(project: Project, destination?: WorkspaceDestination,
 defineExpose({
   navigationBusy: computed(() => creating.value || opening.value),
   createSidebarProject: createWorkspaceProject,
-  openSidebarProject: (project: Project, file?: string, mode?: ProjectMode) => openProject(project, file ? "agent" : undefined, file, mode),
-  openSidebarSettings(panel?: string) {
-    if (panel === "deviceLink") mobileConnectVisible.value = true;
-    else if (panel) settingsDialog.value?.openPanel(panel);
-    else settingsVisible.value = true;
-  },
+  openSidebarProject: (project: Project, mode?: ProjectMode) => openProject(project, undefined, mode),
 });
 
-// 整集模板：把流水线定位和用户主题拼成创作要求，走与首页输入框相同的新建项目入口。
 async function startPipeline(request: { name: string; summary: string; category: string; topic: string }) {
   if (creating.value || opening.value) return;
-  const directory = await relocationPicker.value?.chooseDirectory();
-  if (!directory || pageLifetime.signal.aborted) return;
-  await createProject({
-    directory,
-    prompt: `按「${request.name}」流水线制作。\n类别：${request.category}\n定位：${request.summary}\n主题与要求：${request.topic}\n请先给出阶段计划与分镜方案，确认后再开始生成。`,
-    attachments: [],
-    model: modelChoices.value[0]?.value ?? "",
-    reasoningEffort: "",
-  });
-}
-
-function inferProjectMode(entries: { name: string; type: string }[]): ProjectMode {
-  return entries.some(entry => entry.type === "file" && entry.name === timelineProjectFile) ? "edit" : "canvas";
-}
-
-async function initializeProject(path: string, requireEmpty = false, mode?: ProjectMode) {
-  const { directory, empty, entries } = await useWorkspaceFiles(path).list("", pageLifetime.signal);
-  if (requireEmpty && !empty) {
-    ElMessage.warning("该文件夹不为空，请重新选择空文件夹；已有项目请从项目列表打开。");
-    return false;
-  }
-  const projectMode = empty ? mode ?? "canvas" : inferProjectMode(entries);
-  if (empty) {
-    const files = useWorkspaceFiles(directory);
-    if (projectMode === "edit") await files.writeJson(timelineProjectFile, createEmptyProject(), true);
-    else await files.writeJson("画布1.json", { lumoCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
-  }
-  await workspaceStore.openProject(directory, directory, pageLifetime.signal, projectMode);
-  return true;
-}
-
-async function createProject(request?: NonNullable<typeof workspaceStore.pendingAgentMessage>, destination?: WorkspaceDestination, mode?: ProjectMode) {
-  if (creating.value || opening.value) return;
-  const path = request ? request.directory : await relocationPicker.value?.chooseDirectory();
-  if (!path || creating.value || opening.value || pageLifetime.signal.aborted) return;
   creating.value = true;
   try {
-    if (!await initializeProject(path, !!request || !!mode, mode ?? (destination === "timeline" ? "edit" : undefined))) return;
-    if (request && (request.prompt.trim() || request.attachments?.length)) {
-      workspaceStore.pendingAgentMessage = { ...request, directory: workspaceStore.project!.directory };
-    }
-    await enterWorkspace(destination ?? (workspaceStore.project?.mode === "edit" ? "timeline" : undefined));
-  } catch (err) {
-    ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
-      ? err.response?.data.message || "无法打开或创建项目，请重试"
-      : err instanceof Error ? err.message : "无法打开或创建项目，请重试");
+    const directory = await relocationPicker.value?.chooseDirectory();
+    if (!directory || pageLifetime.signal.aborted) return;
+    const project = await workspaceStore.createProject("canvas", pageLifetime.signal, directory);
+    workspaceStore.pendingAgentMessage = {
+      directory: project.directory,
+      prompt: `按「${request.name}」流水线制作。\n类别：${request.category}\n定位：${request.summary}\n主题与要求：${request.topic}\n请先给出阶段计划与分镜方案，确认后再开始生成。`,
+      model: getDefaultModelKey("text", modelChoices.value),
+      reasoningEffort: "",
+    };
+    await enterWorkspace("agent");
+  } catch (error) {
+    if (!pageLifetime.signal.aborted) ElMessage.error(axios.isAxiosError<{ message?: string }>(error)
+      ? error.response?.data.message || "无法打开或创建项目，请重试"
+      : error instanceof Error ? error.message : "无法打开或创建项目，请重试");
   } finally {
     creating.value = false;
   }

@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./app": "./src/app.ts",
+    "./ffmpeg": "./src/utils/ffmpeg/index.ts",
     "./multiTenant": "./src/utils/multiTenant/index.ts",
     "./remoteConnection": "./src/remoteConnection.ts",
     "./desktop": "./src/types/desktop.ts",
@@ -12,6 +13,9 @@
     "./documentFormats": "./src/lib/documentFormats.ts",
     "./nodeMenu": "./src/lib/nodeMenu.ts",
     "./modelReasoning": "./src/lib/modelReasoning.ts",
+    "./mediaSchemas": "./src/utils/media/schemas.ts",
+    "./workspace": "./src/utils/workspace/index.ts",
+    "./workspaceFiles": "./src/utils/workspace/files.ts",
     "./channel": "./src/utils/channel/types.ts",
     "./mcp": "./src/utils/mcp/runtime.ts",
     "./mobileLink": "./src/utils/mobileLink/index.ts",
@@ -19,6 +23,7 @@
     "./agent/types": "./src/agent/runtime/types.ts",
     "./singleAgent/types": "./src/utils/singleAgent/types.ts",
     "./agent/mentionSources": "./src/agent/mentionSources.ts",
+    "./templateCatalog": "./src/lib/templateCatalog.ts",
     "./i18n": "./src/lib/i18n.ts"
   },
   "scripts": {
@@ -59,6 +64,7 @@
     "fast-glob": "^3.3.3",
     "fflate": "^0.8.3",
     "morgan": "^1.12.1",
+    "nodemailer": "^10.6.1",
     "undici": "8.9.0",
     "wavefile": "^11.0.0",
     "zod": "^4.6.2"
@@ -66,6 +72,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/morgan": "^1.9.10"
+    "@types/morgan": "^1.9.10",
+    "@types/nodemailer": "^8.0.2"
   }
 }

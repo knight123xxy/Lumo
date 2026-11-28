@@ -19,12 +19,16 @@ export default {
     // ACT: Photon、anydoc 与沙盒依赖保留运行时目录，避免 WASM/Worker 引用构建机路径。
     bun: {
       entrypoint: "apps/desktop/src/bootstrap.ts", minify: true,
+      define: { "process.env.VITE_LUMO_ACCOUNT_SERVICE_URL": JSON.stringify(process.env.VITE_LUMO_ACCOUNT_SERVICE_URL ?? "") },
       external: ["@silvia-odwyer/photon-node", "@firecrawl/anydoc", "@firecrawl/anydoc-wasm", "just-bash"],
       ...(process.platform === "darwin" && process.env.LUMO_EXTERNAL_RUNTIME === "1" ? {
         alias: { "electrobun/main": fileURLToPath(new URL("./build/desktop/runtime/electrobunMain.js", import.meta.url)) },
       } : {}),
     },
     copy: {
+      ...(process.platform === "darwin" && process.env.LUMO_OPENFILM_BUNDLE_DIR ? {
+        [process.env.LUMO_OPENFILM_BUNDLE_DIR]: "openFilmStudio",
+      } : {}),
       "build/desktop/ffmpeg/ffmpegWorker.js": "bun/ffmpegWorker.js",
       "build/desktop/sandbox/sandboxProcess.js": "bun/sandboxProcess.js",
       "apps/server/src/utils/showcase/renderCards.mjs": "bun/renderCards.mjs",
@@ -57,7 +61,7 @@ export default {
         [`packages/startup/assets/${startupTarget}`]: `startup/${startupTarget}`,
       } : {}),
     },
-    buildFolder: "build/desktop/app",
+    buildFolder: process.env.LUMO_DESKTOP_BUILD_FOLDER || "build/desktop/app",
     artifactFolder: `build/desktop/artifacts${desktopTarget ? `/${desktopTarget}` : ""}`,
     win: {
       icon: "packages/assets/logo.ico",

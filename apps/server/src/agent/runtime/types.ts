@@ -1,5 +1,21 @@
+import type { Context } from "@earendil-works/pi-ai";
 import type { CanvasToolCall, QuestionRequest, ToolCall } from "@lumo/tools-scaffold/runtime";
 import type { ThinkingLevel } from "../../lib/modelReasoning";
+
+export type AgentTextModel = {
+  providerId: string;
+  modelId: string;
+  routeId: string;
+  label: string;
+  contextWindow: number;
+  maxOutputTokens: number;
+  reasoningLevels: readonly ThinkingLevel[];
+};
+
+export type AgentTextTransport = {
+  models: readonly AgentTextModel[];
+  generate(input: { providerId: string; modelId: string; requestId: string; context: Context }, signal?: AbortSignal): Promise<Response>;
+};
 
 export type AgentToolCall = ToolCall & { question?: QuestionRequest & { callId: string } };
 

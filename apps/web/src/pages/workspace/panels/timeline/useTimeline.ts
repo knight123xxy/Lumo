@@ -3,7 +3,8 @@ import axios from "axios";
 import { createBrowserFfmpeg, type BrowserFfmpegFactory } from "@lumo/ffmpeg/browser";
 import { isBrowserAudioAsrSupported, transcribeBrowserAudio } from "@lumo/asr";
 import { translate } from "@lumo/i18n/vue";
-import { useNodeAi } from "@lumo/nodes-scaffold/nodeAi";
+import { getNodeModelIdentity, useNodeAi } from "@lumo/nodes-scaffold/nodeAi";
+import { ElMessageBox } from "element-plus";
 import http from "@/lib/http";
 import { buildAutomaticFilm, type AutomaticFilmInput } from "./automaticFilm";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
@@ -23,9 +24,14 @@ import {
 } from "./timelineModel";
 import { extractAudio, probeMedia } from "./timelineMedia";
 import { applySilenceEdit, type SilenceEditMode } from "./timelineSilence";
-import type { AssetItem, ClipFilter, ClipCrop, ProjectStyle, TimelineClip, TimelineProject, TrackType } from "./timelineTypes";
+import { splitSubtitleText } from "./timelineSubtitles";
+import type { AssetItem, ClipFilter, ClipCrop, FilmImportDraft, ProjectStyle, TimelineClip, TimelineProject, TrackType } from "./timelineTypes";
 
 type Selection = { trackId: string; clipId: string };
+
+function clipVolumePatch(volume: number) {
+  return { volume: clamp(volume, 0, 2) };
+}
 
 function snapshot<T>(data: T): T {
   return JSON.parse(JSON.stringify(data)) as T;
@@ -88,21 +94,41 @@ export function useTimeline(directory: string) {
       const data = await files.readJson<TimelineProject>(timelineProjectFile, lifetime.signal);
       if (data && Array.isArray(data.tracks)) project.value = normalizeProject(data);
       else throw new Error(translate("剪辑工程格式不正确"));
-    } catch (error) {
-      // 首页成片会直接保存草稿，只有文件不存在时才允许从空工程开始。
-      if (!axios.isAxiosError(error) || error.response?.status !== 404) {
-        if (strict) throw error;
-        timelineReadError = error instanceof Error ? error.message : translate("读取剪辑工程失败");
+    } catch (failure) {
+      // 只有工程文件不存在时才允许从空时间线开始。
+      if (!axios.isAxiosError(failure) || failure.response?.status !== 404) {
+        if (strict) throw failure;
+        timelineReadError = failure instanceof Error ? failure.message : translate("读取剪辑工程失败");
+        error.value = timelineReadError;
       }
     }
     loaded.value = true;
     ready.value = true;
   }
 
+  let pendingSave = Promise.resolve();
+  function queueSave(save: () => Promise<void>) {
+    const result = pendingSave.then(save);
+    // 失败返回给本次调用方，后续保存仍可执行。
+    pendingSave = result.catch(() => {});
+    return result;
+  }
+
   async function flushSave() {
     if (!loaded.value) return;
     if (timelineReadError) throw new Error(timelineReadError);
-    await files.writeJson(timelineProjectFile, project.value);
+    // 等前一个写入发布工程状态后再读取快照，避免保存旧时间线。
+    await queueSave(() => files.writeJson(timelineProjectFile, project.value));
+  }
+
+  function saveTimelineChange(change: TimelineProject | (() => TimelineProject), beforeWrite = () => lifetime.signal.throwIfAborted()) {
+    return queueSave(async () => {
+      beforeWrite();
+      const next = typeof change === "function" ? change() : change;
+      await files.writeJson(timelineProjectFile, next);
+      commit();
+      project.value = next;
+    });
   }
 
   async function appendCanvasVideo(video: { path: string; name: string; mimeType: string }) {
@@ -141,9 +167,7 @@ export function useTimeline(directory: string) {
       track.clips.push(clip);
       next.assets.push({ id: uid("asset"), path, name: video.name, mimeType: video.mimeType, kind: "video", size: Number(media.format.size) || 0,
         duration: seconds, width: stream.width, height: stream.height });
-      await files.writeJson(timelineProjectFile, next);
-      commit();
-      project.value = next;
+      await saveTimelineChange(next);
       selection.value = { trackId: track.id, clipId: clip.id };
       playing.value = false;
       playhead.value = start;
@@ -152,7 +176,7 @@ export function useTimeline(directory: string) {
     }
   }
 
-  async function createAutomaticFilm(input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void) {
+  async function createAutomaticFilm(input: AutomaticFilmInput, signal: AbortSignal, progress: (stage: string) => void, onSaving?: () => void) {
     if (!ready.value || busy.value) throw new Error(translate("剪辑工程正在处理，请稍后重试"));
     if (timelineReadError) throw new Error(timelineReadError);
     busy.value = true;
@@ -162,24 +186,30 @@ export function useTimeline(directory: string) {
       if (unavailable) throw new Error(translate("请先显示视频和字幕轨，并取消音频轨静音"));
       const draft = await buildAutomaticFilm(input, directory, ai, await getFfmpeg(), combined, progress);
       combined.throwIfAborted();
-      const next = snapshot(project.value);
-      const start = computeDuration(next);
-      for (const [type, clips] of [["video", draft.video], ["audio", draft.audio], ["subtitle", draft.subtitles]] as const) {
-        let track = next.tracks.find(item => item.type === type);
-        if (track && (track.hidden || (type === "audio" && track.muted))) {
-          throw new Error(translate("请先显示视频和字幕轨，并取消音频轨静音"));
+      let start = 0;
+      await saveTimelineChange(() => {
+        const next = snapshot(project.value);
+        start = computeDuration(next);
+        for (const [type, clips] of [["video", draft.video], ["audio", draft.audio], ["subtitle", draft.subtitles]] as const) {
+          let track = next.tracks.find(item => item.type === type);
+          if (track && (track.hidden || (type === "audio" && track.muted))) {
+            throw new Error(translate("请先显示视频和字幕轨，并取消音频轨静音"));
+          }
+          if (!track) {
+            track = createTrack(type);
+            next.tracks.push(track);
+          }
+          track.clips.push(...clips.map(clip => ({ ...clip, timelineStart: clip.timelineStart + start })));
         }
-        if (!track) {
-          track = createTrack(type);
-          next.tracks.push(track);
-        }
-        track.clips.push(...clips.map(clip => ({ ...clip, timelineStart: clip.timelineStart + start })));
-      }
-      next.assets.push(...draft.assets);
-      if (draft.style) next.style = draft.style;
-      await files.writeJson(timelineProjectFile, next);
-      commit();
-      project.value = next;
+        next.assets.push(...draft.assets);
+        if (draft.style) next.style = draft.style;
+        const { video, audio, subtitles } = draft;
+        (next.pendingFilmImports ??= []).push({ id: crypto.randomUUID(), video, audio, subtitles });
+        return next;
+      }, () => {
+        combined.throwIfAborted();
+        onSaving?.();
+      });
       playing.value = false;
       selection.value = null;
       playhead.value = start;
@@ -187,6 +217,53 @@ export function useTimeline(directory: string) {
     } finally {
       busy.value = false;
     }
+  }
+
+  async function createFilmFromConversation(topic: string, videoPaths: string[], signal: AbortSignal) {
+    signal.throwIfAborted();
+    if (videoPaths.some(path => /^(?:[\\/]|[a-z]:)/i.test(path) || path.split(/[\\/]/).some(part => part === ".."))) {
+      throw new Error(translate("请使用当前项目内的视频路径"));
+    }
+    const [writers, models] = await Promise.all([ai.getModels(signal, true), ai.getMediaModels(signal, true)]);
+    const writer = writers[0];
+    const narrator = models.find(model => model.type === "audio");
+    if (!writer || !narrator) throw new Error(translate("请先在模型设置中配置文案和配音模型"));
+    const writerModel = getNodeModelIdentity(writer);
+    const narratorModel = getNodeModelIdentity(narrator);
+    const details = [topic, ...videoPaths, `${writerModel.modelId} / ${narratorModel.modelId}`, translate("旁白和分镜共用 1 次文案请求，分镜通过检查后按句配音 3–6 次")];
+    if (writerModel.providerId === "multiTenant" && narratorModel.providerId === "multiTenant") {
+      const totals = await http<{ currency: string; amount: string }[]>({ method: "POST", url: "/api/ai/filmPrice", signal,
+        data: { writerId: writerModel.modelId, narratorId: narratorModel.modelId } });
+      details.push(`${translate("整单保守预估")} · ${totals.map(({ currency, amount }) => `${amount} ${currency}`).join(" + ")}`);
+    } else {
+      const quote = await ai.getMediaPrice({ ...narratorModel, mediaType: "audio", directory, outputDirectory: "assets/timeline", prompt: "" },
+        AbortSignal.any([signal, AbortSignal.timeout(8000)])).catch(() => null);
+      details.push(`${translate("配音报价")} · ${quote?.price ?? translate("供应商未提供报价")}`, translate("整单金额未知，以供应商账单为准"));
+    }
+    signal.throwIfAborted();
+    const confirmed = await ElMessageBox.confirm(details.join("\n"), translate("确认生成用量与报价")).then(() => true, () => false);
+    if (!confirmed) throw new Error(translate("已取消生成"));
+    signal.throwIfAborted();
+    const sources = videoPaths.map(path => assets.value.find(asset => asset.kind === "video" && asset.path === path) ?? {
+      id: path, name: path.split("/").pop() || path, path, kind: "video" as const, mimeType: "video/mp4", size: 0,
+    });
+    const draft = await createAutomaticFilm({ topic, assets: sources, writer, narrator, style: project.value.style }, signal, () => {});
+    return draft;
+  }
+
+  async function acknowledgeFilmImport(id: string) {
+    await queueSave(async () => {
+      const removeImport = (snapshot: TimelineProject) => {
+        if (snapshot.pendingFilmImports) snapshot.pendingFilmImports = snapshot.pendingFilmImports.filter(draft => draft.id !== id);
+      };
+      const next = { ...project.value };
+      removeImport(next);
+      await files.writeJson(timelineProjectFile, next);
+      // 撤销可能已把草稿移入重做记录。导入成功后，当前状态和历史快照都要清理。
+      removeImport(project.value);
+      past.value.forEach(removeImport);
+      future.value.forEach(removeImport);
+    });
   }
 
   // ---------- 素材库 ----------
@@ -306,9 +383,7 @@ export function useTimeline(directory: string) {
       }
       const clip = createClip({ kind: "effect", source: result.output, timelineStart: start, timelineDuration: result.seconds, sourceDuration: result.seconds, text: name });
       track.clips.push(clip);
-      await files.writeJson(timelineProjectFile, next);
-      commit();
-      project.value = next;
+      await saveTimelineChange(next);
       playing.value = false;
       playhead.value = start;
       selection.value = { trackId: track.id, clipId: clip.id };
@@ -379,7 +454,7 @@ export function useTimeline(directory: string) {
 
   function setVolume(clipId: string, volume: number) {
     commit();
-    applyToClip(clipId, { volume: clamp(volume, 0, 2) });
+    applyToClip(clipId, clipVolumePatch(volume));
   }
 
   function setFade(clipId: string, fadeIn: number, fadeOut: number) {
@@ -412,6 +487,22 @@ export function useTimeline(directory: string) {
     if (!clip) return;
     commit();
     applyToClip(clipId, setSourceRange(clip, inPoint, outPoint));
+  }
+
+  async function saveAgentClipEdit(clipId: string, expected: TimelineClip, edit: { volume: number } | { start: number; end: number }, checkContext: () => void) {
+    const beforeWrite = () => {
+      lifetime.signal.throwIfAborted();
+      checkContext();
+      if (timelineReadError) throw new Error(timelineReadError);
+      if (findInTracks(clipId)?.clip !== expected) throw new Error("剪辑片段已变化，请重新读取时间线");
+    };
+    const updated = "volume" in edit ? { ...expected, ...clipVolumePatch(edit.volume) }
+      : setSourceRange(expected, edit.start, edit.end);
+    await saveTimelineChange(() => ({
+      ...project.value,
+      tracks: project.value.tracks.map(track => ({ ...track, clips: track.clips.map(clip => clip.id === clipId ? updated : clip) })),
+    }), beforeWrite);
+    return updated;
   }
 
   function moveClipTo(clipId: string, timelineStart: number, trackId?: string) {
@@ -495,7 +586,9 @@ export function useTimeline(directory: string) {
 
   // ---------- 字幕 ASR ----------
 
-  async function generateSubtitles(clipId: string) {
+  async function generateSubtitles(clipId: string, signal = lifetime.signal, check = () => signal.throwIfAborted()) {
+    check();
+    if (!ready.value || busy.value || timelineReadError) throw new Error(timelineReadError || translate("剪辑工程正在处理，请稍后重试"));
     const found = findInTracks(clipId);
     if (!found) throw new Error(translate("未找到片段"));
     if (!isBrowserAudioAsrSupported()) throw new Error(translate("当前浏览器暂不支持音频识别，可以换用 Chrome 再试"));
@@ -503,20 +596,33 @@ export function useTimeline(directory: string) {
     if (clip.kind === "text") throw new Error(translate("文字片段不需要识别字幕"));
     busy.value = true;
     try {
-      let audioPath = clip.kind === "audio" ? clip.source : "";
-      if (clip.kind !== "audio") {
-        audioPath = `assets/timeline/${clip.id}.mp3`;
-        await extractAudio(await getFfmpeg(), clip.source, audioPath, lifetime.signal);
+      for (const folder of ["assets", "assets/timeline"]) {
+        await files.mkdir(folder).catch(error => {
+          if (!axios.isAxiosError(error) || error.response?.data?.data?.code !== "EEXIST") throw error;
+        });
       }
+      const audioPath = `assets/timeline/${uid("speech")}.mp3`;
+      await extractAudio(await getFfmpeg(), clip.source, audioPath, signal, clip);
       const handle = files.acquireUrl(audioPath, "audio/mpeg");
       try {
-        const text = await transcribeBrowserAudio(await handle.url, { lang: "zh-CN", signal: lifetime.signal });
-        if (!text.trim()) throw new Error(translate("没有识别到清晰的人声"));
-        commit();
-        const track = ensureTrack("subtitle");
-        const subtitle = createClip({ kind: "text", timelineStart: clip.timelineStart, timelineDuration: clip.timelineDuration, text: text.trim() });
-        track.clips.push(subtitle);
-        selection.value = { trackId: track.id, clipId: subtitle.id };
+        const text = (await transcribeBrowserAudio(await handle.url, { lang: "zh-CN", signal })).trim();
+        if (!text) throw new Error(translate("没有识别到清晰的人声"));
+        // ACT: 按句或短语切成独立字幕条，各自有起止时间，可逐条选中修改。
+        const subtitles = splitSubtitleText(text, clip.timelineDuration, clip.timelineStart)
+          .map(segment => createClip({ kind: "text", timelineStart: segment.start, timelineDuration: segment.end - segment.start, text: segment.text }));
+        if (!subtitles.length) throw new Error(translate("没有识别到清晰的人声"));
+        await saveTimelineChange(() => {
+          if (findInTracks(clipId)?.clip !== clip) throw new Error("口播片段已改变，请重新读取时间线");
+          const next = snapshot(project.value);
+          let track = next.tracks.find(track => track.type === "subtitle");
+          if (!track) { track = createTrack("subtitle"); next.tracks.push(track); }
+          track.clips.push(...subtitles);
+          return next;
+        }, check);
+        const inserted = findInTracks(subtitles[0]!.id);
+        if (inserted) selection.value = { trackId: inserted.trackId, clipId: subtitles[0]!.id };
+        return { subtitleCount: subtitles.length, firstSubtitleId: subtitles[0]!.id, timelineStart: subtitles[0]!.timelineStart,
+          duration: subtitles.reduce((sum, item) => sum + item.timelineDuration, 0) };
       } finally {
         handle.release();
       }
@@ -525,37 +631,77 @@ export function useTimeline(directory: string) {
     }
   }
 
+  /** 识别服务不可用时的兜底：按用户文稿断句，并按字符数分配片段区间。 */
+  async function subtitleFromScript(clipId: string, script: string, signal = lifetime.signal, check = () => signal.throwIfAborted()) {
+    check();
+    if (!ready.value || busy.value || timelineReadError) throw new Error(timelineReadError || translate("剪辑工程正在处理，请稍后重试"));
+    const clip = findInTracks(clipId)?.clip;
+    if (!clip) throw new Error(translate("未找到片段"));
+    if (clip.kind === "text") throw new Error(translate("文字片段不需要字幕"));
+    const text = script.trim();
+    if (!text) throw new Error("文稿不能为空");
+    const subtitles = splitSubtitleText(text, clip.timelineDuration, clip.timelineStart)
+      .map(segment => createClip({ kind: "text", timelineStart: segment.start, timelineDuration: segment.end - segment.start, text: segment.text }));
+    if (!subtitles.length) throw new Error("文稿无法断句");
+    await saveTimelineChange(() => {
+      if (findInTracks(clipId)?.clip !== clip) throw new Error("口播片段已改变，请重新读取时间线");
+      const next = snapshot(project.value);
+      let track = next.tracks.find(track => track.type === "subtitle");
+      if (!track) { track = createTrack("subtitle"); next.tracks.push(track); }
+      track.clips.push(...subtitles);
+      return next;
+    }, check);
+    const inserted = findInTracks(subtitles[0]!.id);
+    if (inserted) selection.value = { trackId: inserted.trackId, clipId: subtitles[0]!.id };
+    return { subtitleCount: subtitles.length, firstSubtitleId: subtitles[0]!.id, timelineStart: subtitles[0]!.timelineStart,
+      duration: subtitles.reduce((sum, item) => sum + item.timelineDuration, 0) };
+  }
+
   // ---------- 口播自动化（剪沉默 / 加速停顿） ----------
 
-  async function silenceEdit(mode: SilenceEditMode) {
-    const clip = selectedClip.value;
+  async function silenceEdit(mode: SilenceEditMode, clipId?: string, signal = lifetime.signal, check = () => signal.throwIfAborted()) {
+    if (!ready.value || busy.value) throw new Error(translate("剪辑工程正在处理，请稍后重试"));
+    if (timelineReadError) throw new Error(timelineReadError);
+    const clip = clipId ? findInTracks(clipId)?.clip : selectedClip.value;
     if (!clip) throw new Error(translate("请先选择要处理的口播片段"));
     if (clip.kind !== "video" && clip.kind !== "audio") throw new Error(translate("仅支持视频或音频片段"));
     // ACT: 对整段源素材做口播自动化，忽略片段已裁剪的 inPoint/outPoint 与变速，处理后重置为整段成品。
     const duration = clip.sourceDuration > 0 ? clip.sourceDuration : clip.outPoint;
-    if (!clip.source || duration <= 0) throw new Error(translate("片段缺少源素材"));
+    const source = clip.source;
+    if (!source || duration <= 0) throw new Error(translate("片段缺少源素材"));
     const suffix = clip.kind === "video" ? "mp4" : "mp3";
-    const outputPath = `assets/timeline/${clip.id}-${mode}.${suffix}`;
+    const outputPath = `assets/timeline/${uid(mode)}.${suffix}`;
     busy.value = true;
     try {
       const result = await applySilenceEdit(
         await getFfmpeg(),
-        { path: clip.source, duration, hasVideo: clip.kind === "video" },
+        { path: source, duration, hasVideo: clip.kind === "video" },
         outputPath,
         mode,
-        lifetime.signal,
+        signal,
       );
+      check();
       if (!result.silenceCount) return { silenceCount: 0, removedSeconds: 0 };
-      commit();
-      applyToClip(clip.id, {
-        source: outputPath,
-        sourceDuration: result.newDuration,
-        inPoint: 0,
-        outPoint: result.newDuration,
-        timelineDuration: result.newDuration,
-        speed: 1,
-      });
-      return { silenceCount: result.silenceCount, removedSeconds: result.removedSeconds };
+      await saveTimelineChange(() => {
+        const next = snapshot(project.value);
+        const target = next.tracks.flatMap(track => track.clips).find(item => item.id === clip.id);
+        if (!target || findInTracks(clip.id)?.clip !== clip || target.source !== source) throw new Error(translate("口播片段已改变，请重新选择片段"));
+        const track = next.tracks.find(track => track.clips.includes(target));
+        if (clipId && track?.clips.some(other => other.id !== target.id && other.timelineStart >= target.timelineStart
+          && other.timelineStart < target.timelineStart + result.newDuration)) {
+          throw new Error("处理后的口播片段会与同轨其他片段重叠");
+        }
+        Object.assign(target, {
+          source: outputPath,
+          sourceDuration: result.newDuration,
+          inPoint: 0,
+          outPoint: result.newDuration,
+          timelineDuration: result.newDuration,
+          speed: 1,
+        });
+        return next;
+      }, check);
+      return { silenceCount: result.silenceCount, removedSeconds: result.removedSeconds, outputPath };
     } finally {
       busy.value = false;
     }
@@ -595,6 +741,8 @@ export function useTimeline(directory: string) {
     importFiles,
     appendCanvasVideo,
     createAutomaticFilm,
+    createFilmFromConversation,
+    acknowledgeFilmImport,
     addClip,
     addLowerThird,
     addTextClip,
@@ -611,6 +759,7 @@ export function useTimeline(directory: string) {
     setText,
     setStyle,
     setClipRange,
+    saveAgentClipEdit,
     trimClip,
     moveClipTo,
     toggleTrackHidden,
@@ -620,6 +769,7 @@ export function useTimeline(directory: string) {
     undo,
     redo,
     generateSubtitles,
+    subtitleFromScript,
     silenceEdit,
     select(trackId: string, clipId: string) {
       selection.value = { trackId, clipId };
@@ -645,5 +795,9 @@ function normalizeProject(data: TimelineProject): TimelineProject {
   project.assets = Array.isArray(data.assets) ? data.assets : [];
   project.tracks = Array.isArray(data.tracks) && data.tracks.length ? data.tracks : project.tracks;
   project.style = data.style;
+  if (Array.isArray(data.pendingFilmImports)) {
+    project.pendingFilmImports = data.pendingFilmImports.filter(draft => draft && typeof draft.id === "string"
+      && /^[a-f0-9-]{36}$/.test(draft.id) && Array.isArray(draft.video) && Array.isArray(draft.audio) && Array.isArray(draft.subtitles));
+  }
   return project;
 }

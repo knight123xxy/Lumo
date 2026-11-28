@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="స్టార్స్ బ్యాడ్జ్" />
   </a>
-  <a href="../../licenses/toonflow.txt">
+  <a href="../../LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License బ్యాడ్జ్" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ https://github.com/user-attachments/assets/2d9fddac-dfdf-4640-b030-b09d7f7287e9
 
 ## 8. 📜 ఓపెన్ సోర్స్ లైసెన్స్
 
-Toonflow [MIT License](../../licenses/toonflow.txt) కింద లైసెన్స్ పొందింది. థర్డ్-పార్టీ డిపెండెన్సీలు మరియు ఆస్తులు వాటి సంబంధిత లైసెన్స్‌లు మరియు కాపీరైట్ నోటీసులకు లోబడి ఉంటాయి.
+Toonflow [MIT License](../../LICENSE) కింద లైసెన్స్ పొందింది. థర్డ్-పార్టీ డిపెండెన్సీలు మరియు ఆస్తులు వాటి సంబంధిత లైసెన్స్‌లు మరియు కాపీరైట్ నోటీసులకు లోబడి ఉంటాయి.
 
 [![Toonflow స్టార్ హిస్టరీ](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

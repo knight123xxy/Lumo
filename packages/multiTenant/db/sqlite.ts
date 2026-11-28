@@ -266,6 +266,7 @@ export function connectSqlite(file: string): AdminDatabase {
         "settingsRevision" INTEGER NOT NULL DEFAULT 0,
         "disabled" INTEGER NOT NULL DEFAULT 0,
         "authVersion" INTEGER NOT NULL DEFAULT 0,
+        "emailVerifiedAt" INTEGER,
         "createdAt" INTEGER NOT NULL DEFAULT 0,
         "lastLoginAt" INTEGER NOT NULL DEFAULT 0
       )`);
@@ -277,6 +278,7 @@ export function connectSqlite(file: string): AdminDatabase {
           ["settingsRevision", sql`ALTER TABLE "multiTenantUser" ADD COLUMN "settingsRevision" INTEGER NOT NULL DEFAULT 0`],
           ["disabled", sql`ALTER TABLE "multiTenantUser" ADD COLUMN "disabled" INTEGER NOT NULL DEFAULT 0`],
           ["authVersion", sql`ALTER TABLE "multiTenantUser" ADD COLUMN "authVersion" INTEGER NOT NULL DEFAULT 0`],
+          ["emailVerifiedAt", sql`ALTER TABLE "multiTenantUser" ADD COLUMN "emailVerifiedAt" INTEGER`],
           ["createdAt", sql`ALTER TABLE "multiTenantUser" ADD COLUMN "createdAt" INTEGER NOT NULL DEFAULT 0`],
           ["lastLoginAt", sql`ALTER TABLE "multiTenantUser" ADD COLUMN "lastLoginAt" INTEGER NOT NULL DEFAULT 0`],
         ] as const) {
@@ -379,9 +381,12 @@ export function connectSqlite(file: string): AdminDatabase {
       return db.update(sqliteUser).set({ disabled, authVersion: sql`${sqliteUser.authVersion} + 1` }).where(eq(sqliteUser.id, id))
         .returning({ id: sqliteUser.id }).get() !== undefined;
     },
-    async resetUserPassword(id, passwordHash) {
+    async resetUserPassword(id, passwordHash, recovery) {
       return db.update(sqliteUser).set({ passwordHash, failedAttempts: 0, lockedUntil: 0, authVersion: sql`${sqliteUser.authVersion} + 1` })
-        .where(eq(sqliteUser.id, id)).returning({ id: sqliteUser.id }).get() !== undefined;
+        .where(and(eq(sqliteUser.id, id), recovery && and(eq(sqliteUser.disabled, false),
+          eq(sqliteUser.userNameKey, recovery.userNameKey), eq(sqliteUser.emailVerifiedAt, recovery.emailVerifiedAt),
+          eq(sqliteUser.authVersion, recovery.authVersion))))
+        .returning({ id: sqliteUser.id }).get() !== undefined;
     },
     async createWebSession(session) {
       db.insert(sqliteWebSession).values(session).run();

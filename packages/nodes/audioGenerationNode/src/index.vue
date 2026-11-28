@@ -200,9 +200,9 @@ function loadModels() {
       return;
     }
     models.value = items.filter(item => item.type === "audio");
-    // ACT: 仅空配置选择默认模型（优先上次手动选择的），临时不可用的模型保持原选择，避免静默换供应商。
+    // ACT: 仅为空配置补默认值，保留已有模型和生成参数。
     if (!data.value.model) {
-      const choice = findNodeModel(models.value, modelMemory.get()) ?? modelGroups.value[0]?.models[0];
+      const choice = findNodeModel(models.value, modelMemory.getDefault()) ?? findNodeModel(models.value, modelMemory.get()) ?? modelGroups.value[0]?.models[0];
       data.value.model = choice ? getNodeModelKey(choice) : "";
     }
   }).finally(() => {

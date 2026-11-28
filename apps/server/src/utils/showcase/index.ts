@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { existsSync, mkdtemp, mkdir, readFile, rm, writeFile } from "@lumo/file";
@@ -12,17 +13,18 @@ export { effects };
 export type { EffectDefinition, EffectParams } from "./effects";
 
 // ACT: 多套竖屏模板共用同一渲染管线，模板只决定镜头顺序与文案槽位；素材段可缺省，缺省时自动缩短总时长。
-export type TemplateSlots = {
-  title?: string;
-  subtitle?: string;
-  claim?: string;
-  cta?: string;
-  screenPath?: string;
-  resultPath?: string;
-  themeId?: string;
-  templateId?: string;
-  titleCard?: { shotId: "paper-title-card"; text: string };
-};
+export const templateSlotsSchema = z.strictObject({
+  title: z.string().max(200).optional(),
+  subtitle: z.string().max(300).optional(),
+  claim: z.string().max(200).optional(),
+  cta: z.string().max(200).optional(),
+  screenPath: z.string().min(1).max(1024).optional(),
+  resultPath: z.string().min(1).max(1024).optional(),
+  themeId: z.enum(["coral-noir", "claude-light", "amber-noir", "blueprint-stone", "celadon-paper", "graphite-signal"]).optional(),
+  templateId: z.enum(["vertical-beat", "product-three", "knowledge-qa", "data-brief"]).optional(),
+  titleCard: z.object({ shotId: z.literal("paper-title-card"), text: z.string().trim().min(1).max(180) }).optional(),
+});
+export type TemplateSlots = z.infer<typeof templateSlotsSchema>;
 
 export type TemplateResult = { output: string; seconds: number; segments: number };
 

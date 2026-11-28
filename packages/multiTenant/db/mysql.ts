@@ -348,6 +348,7 @@ export function connectMysql(config: Extract<DataSource, { provider: "mysql" }>[
         settingsRevision INT NOT NULL DEFAULT 0,
         disabled BOOLEAN NOT NULL DEFAULT FALSE,
         authVersion INT NOT NULL DEFAULT 0,
+        emailVerifiedAt BIGINT,
         createdAt BIGINT NOT NULL DEFAULT 0,
         lastLoginAt BIGINT NOT NULL DEFAULT 0
       )`);
@@ -357,6 +358,7 @@ export function connectMysql(config: Extract<DataSource, { provider: "mysql" }>[
         ["settingsRevision", sql`ALTER TABLE multiTenantUser ADD COLUMN settingsRevision INT NOT NULL DEFAULT 0`],
         ["disabled", sql`ALTER TABLE multiTenantUser ADD COLUMN disabled BOOLEAN NOT NULL DEFAULT FALSE`],
         ["authVersion", sql`ALTER TABLE multiTenantUser ADD COLUMN authVersion INT NOT NULL DEFAULT 0`],
+        ["emailVerifiedAt", sql`ALTER TABLE multiTenantUser ADD COLUMN emailVerifiedAt BIGINT`],
         ["createdAt", sql`ALTER TABLE multiTenantUser ADD COLUMN createdAt BIGINT NOT NULL DEFAULT 0`],
         ["lastLoginAt", sql`ALTER TABLE multiTenantUser ADD COLUMN lastLoginAt BIGINT NOT NULL DEFAULT 0`],
       ] as const) {
@@ -473,9 +475,11 @@ export function connectMysql(config: Extract<DataSource, { provider: "mysql" }>[
       const [result] = await db.update(mysqlUser).set({ disabled, authVersion: sql`${mysqlUser.authVersion} + 1` }).where(eq(mysqlUser.id, id));
       return result.affectedRows === 1;
     },
-    async resetUserPassword(id, passwordHash) {
+    async resetUserPassword(id, passwordHash, recovery) {
       const [result] = await db.update(mysqlUser).set({ passwordHash, failedAttempts: 0, lockedUntil: 0, authVersion: sql`${mysqlUser.authVersion} + 1` })
-        .where(eq(mysqlUser.id, id));
+        .where(and(eq(mysqlUser.id, id), recovery && and(eq(mysqlUser.disabled, false),
+          eq(mysqlUser.userNameKey, recovery.userNameKey), eq(mysqlUser.emailVerifiedAt, recovery.emailVerifiedAt),
+          eq(mysqlUser.authVersion, recovery.authVersion))));
       return result.affectedRows === 1;
     },
     async createWebSession(session) {

@@ -1,18 +1,14 @@
 <template>
-  <aside id="workspaceSidebar" class="appSidebar" :class="{ collapsed }" aria-label="工作区侧栏">
+  <aside id="workspaceSidebar" class="appSidebar" aria-label="工作区侧栏">
     <div class="sidebarHeader">
       <div class="sidebarBrand">
         <el-image class="sidebarLogo" :src="logoUrl" fit="contain" alt="Lumo" />
         <span class="brandName">Lumo</span>
       </div>
-      <button class="sidebarToggle" type="button" :aria-label="collapsed ? '展开侧栏' : '收起侧栏'" :title="collapsed ? '展开侧栏' : '收起侧栏'" :aria-expanded="!collapsed" aria-controls="workspaceSidebar" @click="emit('update:collapsed', !collapsed)">
-        <icon-layout-sidebar-left-expand v-if="collapsed" :size="18" aria-hidden="true" />
-        <icon-layout-sidebar-left-collapse v-else :size="18" aria-hidden="true" />
-      </button>
     </div>
-    <el-button class="sidebarCreate" type="primary" :aria-label="translate(workspaceStore.projectList.length ? '新建对话' : '新建项目')" :title="translate(workspaceStore.projectList.length ? '新建对话' : '新建项目')" :disabled="disabled" @click="emit('create')">
+    <el-button class="sidebarCreate" type="primary" :aria-label="translate('新建项目')" :title="translate('新建项目')" :disabled="disabled" @click="emit('create')">
       <icon-plus :size="18" aria-hidden="true" />
-      <span class="sidebarCreateLabel">{{ translate(workspaceStore.projectList.length ? '新建对话' : '新建项目') }}</span>
+      <span class="sidebarCreateLabel">{{ translate('新建项目') }}</span>
     </el-button>
     <nav class="sidebarNav" aria-label="主导航" :inert="disabled">
       <button class="sidebarItem" :class="{ active: activeSection === 'skills' }" type="button" :aria-current="activeSection === 'skills' ? 'page' : undefined" :aria-label="translate('应用市场')" :title="translate('应用市场')" @click="emit('section', 'skills')">
@@ -24,26 +20,24 @@
         <span class="sidebarText">{{ translate('资产') }}</span>
       </button>
     </nav>
-    <workspaceTree v-show="!collapsed" class="sidebarTree" :disabled="disabled" @openProject="project => emit('openProject', project)" @openChat="(project, file, mode) => emit('openChat', project, file, mode)" @createProject="emit('createProject')" @createChat="project => emit('createChat', project)" />
+    <workspaceTree class="sidebarTree" :disabled="disabled" @openProject="project => emit('openProject', project)" @openChat="(project, file, mode) => emit('openChat', project, file, mode)" @createProject="emit('createProject')" @createChat="project => emit('createChat', project)" />
     <div class="sidebarFooter">
-      <homeAccount :collapsed="collapsed" @openSettings="emit('settings')" @openAccount="emit('account')" @openUpdate="emit('update')" @openDeviceLink="emit('deviceLink')" />
+      <homeAccount :collapsed="false" @openSettings="emit('settings')" @openAccount="emit('account')" @openUpdate="emit('update')" />
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { translate } from "@lumo/i18n/vue";
-import { IconApps, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconLibraryPhoto, IconPlus } from "@tabler/icons-vue";
+import { IconApps, IconLibraryPhoto, IconPlus } from "@tabler/icons-vue";
 import logoUrl from "@lumo/assets/logo.svg";
 import { currentUser } from "@/stores/multiTenant";
-import { useWorkspaceStore, type Project, type ProjectMode } from "@/stores/workspace";
+import type { Project, ProjectMode } from "@/stores/workspace";
 import workspaceTree from "./workspaceTree.vue";
 import homeAccount from "../homeAccount.vue";
 
-const workspaceStore = useWorkspaceStore();
-const { collapsed, disabled = false, activeSection } = defineProps<{ collapsed: boolean; disabled?: boolean; activeSection?: string }>();
+const { disabled = false, activeSection } = defineProps<{ disabled?: boolean; activeSection?: string }>();
 const emit = defineEmits<{
-  "update:collapsed": [value: boolean];
   create: [];
   section: [value: string];
   openProject: [project: Project];
@@ -53,13 +47,11 @@ const emit = defineEmits<{
   settings: [];
   account: [];
   update: [];
-  deviceLink: [];
 }>();
 </script>
 
 <style scoped lang="scss">
 .appSidebar {
-  --sidebarWidth: clamp(212px, 18vw, 256px);
   position: relative;
   display: flex;
   flex: 0 0 var(--sidebarWidth);
@@ -70,34 +62,8 @@ const emit = defineEmits<{
   padding: calc(20px + var(--titlebarInset, 0px)) 12px 16px;
   overflow-x: hidden;
   overflow-y: auto;
-  background: var(--el-bg-color);
+  background: color-mix(in srgb, var(--el-fill-color) 55%, var(--el-bg-color));
   border-inline-end: 1px solid var(--el-border-color-lighter);
-  transition: flex-basis .18s ease, width .18s ease;
-
-  &.collapsed {
-    --sidebarWidth: 72px;
-
-    .sidebarCreateLabel { display: none; }
-
-    .sidebarHeader .sidebarBrand .brandName { max-width: 0; opacity: 0; }
-    .sidebarHeader .sidebarToggle { inset-inline-start: 9px; opacity: 0; }
-
-    @media (min-width: 901px) {
-      .sidebarHeader:hover, .sidebarHeader:has(.sidebarToggle:focus-visible) {
-        .sidebarLogo { opacity: 0; }
-        .sidebarToggle { opacity: 1; }
-      }
-    }
-
-    .sidebarItem {
-      gap: 0;
-      padding-inline: 14px;
-
-      .sidebarText { max-width: 0; opacity: 0; }
-    }
-
-    .sidebarFooter :deep(.accountLabel) { display: none; }
-  }
 
   .sidebarHeader {
     position: relative;
@@ -136,23 +102,7 @@ const emit = defineEmits<{
       }
     }
 
-    .sidebarToggle {
-      position: absolute;
-      inset-inline-end: 0;
-      display: grid;
-      place-items: center;
-      width: 26px;
-      height: 26px;
-      padding: 0;
-      color: var(--el-text-color-secondary);
-      background: transparent;
-      border: 0;
-      border-radius: 7px;
-      cursor: pointer;
 
-      &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
-      &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 1px; }
-    }
   }
 
   .sidebarCreate {

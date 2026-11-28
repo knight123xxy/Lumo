@@ -21,7 +21,11 @@ export default async function http<T>(config: HttpRequestConfig): Promise<T> {
   } catch (error) {
     if (axios.isCancel(error) || !axios.isAxiosError<{ message?: unknown }>(error)) throw error;
     const message = error.response?.data?.message;
+    const retryAfter = Number(error.response?.headers["retry-after"]);
     throw Object.assign(new Error(typeof message === "string" && message ? message : error.code === "ECONNABORTED"
-      ? "请求超时，请重试" : "请求失败，请检查网络连接"), { status: error.response?.status });
+      ? "请求超时，请重试" : "请求失败，请检查网络连接"), {
+      status: error.response?.status,
+      ...(Number.isSafeInteger(retryAfter) && retryAfter > 0 ? { retryAfter } : {}),
+    });
   }
 }

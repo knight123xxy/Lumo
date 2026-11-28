@@ -6,6 +6,9 @@ const hostingBaseUrl = "https://api.ideamine.cn";
 const lumoMasterUserId = "78";
 const trialRemainQuota = 142857;
 const requestTimeoutMs = 20000;
+const hostedGroup = "default";
+const hostedKeyLifetime = 5 * 60 * 1000;
+const hostedKeyCache = new Map<string, { key: string; expiresAt: number }>();
 
 export type HostedSubAccount = { id: number; key: string };
 export type HostedTokenSummary = { id: number; name: string };
@@ -86,7 +89,7 @@ export const hosting = {
     const name = `lumo-${userId.trim()}`;
     const result = await request({
       method: "POST", path: "/api/token/", newApiUser: true, signal,
-      data: { name, remain_quota: remainQuota, expired_time: -1, unlimited_quota: false, model_limits_enabled: false },
+      data: { name, remain_quota: remainQuota, expired_time: -1, unlimited_quota: false, model_limits_enabled: false, group: hostedGroup },
     });
     if (!result.ok) fail(sanitizeMessage((result.body as { message?: unknown })?.message), result.status >= 400 && result.status <= 599 ? result.status : 502);
     const data = unwrap(result.body, signal);
@@ -106,27 +109,33 @@ export const hosting = {
     return key.trim();
   },
 
+  // ACT: new-api 的 PUT 会整体覆盖令牌，必须回传已有字段，否则 name 等会被清空。
+  async updateSubAccount(tokenId: number, changes: Record<string, unknown>, signal?: AbortSignal): Promise<void> {
+    const current = await request({ path: `/api/token/${tokenId}`, newApiUser: true, signal });
+    const data = unwrap(current.body, signal) as Record<string, unknown> | null;
+    if (!data || typeof data !== "object") fail("算力汇 子账号响应格式不正确", 502);
+    const editable = ["name", "expired_time", "remain_quota", "unlimited_quota", "model_limits_enabled", "model_limits", "allow_ips", "status", "group"];
+    const payload: Record<string, unknown> = { id: tokenId };
+    for (const key of editable) if (data[key] !== undefined) payload[key] = data[key];
+    Object.assign(payload, changes);
+    // ACT: 分组为空会让令牌在 /v1 鉴权时报 Invalid token，必须落回可用分组。
+    if (!payload.group) payload.group = hostedGroup;
+    const result = await request({ method: "PUT", path: "/api/token/", newApiUser: true, signal, data: payload });
+    if (!result.ok) fail(sanitizeMessage((result.body as { message?: unknown })?.message), result.status >= 400 && result.status <= 599 ? result.status : 502);
+    unwrap(result.body, signal);
+  },
+
   // 充值：调大 remain_quota。Lumo 内支付成功后由服务端调用（S2 接入支付流）。
   async rechargeSubAccount(tokenId: number, remainQuota: number, signal?: AbortSignal): Promise<void> {
     if (!hostedTokenId.safeParse(tokenId).success) fail("子账号 ID 无效", 400);
     if (!Number.isFinite(remainQuota) || remainQuota < 0) fail("充值额度无效", 400);
-    const result = await request({
-      method: "PUT", path: "/api/token/", newApiUser: true, signal,
-      data: { id: tokenId, remain_quota: remainQuota },
-    });
-    if (!result.ok) fail(sanitizeMessage((result.body as { message?: unknown })?.message), result.status >= 400 && result.status <= 599 ? result.status : 502);
-    unwrap(result.body, signal);
+    await this.updateSubAccount(tokenId, { remain_quota: remainQuota }, signal);
   },
 
   // 封停：status=2。欠费或人工封停时使用（S2 余额拦截联动）。
   async suspendSubAccount(tokenId: number, signal?: AbortSignal): Promise<void> {
     if (!hostedTokenId.safeParse(tokenId).success) fail("子账号 ID 无效", 400);
-    const result = await request({
-      method: "PUT", path: "/api/token/", newApiUser: true, signal,
-      data: { id: tokenId, status: 2 },
-    });
-    if (!result.ok) fail(sanitizeMessage((result.body as { message?: unknown })?.message), result.status >= 400 && result.status <= 599 ? result.status : 502);
-    unwrap(result.body, signal);
+    await this.updateSubAccount(tokenId, { status: 2 }, signal);
   },
 
   // 余额：子账号维度，用子账号 key 当 Bearer（OpenAI 兼容直出）。
@@ -155,6 +164,31 @@ export const hosting = {
     });
   },
 
+  // 文本只需子账号 Key；上游余额接口格式变动不能阻断取 Key。
+  async getUserSubAccountKey(userId: string, signal?: AbortSignal): Promise<string> {
+    if (typeof userId !== "string" || !userId.trim() || userId.trim().length > 64) fail("用户 ID 无效", 400);
+    const id = userId.trim();
+    const cached = hostedKeyCache.get(id);
+    if (cached && cached.expiresAt > Date.now()) return cached.key;
+    const service = this;
+    async function resolve() {
+      const name = `lumo-${id}`;
+      const matches = await service.searchSubAccounts(name, signal);
+      const account = matches.find((item: HostedTokenSummary) => item.name === name);
+      if (!account) fail("未找到算力汇子账号，请重新注册或联系客服", 404);
+      return service.getSubAccountKey(account.id, signal);
+    }
+    let key: string;
+    try {
+      key = await resolve();
+    } catch (error) {
+      if ((error as { status?: number }).status === 404 || signal?.aborted) throw error;
+      key = await resolve();
+    }
+    hostedKeyCache.set(id, { key, expiresAt: Date.now() + hostedKeyLifetime });
+    return key;
+  },
+
   // 按 Lumo 用户 ID 反查子账号（name=lumo-<uid>）并取明文 key + 余额。明文 key 仅用于本次请求，不落日志、不持久化。
   async getUserSubAccount(userId: string, signal?: AbortSignal): Promise<HostedUserAccount> {
     if (typeof userId !== "string" || !userId.trim() || userId.trim().length > 64) fail("用户 ID 无效", 400);
@@ -165,6 +199,19 @@ export const hosting = {
     const key = await this.getSubAccountKey(account.id, signal);
     const remainingQuota = await this.getBalance(key, signal);
     return { id: account.id, key, remainingQuota };
+  },
+
+  // 按用户增量调高子账号额度；上游余额接口不参与，避免格式变动阻断充值对齐。
+  async addSubAccountQuota(userId: string, quotaDelta: number, signal?: AbortSignal): Promise<void> {
+    if (!Number.isSafeInteger(quotaDelta) || quotaDelta <= 0) fail("充值额度无效", 400);
+    const name = `lumo-${userId.trim()}`;
+    const matches = await this.searchSubAccounts(name, signal);
+    const account = matches.find(item => item.name === name);
+    if (!account) fail("未找到算力汇子账号，请重新注册或联系客服", 404);
+    const current = await request({ path: `/api/token/${account.id}`, newApiUser: true, signal });
+    const data = unwrap(current.body, signal) as { remain_quota?: unknown } | null;
+    const remain = typeof data?.remain_quota === "number" ? data.remain_quota : 0;
+    await this.rechargeSubAccount(account.id, remain + quotaDelta, signal);
   },
 
   // 充值：先查当前余额，再按增量调大 remain_quota（PUT 的 remain_quota 为绝对值）。

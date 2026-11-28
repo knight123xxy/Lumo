@@ -1,0 +1,23 @@
+--- a/packages/openfilm/studio/ui/src/plugins/color/ColorDesk.tsx
++++ b/packages/openfilm/studio/ui/src/plugins/color/ColorDesk.tsx
+@@ -288,8 +288,8 @@
+     return () => window.clearInterval(t);
+   }, [feed.length]);
+   const layerPath = layer === 'own' ? (first ? ownPath(first) : '') : layer;
+-  const layerText = draft?.files.find((f) => f.path === layerPath)?.text ?? text(layerPath);
+   const isCube = layer !== 'own' && !/\.(ctf|clf)$/i.test(layer);
++  const layerText = isCube ? null : draft?.files.find((f) => f.path === layerPath)?.text ?? text(layerPath);
+   const filterHere = parts.after.map(filterOfUrl).find(Boolean) ?? null;
+   const layerIsFilter = layer !== 'own' && filterOfUrl(layer) != null;
+ 
+--- a/packages/openfilm/src/color/chain.mjs
++++ b/packages/openfilm/src/color/chain.mjs
+@@ -27,7 +27,7 @@
+ /** A file's part in a grade, by its name: `screen` is made for what the screen shows. @param {string} url @returns {'input' | 'output' | 'layer' | 'screen'} */
+ export function roleOf(url) {
+   const name = url.split(/[?#]/)[0].split('/').pop() ?? '';
+-  return /^in-[\w.-]*\.ctf$/i.test(name) ? 'input' : /^out-[\w.-]*\.ctf$/i.test(name) ? 'output' : /^filter-[\w.-]*\.ctf$/i.test(name) ? 'screen' : 'layer';
++  return /^in-[\w.-]*\.ctf$/i.test(name) ? 'input' : /^out-[\w.-]*\.ctf$/i.test(name) ? 'output' : (/\.cube$/i.test(name) || /^filter-[\w.-]*\.ctf$/i.test(name)) ? 'screen' : 'layer';
+ }
+ 
+ /** The files a style grades by, in order, as written (`url(…)`); none without `--of-lut`. @param {string | null | undefined} style */

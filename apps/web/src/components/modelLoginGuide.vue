@@ -1,19 +1,20 @@
 <template>
   <div class="modelLoginGuide">
-    <span>登录 Lumo 后即可使用官方模型，无需手动配置 API Key。</span>
-    <el-button type="primary" size="small" @click.stop="openLogin">前往登录</el-button>
+    <span>{{ translate('当前设备还没有可用的文本模型。') }}</span>
+    <el-button type="primary" size="small" @click.stop="openModelSettings">{{ translate('配置模型') }}</el-button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { inject } from "vue";
+import { translate } from "@lumo/i18n/vue";
 
 const emit = defineEmits<{ login: [] }>();
 const openSettingsPanel = inject<(id: string) => void>("openSettingsPanel");
 
-function openLogin() {
+function openModelSettings() {
   emit("login");
-  openSettingsPanel?.("account");
+  openSettingsPanel?.("model");
 }
 </script>
 

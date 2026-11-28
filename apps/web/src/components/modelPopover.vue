@@ -12,7 +12,7 @@
       <template #reference>
         <el-button class="modelButton" text :disabled="disabled" aria-label="模型与思考强度设置">
           <modelIcon v-if="selectedModelChoice" :model="selectedModelChoice.modelId" :size="14" />
-          <modelLabel class="modelName" :label="selectedModelChoice?.label ?? '选择模型'" :providerId="selectedModelChoice?.providerId" />
+          <modelLabel class="modelName" :label="selectedModelChoice ? modelName(selectedModelChoice) : '选择模型'" :providerId="showReasoning ? selectedModelChoice?.providerId : undefined" />
           <template v-if="showReasoning && reasoningLevels.length">
             ·
             <span class="reasoningLabel">{{ reasoningLabel }}</span>
@@ -22,17 +22,20 @@
       </template>
       <el-form class="modelOptions" labelPosition="top">
         <el-form-item label="模型">
-          <el-select :modelValue="selectedModelChoice ? selectedModel : ''" filterable :disabled="disabled" :teleported="false" placeholder="选择模型" aria-label="选择模型" noDataText="请先在设置中添加模型" @update:modelValue="selectedModel = $event" @change="reasoningEffort = ''">
+          <el-select :modelValue="selectedModelChoice ? selectedModel : ''" filterable :disabled="disabled" :teleported="false" placeholder="选择模型" aria-label="选择模型" :noDataText="desktopAccountUser ? '平台尚未发布文本模型，请联系管理员' : '请先在设置中添加模型'" @update:modelValue="selectedModel = $event" @change="reasoningEffort = ''">
             <template #prefix><modelIcon v-if="selectedModelChoice" :model="selectedModelChoice.modelId" :size="18" /></template>
-            <template #label="{ label }"><modelLabel :label="label" :providerId="selectedModelChoice?.providerId" /></template>
-            <template v-if="!modelChoices.length && !multiTenantEnabled && !lumoAccountToken && openSettingsPanel" #empty>
+            <template #label="{ label }"><modelLabel :label="label" :providerId="showReasoning ? selectedModelChoice?.providerId : undefined" /></template>
+            <template v-if="!modelChoices.length && !desktopAccountUser && !multiTenantEnabled && !lumoAccountToken && openSettingsPanel" #empty>
               <modelLoginGuide @login="visible = false" />
             </template>
             <el-option-group v-for="provider in modelGroups" :key="provider.id" :label="provider.label">
-              <el-option v-for="model in provider.models" :key="model.value" :label="model.label" :value="model.value">
+              <el-option v-for="model in provider.models" :key="model.value" :label="modelName(model)" :value="model.value">
                 <div class="modelOption">
                   <modelIcon :model="model.modelId" :size="16" />
-                  <modelLabel class="modelOptionLabel" :label="model.label" :providerId="provider.id" />
+                  <modelLabel class="modelOptionLabel" :label="modelName(model)" :providerId="showReasoning ? provider.id : undefined" />
+                   <span v-if="!showReasoning && provider.id === 'multiTenant'" class="modelDiscount">
+                     {{ model.discountPercent == null ? translate('未配置') : model.discountPercent === 100 ? translate('原价') : t`${model.discountPercent / 10} 折` }}
+                   </span>
                 </div>
               </el-option>
             </el-option-group>
@@ -57,12 +60,15 @@
 <script setup lang="ts">
 import { computed, inject, ref, useId, watch } from "vue";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-vue";
+import { t, translate } from "@lumo/i18n/vue";
 import { modelIcon } from "@lumo/model-icons";
 import { useNodeModelSelection } from "@lumo/nodes-scaffold/nodeAi";
 import modelLabel from "@lumo/node-shared/modelLabel";
 import type { ThinkingLevel } from "@lumo/server/modelReasoning";
 import { modelChoices, multiTenantEnabled, refreshModelChoices, lumoAccountToken } from "@/stores/settings";
 import modelLoginGuide from "./modelLoginGuide.vue";
+import { desktopAccountUser } from "@/lib/lumoAccountService";
+import { getDefaultModelKey } from "./settings/panels/model/defaultModels";
 
 const selectedModel = defineModel<string>({ default: "" });
 const reasoningEffort = defineModel<string>("reasoningEffort", { default: "" });
@@ -72,6 +78,13 @@ const openSettingsPanel = inject<(id: string) => void>("openSettingsPanel");
 const reasoningId = useId();
 const reasoningLabels: Record<ThinkingLevel, string> = { off: "关闭", minimal: "最小", low: "低", medium: "中", high: "高", xhigh: "极高", max: "最高" };
 const selectedModelChoice = useNodeModelSelection(modelChoices, selectedModel);
+function modelName(model: (typeof modelChoices.value)[number]) {
+  if (props.showReasoning) return model.label;
+  if (model.displayName) return model.displayName;
+  // 兼容仍把价格拼进标签的旧目录。
+  const suffix = model.priceLabel ? ` · ${model.priceLabel}` : "";
+  return suffix && model.label.endsWith(suffix) ? model.label.slice(0, -suffix.length) : model.label;
+}
 const modelGroups = computed(() => {
   const groups = new Map<string, { id: string; label: string; models: Array<(typeof modelChoices.value)[number]> }>();
   for (const model of modelChoices.value) {
@@ -87,7 +100,7 @@ const reasoningColumns = computed(() => Math.min(4, reasoningOptions.value.lengt
 const reasoningLabel = computed(() => reasoningOptions.value.find(item => item.value === reasoningEffort.value)?.label ?? "默认");
 
 watch(modelChoices, items => {
-  if (!selectedModel.value) selectedModel.value = items[0]?.value ?? "";
+  if (!selectedModel.value || (desktopAccountUser.value && !selectedModelChoice.value)) selectedModel.value = getDefaultModelKey("text", items);
 }, { immediate: true });
 watch([() => selectedModelChoice.value?.reasoningLevels, reasoningEffort], ([levels, effort]) => {
   if (levels && effort && !levels.includes(effort as ThinkingLevel)) reasoningEffort.value = "";
@@ -157,6 +170,13 @@ watch(visible, value => { if (value) void refreshModelChoices().catch(() => {});
 
           .modelOptionLabel {
             flex: 1;
+          }
+
+          .modelDiscount {
+            flex-shrink: 0;
+            color: var(--el-text-color-secondary);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
           }
         }
       }

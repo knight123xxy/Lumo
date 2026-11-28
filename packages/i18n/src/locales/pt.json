@@ -1612,6 +1612,7 @@
   "模型与连接配置已保存，读取最新模型失败：{0}。请重新打开编辑。": "Modelos e configurações de conexão salvos, mas não foi possível buscar os modelos mais recentes: {0}. Abra o editor de novo.",
   "模型与思考强度设置": "Configurações de modelo e esforço de raciocínio",
   "默认": "Padrão",
+  "默认模型": "Modelo padrão",
   "默认 10588，占用时自动顺延。保存后自动切换 MCP 端口，地址变化后请重新复制客户端配置。": "O padrão é 10588; se estiver em uso, tenta as portas seguintes. Salvar troca a porta do MCP automaticamente. Copie a configuração do cliente de novo se o endereço mudar.",
   "默认包含": "Incluído por padrão",
   "默认打开方式": "Associações de arquivo padrão",

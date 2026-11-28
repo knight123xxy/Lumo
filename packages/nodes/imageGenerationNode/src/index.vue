@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onScopeDispose, ref, shallowRef, watch } from "vue";
-import { ElButton, ElCard, ElOption, ElOptionGroup, ElLoading, ElImageViewer, ElMessageBox } from "element-plus";
+import { ElButton, ElCard, ElOption, ElOptionGroup, ElLoading, ElImageViewer } from "element-plus";
 import { IconCheck, IconPhotoAi, IconSparkles, IconArrowUp, IconPlayerStop, IconTransfer, IconLayoutGrid, IconBrush, IconPencil, IconSun, IconCameraRotate, IconPanoramaHorizontal, IconChevronDown } from "@tabler/icons-vue";
 import { findNodeModel, getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelMemory, useNodeModelSelection, z, type NodeMediaModel, type NodeImageRequest, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
 import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
@@ -303,9 +303,13 @@ function loadModels() {
   modelsRequest = ai.getMediaModels().then((items) => {
     if (disposed || generating.value || deleting.value) return;
     models.value = items.filter((item) => item.type === "image");
-    // ACT: 只给空配置选默认模型（优先上次手动选择的），保留暂时不可用的旧选择及其参数。
+    // ACT: 旧内置图片模型迁移到同名官方线路，保留节点生成参数。
+    const migrated = models.value.find(model => model.providerId === "multiTenant"
+      && data.value.model === JSON.stringify(["ideamine", model.modelId]));
+    if (migrated && !selectedModel.value) data.value.model = getNodeModelKey(migrated);
+    // ACT: 仅为空配置补默认值，保留已有模型和生成参数。
     if (!data.value.model) {
-      const choice = findNodeModel(models.value, modelMemory.get()) ?? modelGroups.value[0]?.models[0];
+      const choice = findNodeModel(models.value, modelMemory.getDefault()) ?? findNodeModel(models.value, modelMemory.get()) ?? modelGroups.value[0]?.models[0];
       data.value.model = choice ? getNodeModelKey(choice) : "";
     }
   }).finally(() => {
@@ -356,18 +360,6 @@ async function startGeneration() {
   const controller = new AbortController();
   const inpaintData = data.value.inpaint;
   generationController = controller;
-  // ACT: 生成前预估确认（263 §7.2）：首次生成弹确认，确认后不再重复询问；重绘与报价查询失败不阻塞生成。
-  if (selectedModel.value?.supportsPrice && !inpaintData && !localStorage.getItem("lumo.confirmedImagePrice")) {
-    const directory = await workspace.list().then(({ directory }) => directory).catch(() => undefined);
-    if (directory) {
-      const price = await ai.getMediaPrice({ ...input, directory, mediaType: "image" }, controller.signal).catch(() => null);
-      if (price?.price) {
-        const confirmed = await ElMessageBox.confirm(`生成图片前确认：即将消耗算力，当前模型单价 ${price.price}。确认后后续生成不再重复询问。是否继续？`, "生成确认", { confirmButtonText: "继续生成", cancelButtonText: "取消", type: "info", closeOnClickModal: false }).then(() => true, () => false);
-        if (!confirmed) return { status: "cancelled" };
-        localStorage.setItem("lumo.confirmedImagePrice", "1");
-      }
-    }
-  }
   // ACT: 工具立即返回；任务身份先保存，卸载只停止等待，重新打开后复查。
   generation = generationState.run(() => workspace.list()
     .then(({ directory }) => {

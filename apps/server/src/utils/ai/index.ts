@@ -13,6 +13,11 @@ import { readDocument } from "@/utils/documents";
 import { getConfiguredProviders, getModelLimits, getModelReasoning, getProviderBaseUrl, providerSchema } from "@/utils/ai/provider";
 import { modelGateway, requireDirectModelAccess } from "@/utils/multiTenant/gateway";
 import { createBillingUsageTracker } from "@/utils/ai/billingUsage";
+import { hosting } from "@/utils/channel";
+import { currentIdentity } from "@/utils/multiTenant/context";
+
+// ACT: 平台文本线路复用用户托管子账号额度，用户侧仍只扣 Lumo 钱包。
+const hostedTextProviderId = "ideamineText";
 
 export { fetchProviderModels } from "@/utils/ai/models";
 export { accountProviderSchema, getAccountProvider, getAccountToken, getConfiguredProviders, getModelLimits, getModelReasoning, providerSchema, reasoningEffortsSchema } from "@/utils/ai/provider";
@@ -26,6 +31,15 @@ export async function getConfiguredModel(providerId: string, modelId: string) {
     throw Object.assign(new Error(official ? "请先登录 算力汇 账号并刷新供应商" : "请先在设置中配置模型供应商"), { status: official ? 401 : 400 });
   }
   const provider = parsed.data;
+  const actor = currentIdentity();
+  if (execution && actor?.role === "user" && execution.route.providerId === hostedTextProviderId) {
+    try {
+      provider.apiKey = await hosting.getUserSubAccountKey(actor.id);
+    } catch {
+      // ACT: 托管凭据不可用时允许管理员配置的平台 Key 兜底；两者都没有才拒绝。
+      if (!provider.apiKey.trim()) throw Object.assign(new Error("Lumo 上游算力凭据暂不可用，请联系管理员"), { status: 503 });
+    }
+  }
   const model = resolved?.model ?? provider.models.find(item => item.id === modelId);
   if (!model) throw Object.assign(new Error("所选模型不存在，请重新选择"), { status: 400 });
   const baseUrl = getProviderBaseUrl(provider.apiUrl, provider.protocol);

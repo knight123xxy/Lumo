@@ -8,6 +8,8 @@ export type { ListUserOptions, ManagedUser } from "@lumo/multi-tenant-db";
 export const adminAccountSchema = z.string().trim().transform(value => value.normalize("NFKC"))
   .pipe(z.string().min(1).max(64).regex(/^[^\s\u0000-\u001f\u007f]+$/))
   .refine(value => value.toLowerCase().length <= 64);
+// 先校验邮箱再规范大小写，避免 NFKC 把未验证的地址折叠成另一个账号。
+export const registrationEmailSchema = z.string().trim().max(64).pipe(z.email()).transform(email => email.toLowerCase());
 export const passwordSchema = z.string().min(8).max(128);
 export const referralCodeSchema = z.string().max(128).trim().regex(/^(?:[0-9a-f]{32})?$/i, "推荐码无效").transform(value => value.toLowerCase());
 export const userIdSchema = z.uuid();
@@ -18,6 +20,11 @@ export const userListSchema = z.object({
   status: z.enum(["all", "enabled", "disabled"]),
 });
 export type AuthIdentity = { id: string; userName: string; role: "admin" | "user" };
+type RecoveryAccount = { id: string; authVersion: number; emailVerifiedAt: number };
+
+function invalidRecoveryCode(): never {
+  return fail("重置验证码无效或已过期，请重新获取", 400);
+}
 
 function digest(value: string) { return createHash("sha256").update(value).digest("hex"); }
 function fail(message: string, status: number): never { throw Object.assign(new Error(message), { status }); }
@@ -53,17 +60,32 @@ export function createMultiTenant(dataDirectory: string) {
     await db.createWebSession({ tokenHash: digest(token), userId: user.id, role: user.role, expiresAt: Date.now() + 8 * 60 * 60 * 1000, authVersion });
     return { token, user };
   }
-  async function addUser(db: AdminDatabase, account: string, password: string, selfRegistration = false, referralCodeHash?: string) {
+  async function assertAccountAvailable(db: AdminDatabase, adminName: string, userNameKey: string) {
+    if (userNameKey === accountKey(adminName) || await db.getUser(userNameKey)) fail("账号已存在，请使用其他账号", 409);
+  }
+
+  async function findRecoveryAccount(db: AdminDatabase | undefined, email: string): Promise<RecoveryAccount | undefined> {
+    if (!db) return;
+    await db.initialize();
+    const user = await db.getUser(email);
+    if (user?.userNameKey !== email || user.disabled || !user.emailVerifiedAt) return;
+    return { id: user.id, authVersion: user.authVersion, emailVerifiedAt: user.emailVerifiedAt };
+  }
+
+  async function addUser(db: AdminDatabase, account: string, password: string, registration?: { referralCodeHash?: string; emailVerifiedAt: number | null }) {
     const admin = await db.getAdmin();
     if (!admin) fail("请先设置超级管理员账号", 409);
     await db.initialize();
     const userNameKey = accountKey(account);
-    if (userNameKey === accountKey(admin.userName) || await db.getUser(userNameKey)) fail("账号已存在，请使用其他账号", 409);
+    await assertAccountAvailable(db, admin.userName, userNameKey);
     const passwordHash = await Bun.password.hash(password, { algorithm: "argon2id" });
-    const user = { id: randomUUID(), userName: account, userNameKey, passwordHash, createdAt: Date.now() };
-    if (selfRegistration && !await db.getRegistrationEnabled()) fail("当前已关闭注册，请联系管理员创建账号", 403);
+    const user = {
+      id: randomUUID(), userName: account, userNameKey, passwordHash,
+      createdAt: Date.now(), emailVerifiedAt: registration?.emailVerifiedAt ?? null,
+    };
+    if (registration && !await db.getRegistrationEnabled()) fail("当前已关闭注册，请联系管理员创建账号", 403);
     let created: boolean;
-    try { created = await db.createUser(user, referralCodeHash); }
+    try { created = await db.createUser(user, registration?.referralCodeHash); }
     catch (error) {
       if (await db.getUser(userNameKey)) fail("账号已存在，请使用其他账号", 409);
       throw error;
@@ -72,6 +94,14 @@ export function createMultiTenant(dataDirectory: string) {
     return user;
   }
   return {
+    async checkRegistrationAccount(userName: string) {
+      const key = accountKey(adminAccountSchema.parse(userName));
+      const db = await getDatabase();
+      const admin = await db?.getAdmin();
+      if (!db || !admin) fail("请先设置超级管理员账号", 409);
+      await db.initialize();
+      await assertAccountAvailable(db, admin.userName, key);
+    },
     async isConfigured() {
       const db = await getDatabase();
       return !!(await db?.getAdmin());
@@ -166,15 +196,20 @@ export function createMultiTenant(dataDirectory: string) {
       }
       return { code };
     },
-    register(userName: string, password: string, referralCode?: string) {
-      const account = adminAccountSchema.parse(userName);
+    async register(userName: string, password: string, referralCode?: string, verifyEmail?: (email: string) => Promise<void>) {
+      const account = verifyEmail ? registrationEmailSchema.parse(userName) : adminAccountSchema.parse(userName);
       passwordSchema.parse(password);
       const code = referralCodeSchema.optional().parse(referralCode);
+      const db = await getDatabase();
+      if (!db) fail("请先设置超级管理员账号", 409);
+      if (!await db.getRegistrationEnabled()) fail("当前已关闭注册，请联系管理员创建账号", 403);
+      if (verifyEmail) await verifyEmail(account);
+      const emailVerifiedAt = verifyEmail ? Date.now() : null;
       return serial(async () => {
-        const db = await getDatabase();
-        if (!db) fail("请先设置超级管理员账号", 409);
-        if (!await db.getRegistrationEnabled()) fail("当前已关闭注册，请联系管理员创建账号", 403);
-        const user = await addUser(db, account, password, true, code ? digest(code) : undefined);
+        const user = await addUser(db, account, password, {
+          referralCodeHash: code ? digest(code) : undefined,
+          emailVerifiedAt,
+        });
         if (!await db.completeUserLogin(user.id, 0, Date.now())) fail("账号状态已变更，请重新登录", 401);
         return createWebSession(db, { id: user.id, userName: user.userName, role: "user" });
       });
@@ -216,6 +251,18 @@ export function createMultiTenant(dataDirectory: string) {
         const passwordHash = await Bun.password.hash(password, { algorithm: "argon2id" });
         if (!await db.resetUserPassword(userId, passwordHash)) fail("账号不存在", 404);
       });
+    },
+    async getPasswordRecoveryAccount(email: string) {
+      return findRecoveryAccount(await getDatabase(), registrationEmailSchema.parse(email));
+    },
+    async recoverPassword(email: string, password: string, verifyCode: (account: RecoveryAccount | undefined) => Promise<boolean>) {
+      const userNameKey = registrationEmailSchema.parse(email);
+      passwordSchema.parse(password);
+      const db = await getDatabase();
+      const account = await findRecoveryAccount(db, userNameKey);
+      if (!await verifyCode(account) || !db || !account) invalidRecoveryCode();
+      const passwordHash = await Bun.password.hash(password, { algorithm: "argon2id" });
+      if (!await db.resetUserPassword(account.id, passwordHash, { ...account, userNameKey })) invalidRecoveryCode();
     },
     loginWeb(userName: string, password: string) {
       const account = adminAccountSchema.parse(userName);

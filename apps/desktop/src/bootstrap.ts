@@ -19,6 +19,10 @@ if (process.platform === "win32") {
   console.info("桌面进程启动：", process.platform, process.arch, process.versions.bun);
 }
 
+if (process.platform === "darwin" && process.env.LUMO_MAC_STARTUP_TRACE === "1") {
+  console.info("[Lumo 启动] 正在加载桌面入口");
+}
+
 // ACT: 日志先于桌面依赖初始化，依赖加载异常也能留下完整错误。
 try { await import("./index"); }
 catch (error) {

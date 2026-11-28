@@ -164,9 +164,11 @@ bun run build:desktop
 bun run package:desktop
 ```
 
-Windows x64 安装包为 `toonflow-<版本>-Setup.exe`，ARM64 为 `toonflow-<版本>-win-arm64-Setup.exe`，分别位于 `build/desktop/artifacts/`、`build/desktop/artifacts/windowsArm64/`。
+Windows x64 安装包为 `lumo-<版本>-Setup.exe`，ARM64 为 `lumo-<版本>-win-arm64-Setup.exe`，分别位于 `build/desktop/artifacts/`、`build/desktop/artifacts/windowsArm64/`。Windows 构建和打包默认使用 `https://lumoai.pro/` 作为账号服务。如需测试其他环境，打包前可设置 `VITE_LUMO_ACCOUNT_SERVICE_URL` 为对应的 HTTPS 根地址。
 
-NSIS 安装包不内置 Bun。安装器会自动打开“必要运行时下载”，提供 npmmirror、CNPM 备用线路、GitHub 官方源、SourceForge 镜像四个预设入口，并在系统代理和直连之间自动回退；所有组合失败后才提示重试。npmmirror 与 CNPM 属于同一维护体系，使用不同下载入口，不视为两个独立镜像运营方。高级设置默认折叠，下载中可以暂停、切换来源或取消，缓存位于 `%LOCALAPPDATA%/local.toonflow.desktop/runtime/bun/<版本>/<架构>`。下载的 ZIP 与可执行文件均校验固定大小和 SHA-256，不接受任意版本替换。`/S` 安装使用相同下载流程，不显示交互窗口。首次下载成功后，重新安装可以复用已校验缓存。
+要单独构建 Windows 安装包，可在 GitHub Actions 的 **Debug build** 工作流中选择 `windowsX64` 或 `windowsArm64`，并指定包含本次改动的分支。首次构建可关闭 `generatePatch`。安装包随该次运行的构建产物下载。首装验收应在对应架构的 Windows 上用普通用户执行，依次确认安装、登录、兑换体验卡、默认 Agent 首轮对话、生图回存和退出重开后的项目恢复。安装失败时保留 `%TEMP%\lumoInstall.log`。内嵌 OpenFilm Studio 目前随 macOS 版启用。
+
+NSIS 安装包不内置 Bun。安装器会自动打开“必要运行时下载”，提供 npmmirror、CNPM 备用线路、GitHub 官方源、SourceForge 镜像四个预设入口，并在系统代理和直连之间自动回退；所有组合失败后才提示重试。npmmirror 与 CNPM 属于同一维护体系，使用不同下载入口，不视为两个独立镜像运营方。高级设置默认折叠，下载中可以暂停、切换来源或取消，缓存位于 `%LOCALAPPDATA%/local.lumo.desktop/runtime/bun/<版本>/windows<架构>`。下载的 ZIP 与可执行文件均校验固定大小和 SHA-256，不接受任意版本替换。`/S` 安装使用相同下载流程，不显示交互窗口。首次下载成功后，重新安装可以复用已校验缓存。
 
 线路探测最多 4 路并发，每次仅请求实际 ZIP 的前 32 KiB；单次目标上限 2 秒、整个阶段预算 6 秒，每条线路首次成功后才做第二次确认。出现连续两次成功的候选后，再留 500 毫秒比较其他已启动的线路，然后中断剩余探测、等待工作任务结束并开始单路下载；未测或探测失败的线路继续保留为后备。暂停、取消或更改设置会同时停止全部探测。短时结果只代表当前连接表现；操作系统的 DNS、代理和取消收尾仍可能增加实际等待时间，不承诺所有网络下恰好 6 秒结束。
 
@@ -249,8 +251,8 @@ git push --no-follow-tags origin refs/tags/v2.0.0:refs/tags/v2.0.0
 
 | 平台 | 安装包 | 更新文件 |
 | --- | --- | --- |
-| Windows x64 | `toonflow-<版本号>-Setup.exe` | `stable-win-x64-*` |
-| Windows ARM64 | `toonflow-<版本号>-win-arm64-Setup.exe` | `stable-win-arm64-*` |
+| Windows x64 | `lumo-<版本号>-Setup.exe` | `stable-win-x64-*` |
+| Windows ARM64 | `lumo-<版本号>-win-arm64-Setup.exe` | `stable-win-arm64-*` |
 | macOS Intel | `toonflow-<版本号>-macos-x64.pkg` | `stable-macos-x64-*` |
 | macOS Apple Silicon | `toonflow-<版本号>-macos-arm64.pkg` | `stable-macos-arm64-*` |
 | Linux x64 | `toonflow-<版本号>-linux-x64.deb` | `stable-linux-x64-*` |

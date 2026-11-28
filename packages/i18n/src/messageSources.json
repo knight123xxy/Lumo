@@ -70,7 +70,8 @@
     "apps/web/src/pages/home/pages/explore/exploreDetail.vue",
     "apps/web/src/pages/workspace/panels/document/components/extView.vue",
     "apps/server/src/remoteConnection.ts",
-    "packages/providerWeb/providerEditor.vue"
+    "packages/providerWeb/providerEditor.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "断开并独立运行": [
     "apps/web/src/main.ts",
@@ -2835,7 +2836,8 @@
     "apps/web/src/components/settings/panels/languageModel/addProviderDialog.vue",
     "apps/web/src/components/settings/panels/mediaModel/addCustomProviderDialog.vue",
     "apps/web/src/components/settings/panels/account/index.vue",
-    "apps/web/src/components/settings/panels/account/modelCatalog.vue"
+    "apps/web/src/components/settings/panels/account/modelCatalog.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "获取模型列表": [
     "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue"
@@ -2978,7 +2980,8 @@
   "获取模型列表失败": [
     "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue",
     "apps/web/src/components/settings/panels/languageModel/addProviderDialog.vue",
-    "apps/web/src/components/settings/panels/account/modelCatalog.vue"
+    "apps/web/src/components/settings/panels/account/modelCatalog.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "获取模型列表失败，请检查连接配置": [
     "apps/web/src/components/settings/panels/languageModel/addCustomProviderDialog.vue"
@@ -3374,7 +3377,8 @@
   ],
   "暂无模型": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
-    "packages/providerWeb/providerEditor.vue"
+    "packages/providerWeb/providerEditor.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "测试媒体模型：{0}": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue"
@@ -3385,7 +3389,8 @@
     "apps/web/src/components/agent/mentionMenu.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetBrowser.vue",
     "apps/server/src/utils/media/generation.ts",
-    "packages/providerWeb/modelEditorDialog.vue"
+    "packages/providerWeb/modelEditorDialog.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "视频": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
@@ -3393,7 +3398,8 @@
     "apps/web/src/components/agent/mentionMenu.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetBrowser.vue",
     "apps/server/src/utils/media/generation.ts",
-    "packages/providerWeb/modelEditorDialog.vue"
+    "packages/providerWeb/modelEditorDialog.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "音频": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
@@ -3401,12 +3407,14 @@
     "apps/web/src/components/agent/mentionMenu.vue",
     "apps/web/src/pages/workspace/panels/canvas/components/assetBrowser.vue",
     "apps/server/src/utils/media/generation.ts",
-    "packages/providerWeb/modelEditorDialog.vue"
+    "packages/providerWeb/modelEditorDialog.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "文本": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
     "apps/web/src/components/settings/panels/account/modelCatalog.vue",
-    "apps/web/src/components/agent/mentionMenu.vue"
+    "apps/web/src/components/agent/mentionMenu.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "单图参考": [
     "apps/web/src/components/settings/panels/mediaModel/editProviderDialog.vue",
@@ -3591,7 +3599,8 @@
   ],
   "选择模型": [
     "apps/web/src/components/settings/panels/mediaModel/providerTestPanel.vue",
-    "apps/web/src/components/modelPopover.vue"
+    "apps/web/src/components/modelPopover.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "测试模型": [
     "apps/web/src/components/settings/panels/mediaModel/providerTestPanel.vue"
@@ -4455,7 +4464,8 @@
     "apps/web/src/components/settings/panels/account/walletBonus.vue"
   ],
   "模型分类": [
-    "apps/web/src/components/settings/panels/account/modelCatalog.vue"
+    "apps/web/src/components/settings/panels/account/modelCatalog.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "搜索模型名称": [
     "apps/web/src/components/settings/panels/account/modelCatalog.vue"
@@ -12649,7 +12659,8 @@
   ],
   "供应商管理": [
     "packages/multiTenant/adminWeb/index.vue",
-    "packages/multiTenant/adminWeb/pages/providers.vue"
+    "packages/multiTenant/adminWeb/pages/providers.vue",
+    "apps/web/src/components/settings/panels/model/index.vue"
   ],
   "模型路由": [
     "packages/multiTenant/adminWeb/index.vue",
@@ -13306,5 +13317,38 @@
   ],
   "此代码仅显示一次，请复制保存。": [
     "packages/multiTenant/adminWeb/pages/users.vue"
+  ],
+  "默认模型": [
+    "apps/web/src/components/settings/panels/model/index.vue"
+  ],
+  "邮箱": [
+    "packages/multiTenant/userWeb/index.vue"
+  ],
+  "邮箱验证码": [
+    "packages/multiTenant/userWeb/index.vue"
+  ],
+  "发送验证码": [
+    "packages/multiTenant/userWeb/index.vue"
+  ],
+  "请输入有效的邮箱地址": [
+    "packages/multiTenant/userWeb/index.vue"
+  ],
+  "请输入六位邮箱验证码": [
+    "packages/multiTenant/userWeb/index.vue"
+  ],
+  "邮箱验证服务暂不可用，请稍后重试": [
+    "apps/server/src/utils/multiTenant/registrationEmail.ts"
+  ],
+  "发送验证码过于频繁，请稍后重试": [
+    "apps/server/src/utils/multiTenant/registrationEmail.ts"
+  ],
+  "请输入注册验证码": [
+    "apps/server/src/utils/multiTenant/registrationEmail.ts"
+  ],
+  "注册验证码无效或已过期，请重新获取": [
+    "apps/server/src/utils/multiTenant/registrationEmail.ts"
+  ],
+  "当前未启用邮箱注册验证": [
+    "apps/server/src/utils/multiTenant/index.ts"
   ]
 }

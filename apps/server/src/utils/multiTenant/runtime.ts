@@ -14,6 +14,7 @@ import { runWithIdentity } from "./context";
 type Runtime = { started: boolean; server?: Server; sockets: Set<Socket>; queue: Promise<void>; onEnabledChange?: (enabled: boolean) => void };
 const runtimes = new WeakMap<Application, Runtime>();
 const userRoutes = new Set(["register", "login", "session", "logout", "host"].map(name => `/api/multitenant/user/${name}`));
+const userCodeRoutes = new Set(["sendregistrationcode", "sendpasswordresetcode", "resetpassword"].map(name => `/api/multitenant/user/${name}`));
 const controlRoutes = new Set(["status", "setup", "login", "logout", "state", "enabled", "registration", "hostsession"].map(name => `/api/multitenant/${name}`));
 const userReadRoutes = new Set(["/api/ai/models", "/api/ai/media/models", "/api/multitenant/user/balance", "/api/nodes/get", "/api/nodes/files", "/api/ext/list", "/api/ext/read", "/api/tools/get"]);
 const modelWriteRoutes = new Set(["/api/ai/filmprice", "/api/ai/generate", "/api/ai/media/price", "/api/ai/media/generate", "/api/ai/media/tasks/status", "/api/ai/media/tasks/cancel"]);
@@ -154,6 +155,7 @@ export async function multiTenantAccess(req: Request, res: Response, next: NextF
     || ["/api/multitenant/users", "/api/multitenant/sourcemapping", "/api/multitenant/models", "/api/multitenant/providers", "/api/multitenant/billing"].some(prefix => path === prefix || path.startsWith(`${prefix}/`));
   const desktopRoute = path === "/api/desktop" || path.startsWith("/api/desktop/");
   if (userRoutes.has(path) && (publicWeb || path === "/api/multitenant/user/session")) return next();
+  if (publicWeb && req.method === "POST" && userCodeRoutes.has(path)) return next();
   if (!publicWeb && (managementRoute || path === "/api/desktop/ready")) return next();
   if (!publicWeb && !desktopRoute) throw Object.assign(new Error("请通过端口 10888 访问创作功能"), { status: 403 });
   const platformRoute = platformPrefixes.some(prefix => path === prefix || path.startsWith(`${prefix}/`))
@@ -163,7 +165,7 @@ export async function multiTenantAccess(req: Request, res: Response, next: NextF
   }
   const user: AuthIdentity | null = !publicWeb && authenticateHost(req)
     ? { id: "admin", userName: "", role: "admin" } : await authenticateWeb(req);
-  if (!user) throw Object.assign(new Error("请先登录 算力汇"), { status: 401 });
+  if (!user) throw Object.assign(new Error("请先登录 Lumo"), { status: 401 });
   res.locals.multiTenantUser = user;
   if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) getAppOrigin(req);
   if (user.role === "admin") return runWithIdentity(user, next);

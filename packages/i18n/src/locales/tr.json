@@ -1613,6 +1613,7 @@
   "模型与连接配置已保存，读取最新模型失败：{0}。请重新打开编辑。": "Modeller ve bağlantı ayarları kaydedildi ancak güncel modeller alınamadı: {0}. Düzenleyiciyi yeniden açın.",
   "模型与思考强度设置": "Model ve akıl yürütme düzeyi ayarları",
   "默认": "Varsayılan",
+  "默认模型": "Varsayılan model",
   "默认 10588，占用时自动顺延。保存后自动切换 MCP 端口，地址变化后请重新复制客户端配置。": "Varsayılan port 10588'dir; kullanımdaysa sonraki uygun port otomatik seçilir. Kaydetmenin ardından MCP portu değiştirilir. Adres değiştiğinde istemci yapılandırmasını yeniden kopyalayın.",
   "默认包含": "Varsayılan olarak dahil edilmiştir",
   "默认打开方式": "Varsayılan açma yöntemi",

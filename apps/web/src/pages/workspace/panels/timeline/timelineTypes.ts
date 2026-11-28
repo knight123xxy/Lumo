@@ -96,6 +96,8 @@ export interface ProjectStyle {
   motion?: string;
 }
 
+export type FilmImportDraft = { id: string; video: TimelineClip[]; audio: TimelineClip[]; subtitles: TimelineClip[] };
+
 export interface TimelineProject {
   version: 1;
   name: string;
@@ -105,6 +107,7 @@ export interface TimelineProject {
   assets: AssetItem[];
   tracks: TimelineTrack[];
   style?: ProjectStyle;
+  pendingFilmImports?: FilmImportDraft[];
 }
 
 export const trackDefaults: Record<TrackType, { name: string; hidden: boolean; muted: boolean }> = {

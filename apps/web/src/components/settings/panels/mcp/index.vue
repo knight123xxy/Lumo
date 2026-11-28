@@ -21,8 +21,8 @@
         </div>
         <ul v-if="status.enabled && status.connections.length" class="connectionList">
           <li v-for="connection in status.connections" :key="connection.id">
-            <span>{{ connection.state.directory || "首页" }}</span>
-            <small v-if="connection.state.directory">{{ connection.state.panel === "document" ? "文档" : "画布" }}</small>
+            <span>{{ connection.state.directory || translate("应用市场") }}</span>
+            <small v-if="connection.state.directory">{{ connection.state.panel === "timeline" ? translate("剪辑") : connection.state.panel === "document" ? translate("文档") : translate("画布") }}</small>
           </li>
         </ul>
       </template>

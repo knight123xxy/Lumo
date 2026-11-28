@@ -59,7 +59,7 @@ const upgradeVersion = useBuiltinUpgrades("media");
 const mediaProviderDialog = shallowRef<Component>();
 const editProviderDialog = shallowRef<Component>();
 const providers = ref<MediaProvider[]>([]);
-const visibleProviders = computed(() => providers.value.filter(item => !["lumo", "ideamine"].includes(item.id.toLowerCase())));
+const visibleProviders = computed(() => providers.value.filter(item => item.id.toLowerCase() !== "lumo"));
 const providerDialogVisible = ref(false);
 const editorVisible = ref(false);
 const editingProvider = ref<MediaProvider>();

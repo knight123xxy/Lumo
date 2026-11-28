@@ -213,9 +213,8 @@ async function configuredProvider(request: MediaGenerationRequest, mediaType: "i
       if (upstream.source !== ideamineProviderSource || trustedUrl !== "https://api.ideamine.cn/v1") {
         throw Object.assign(new Error("算力汇托管路由须使用内置适配器及官方地址"), { status: 503 });
       }
-      const hosted = await hosting.getUserSubAccount(ownerUserId, signal);
-      if (!resume && hosted.remainingQuota <= 0) throw Object.assign(new Error("算力汇上游额度不足，请联系管理员"), { status: 503 });
-      config = { ...config, apiUrl: trustedUrl, apiKey: hosted.key };
+      // 媒体同样只取子账号 Key；上游余额接口格式变动不阻断生成。
+      config = { ...config, apiUrl: trustedUrl, apiKey: await hosting.getUserSubAccountKey(ownerUserId, signal) };
     }
     const provider = await loadMediaProviderSource(upstream.source, config, signal, undefined, directory, saveTaskData, upstream.cloud);
     return { provider, request: { ...request, providerId: provider.id, modelId: upstream.upstreamModelId }, usesBuiltinIdeamine: upstream.source === ideamineProviderSource };
@@ -270,7 +269,7 @@ export async function generateMedia(
     return await executeMedia(cwd, mediaType, request, signal, task, () => { submitted = true; });
   } catch (cause) {
     // ACT: 仅宿主确认尚未调用供应商的异常证明未提交；供应商错误码不能伪造此证据。
-    if (!task?.modelRouteCipher || submitted) throw cause;
+    if (submitted) throw cause;
     const failure = cause instanceof Error ? cause : new Error(String(cause));
     notSubmittedFailures.add(failure);
     throw failure;

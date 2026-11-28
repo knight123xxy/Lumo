@@ -10,6 +10,10 @@
       <el-alert v-if="error" :title="error" type="error" :closable="false" showIcon />
     </section>
     <template v-else>
+    <section v-if="deviceConnectionSupported && !deviceHubEnabled" class="settingSection">
+      <el-button @click="connectVisible = true">{{ translate('连接其他设备') }}</el-button>
+      <mobileConnect v-model="connectVisible" />
+    </section>
     <section class="settingSection" aria-labelledby="deviceLinkTitle">
       <div class="sectionHeader">
         <div class="settingInfo">
@@ -131,7 +135,8 @@ import { IconFolderPlus, IconQrcode, IconRefresh } from "@tabler/icons-vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import workspacePicker from "@/pages/home/workspacePicker.vue";
 import { writeClipboardText } from "@/lib/clipboard";
-import { changeDeviceConnection, deviceHubEnabled, getDeviceVersionWarning, mobileConnection, mobileConnectionLabel, mobileConnectionVersionWarning } from "@/lib/mobile";
+import mobileConnect from "@/components/mobileConnect.vue";
+import { changeDeviceConnection, deviceConnectionSupported, deviceHubEnabled, getDeviceVersionWarning, mobileConnection, mobileConnectionLabel, mobileConnectionVersionWarning } from "@/lib/mobile";
 import { isRemoteConnection } from "@/lib/platform";
 
 type LinkStatus = { enabled: boolean; hubEnabled?: boolean; initialized: boolean; pairingAvailable: boolean; port: number; addresses: string[]; publicUrl: string; directories: string[]; appVersion?: string; devices: { id: string; name: string; online: boolean; lastSeen?: number; appVersion?: string }[] };
@@ -140,6 +145,8 @@ type ApiResponse<T> = { code: number; data: T; message?: string };
 
 const props = withDefaults(defineProps<{ visible?: boolean }>(), { visible: true });
 const workspaceStore = useWorkspaceStore();
+const connectVisible = ref(false);
+watch(() => props.visible, visible => { if (!visible) connectVisible.value = false; });
 const headers = { "x-lumo-mobile-link": "1" };
 const status = ref<LinkStatus>();
 const form = reactive({ enabled: false, port: 43123, publicUrl: "", directories: [] as string[] });

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { CanvasInfo } from "@lumo/tools-scaffold/runtime";
-import type { AgentEvent } from "@/agent/runtime/types";
+import type { AgentEvent, AgentTextTransport } from "@/agent/runtime/types";
 import { validateFields } from "@/lib/middleware";
 import u from "@/utils";
 import { translateError, translateMessage } from "@/lib/i18n";
@@ -11,6 +11,7 @@ import { getAgentModelConfiguration } from "@/agent/runtime/model";
 const inputSchema = z.object({
   prompt: z.string().trim(), directory: z.string().min(1),
   runId: z.uuid().optional(),
+  conversationMode: z.enum(["canvas", "edit"]).optional(),
   expectedRunId: z.uuid().optional(),
   attachments: u.agent.agentAttachmentsSchema.optional(),
   mentions: u.agent.agentMentionsSchema.optional(),
@@ -22,6 +23,9 @@ const inputSchema = z.object({
   canvas: z.strictObject({
     // 允许空 id：尚未打开画布时前端仍会带上画布上下文，Agent 可据此调用 addCanvas/getCanvas。
     id: z.string().max(256),
+    studioSelection: z.boolean().optional(),
+    embeddedTimeline: z.boolean().optional(),
+    automaticFilm: z.boolean().optional(),
     tools: z.array(z.strictObject({
       nodeId: z.string().min(1).max(256),
       name: z.string().max(101).regex(/^node:[a-z][a-zA-Z0-9]*$/),
@@ -57,7 +61,8 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
     unregister = u.agent.registerAgentRun(run);
     const cwd = await workspace;
     controller.signal.throwIfAborted();
-    await getAgentModelConfiguration(options.providerId, options.modelId, options.thinkingLevel);
+    const textTransport: AgentTextTransport | undefined = res.locals.agentTextTransport;
+    if (!textTransport) await getAgentModelConfiguration(options.providerId, options.modelId, options.thinkingLevel);
     res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" });
     res.flushHeaders();
     send = (event: AgentEvent) => {
@@ -71,7 +76,7 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
     heartbeat = setInterval(() => {
       if (!res.destroyed && !res.writableEnded && !res.writableNeedDrain) res.write("\n");
     }, 20000);
-    await u.agent.run({ ...options, runId, cwd, canvas: bridge?.context, question: questions.context, signal: controller.signal, onCancel: stop }, send);
+    await u.agent.run({ ...options, textTransport, runId, cwd, canvas: bridge?.context, question: questions.context, signal: controller.signal, onCancel: stop }, send);
     send({ type: "done" });
   } catch (error) {
     if (!res.headersSent) throw error;

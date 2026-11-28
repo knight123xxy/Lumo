@@ -1613,6 +1613,7 @@
   "模型与连接配置已保存，读取最新模型失败：{0}。请重新打开编辑。": "Model dan konfigurasi sambungan disimpan, tetapi gagal mendapatkan model terkini: {0}. Sila buka semula penyunting.",
   "模型与思考强度设置": "Tetapan model dan intensiti penaakulan",
   "默认": "Lalai",
+  "默认模型": "Model lalai",
   "默认 10588，占用时自动顺延。保存后自动切换 MCP 端口，地址变化后请重新复制客户端配置。": "Port lalai ialah 10588; jika digunakan, port tersedia seterusnya dipilih secara automatik. Port MCP bertukar selepas disimpan. Salin semula konfigurasi klien apabila alamat berubah.",
   "默认包含": "Disertakan secara lalai",
   "默认打开方式": "Cara membuka lalai",

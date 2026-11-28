@@ -2,7 +2,7 @@
   "name": "lumo",
   "description": "Lumo 是一款「短剧/漫剧优先」的 AI 视频工作台，从剧本到成片全程 AI，背后接算力汇（api.ideamine.cn）的 Seedance 视频模型。基于 HBAI-Ltd/Toonflow-app（MIT）修改。",
   "author": "HBAI-Ltd <ltlctools@outlook.com>",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "homepage": "https://github.com/HBAI-Ltd/Toonflow-app#readme",
   "repository": {
     "type": "git",

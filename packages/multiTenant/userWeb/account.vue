@@ -7,18 +7,25 @@
     <section v-if="role === 'user'" class="billingSection" aria-labelledby="accountBalanceTitle" :aria-busy="balanceLoading">
       <header class="sectionHeader">
         <h3 id="accountBalanceTitle">{{ translate("余额") }}</h3>
-        <el-button :loading="balanceLoading" :disabled="busy || balanceLoading" @click="loadBalance">{{ translate("刷新") }}</el-button>
+        <el-button :loading="balanceLoading" :disabled="busy || balanceLoading || redeeming" @click="refreshBalance">{{ translate("刷新") }}</el-button>
       </header>
       <el-alert v-if="balanceError" :title="balanceError" type="error" :closable="false" showIcon />
+      <form class="redeemForm" @submit.prevent="submitCard">
+        <label for="accountRechargeCode">{{ translate("输入充值卡密") }}</label>
+        <div class="redeemFields">
+          <el-input id="accountRechargeCode" v-model="cardCode" type="password" autocomplete="off" :maxlength="128" :disabled="busy || redeeming" />
+          <el-button type="primary" nativeType="submit" :loading="redeeming" :disabled="busy || redeeming || !cardCode.trim()">{{ translate("兑换充值卡") }}</el-button>
+        </div>
+        <el-alert v-if="redeemError" :title="redeemError" type="error" :closable="false" showIcon />
+      </form>
       <el-skeleton v-if="balanceLoading && !balance" :rows="4" animated />
       <template v-if="balance">
         <div class="walletList">
-          <section v-for="wallet in balance.wallets" :key="wallet.currency" class="walletRow" :aria-label="wallet.currency">
-            <h4>{{ wallet.currency }}</h4>
+          <section v-if="cnyWallet" class="walletRow" :aria-label="translate('余额')">
             <dl>
-              <div><dt>{{ translate("余额") }}</dt><dd>{{ wallet.balance }}</dd></div>
-              <div><dt>{{ translate("已预占") }}</dt><dd>{{ wallet.reserved }}</dd></div>
-              <div><dt>{{ translate("可用余额") }}</dt><dd>{{ wallet.available }}</dd></div>
+              <div><dt>{{ translate("余额") }}</dt><dd>{{ moneyFormat.format(Number(cnyWallet.balance)) }}</dd></div>
+              <div><dt>{{ translate("已预占") }}</dt><dd>{{ moneyFormat.format(Number(cnyWallet.reserved)) }}</dd></div>
+              <div><dt>{{ translate("可用余额") }}</dt><dd>{{ moneyFormat.format(Number(cnyWallet.available)) }}</dd></div>
             </dl>
           </section>
         </div>
@@ -43,35 +50,51 @@
       </template>
     </section>
     <div class="accountActions">
-      <el-button class="logoutButton" :loading="busy" :disabled="busy" @click="logout">{{ translate("退出登录") }}</el-button>
+      <el-button class="logoutButton" :loading="busy" :disabled="busy || redeeming" @click="logout">{{ translate("退出登录") }}</el-button>
       <el-alert v-if="requestError" class="requestError" :title="requestError" type="error" :closable="false" showIcon />
     </div>
   </div>
 </template>
 
+<script lang="ts">
+export type { BillingSnapshot } from "@lumo/multi-tenant-billing/config";
+</script>
+
 <script setup lang="ts">
 import { locale, translate } from "@lumo/i18n/vue";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { ElAlert, ElButton, ElSkeleton } from "element-plus";
+import { ElAlert, ElButton, ElInput, ElMessage, ElSkeleton } from "element-plus";
 import type { BillingSnapshot, BillingTransaction } from "@lumo/multi-tenant-billing/config";
 import type { UserRequest } from "./types";
 import "element-plus/es/components/alert/style/css";
 import "element-plus/es/components/button/style/css";
+import "element-plus/es/components/input/style/css";
+import "element-plus/es/components/message/style/css";
 import "element-plus/es/components/skeleton/style/css";
 
-const props = defineProps<{ request: UserRequest; userName: string; role?: "admin" | "user" }>();
+const props = defineProps<{
+  request: UserRequest;
+  userName: string;
+  role?: "admin" | "user";
+  active: boolean;
+  balance: BillingSnapshot | null;
+  balanceLoading: boolean;
+  balanceError: string;
+  redeeming: boolean;
+  refreshBalance: () => Promise<void>;
+  redeemCard: (code: string) => Promise<boolean>;
+}>();
 const emit = defineEmits<{ loggedOut: [] }>();
 const busy = ref(false);
 const requestError = ref("");
-const balance = ref<BillingSnapshot | null>(null);
-const balanceLoading = ref(false);
-const balanceError = ref("");
+const cardCode = ref("");
+const redeemError = ref("");
+const cnyWallet = computed(() => props.balance?.wallets.find(wallet => wallet.currency === "CNY"));
+const moneyFormat = computed(() => new Intl.NumberFormat(locale.value, { style: "currency", currency: "CNY", maximumFractionDigits: 6 }));
 const timeFormat = computed(() => new Intl.DateTimeFormat(locale.value, {
   year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
 }));
 const controller = new AbortController();
-let balanceRequest: AbortController | undefined;
-let disposed = false;
 
 function formatTime(value: number) {
   const date = new Date(value);
@@ -85,36 +108,36 @@ function formatAmount(transaction: BillingTransaction) {
   return `${prefix}${transaction.amount} ${transaction.currency}`;
 }
 
-async function loadBalance() {
-  if (props.role !== "user" || !props.userName || busy.value || disposed) return;
-  balanceRequest?.abort();
-  const request = new AbortController();
-  const userName = props.userName;
-  balanceRequest = request;
-  balanceLoading.value = true;
-  balanceError.value = "";
+async function submitCard() {
+  if (!props.active || props.role !== "user" || props.redeeming || busy.value) return;
+  const code = cardCode.value.trim();
+  if (!/^[a-f0-9]{32}$/i.test(code)) {
+    redeemError.value = translate("请输入有效的充值卡密");
+    return;
+  }
+  redeemError.value = "";
   try {
-    const result = await props.request<BillingSnapshot>({ method: "GET", url: "/api/multiTenant/user/balance", signal: request.signal });
-    if (!disposed && !request.signal.aborted && balanceRequest === request && props.role === "user" && props.userName === userName) balance.value = result;
+    if (await props.redeemCard(code)) {
+      cardCode.value = "";
+      ElMessage.success(translate("充值卡已兑换"));
+    }
   } catch (cause) {
-    if (!disposed && !request.signal.aborted && balanceRequest === request) balanceError.value = cause instanceof Error ? cause.message : translate("读取余额失败，请重试");
-  } finally {
-    if (balanceRequest === request) { balanceRequest = undefined; balanceLoading.value = false; }
+    if (props.active && cardCode.value.trim() === code) {
+      redeemError.value = cause instanceof Error ? cause.message : translate("兑换失败，请重试");
+    }
   }
 }
 
-watch(() => [props.userName, props.role], () => {
-  balanceRequest?.abort();
-  balanceRequest = undefined;
-  balanceLoading.value = false;
-  balance.value = null;
-  balanceError.value = "";
-  void loadBalance();
+watch(() => props.active, active => {
+  if (active && props.role === "user") void props.refreshBalance();
+  if (!active) {
+    cardCode.value = "";
+    redeemError.value = "";
+  }
 }, { immediate: true });
 
 async function logout() {
-  if (busy.value) return;
-  balanceRequest?.abort();
+  if (busy.value || props.redeeming) return;
   busy.value = true;
   requestError.value = "";
   try {
@@ -125,11 +148,7 @@ async function logout() {
   } finally { busy.value = false; }
 }
 
-onBeforeUnmount(() => {
-  disposed = true;
-  controller.abort();
-  balanceRequest?.abort();
-});
+onBeforeUnmount(() => controller.abort());
 </script>
 
 <style lang="scss" scoped>
@@ -197,6 +216,20 @@ onBeforeUnmount(() => {
       gap: 16px;
 
       .el-button { min-height: 40px; margin: 0; }
+    }
+
+    .redeemForm {
+      display: grid;
+      gap: 8px;
+
+      .redeemFields {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .el-input { flex: 1 1 180px; min-width: 0; }
+        .el-button { margin: 0; }
+      }
     }
 
     .walletList {

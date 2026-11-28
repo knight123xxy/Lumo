@@ -1,6 +1,5 @@
 import type { BrowserFfmpegCommand, BrowserFfmpegFactory } from "@lumo/ffmpeg/browser";
-import { atempoChain } from "./timelineExport";
-import { runCommand } from "./timelineMedia";
+import { atempoChain, probeMedia, runCommand } from "./timelineMedia";
 
 export interface SilenceSegment {
   start: number;
@@ -151,7 +150,8 @@ function buildSilenceGraph(segments: GraphSegment[], hasVideo: boolean) {
   }
 
   if (hasVideo) {
-    parts.push(`${videoInputs.join("")}${audioInputs.join("")}concat=n=${count}:v=1:a=1[outv][outa]`);
+    const inputs = videoInputs.map((video, index) => `${video}${audioInputs[index]}`).join("");
+    parts.push(`${inputs}concat=n=${count}:v=1:a=1[outv][outa]`);
   } else {
     parts.push(`${audioInputs.join("")}concat=n=${count}:v=0:a=1[outa]`);
   }
@@ -186,6 +186,12 @@ export async function applySilenceEdit(
   }
   await runCommand(command, signal);
 
-  const newDuration = segments.reduce((sum, seg) => sum + (seg.end - seg.start) / seg.speed, 0);
+  // 编码会按视频帧和音频采样对齐，时间线使用成品容器的实际时长。
+  const { format, streams } = await probeMedia(factory, outputPath, signal);
+  const newDuration = Number(format.duration);
+  if (!Number.isFinite(newDuration) || newDuration <= 0 || !streams.some(stream => stream.codec_type === "audio")
+    || (input.hasVideo && !streams.some(stream => stream.codec_type === "video"))) {
+    throw new Error("无法读取口播剪辑成品的时长或轨道");
+  }
   return { silenceCount: silences.length, newDuration, removedSeconds: Math.max(0, input.duration - newDuration) };
 }

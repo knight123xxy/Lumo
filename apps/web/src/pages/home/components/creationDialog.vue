@@ -1,22 +1,16 @@
 <template>
-  <el-dialog v-model="visible" :title="translate(conversation ? '新建对话' : '新建项目')"
+  <el-dialog v-model="visible" :title="translate('新建项目')"
     width="min(440px, calc(100vw - 32px))" alignCenter appendToBody
     :showClose="!busy" :closeOnClickModal="!busy" :closeOnPressEscape="!busy">
     <div class="creationOptions">
-      <label v-if="conversation" class="projectField">
-        <span>{{ translate('所属项目') }}</span>
-        <el-select v-model="directory" :disabled="busy" :aria-label="translate('所属项目')" :placeholder="translate('选择项目')">
-          <el-option v-for="project in projects" :key="project.directory" :label="project.name" :value="project.directory" />
-        </el-select>
-      </label>
-      <button class="modeOption" type="button" :disabled="busy || (conversation && !directory)" @click="emit('select', 'canvas')">
+      <button class="modeOption" type="button" :disabled="busy" @click="emit('select', 'canvas')">
         <span class="modeIcon"><icon-vector :size="18" aria-hidden="true" /></span>
-        <span>{{ translate(conversation ? '画布对话' : '画布项目') }}</span>
+        <span>{{ translate('画布项目') }}</span>
         <icon-chevron-right class="modeArrow" :size="15" aria-hidden="true" />
       </button>
-      <button class="modeOption" type="button" :disabled="busy || (conversation && !directory)" @click="emit('select', 'edit')">
+      <button class="modeOption" type="button" :disabled="busy" @click="emit('select', 'edit')">
         <span class="modeIcon"><icon-movie :size="18" aria-hidden="true" /></span>
-        <span>{{ translate(conversation ? '剪辑对话' : '剪辑项目') }}</span>
+        <span>{{ translate('剪辑项目') }}</span>
         <icon-chevron-right class="modeArrow" :size="15" aria-hidden="true" />
       </button>
     </div>
@@ -26,11 +20,10 @@
 <script setup lang="ts">
 import { translate } from "@lumo/i18n/vue";
 import { IconChevronRight, IconMovie, IconVector } from "@tabler/icons-vue";
-import type { Project, ProjectMode } from "@/stores/workspace";
+import type { ProjectMode } from "@/stores/workspace";
 
 const visible = defineModel<boolean>({ required: true });
-const directory = defineModel<string>("directory", { default: "" });
-defineProps<{ conversation?: boolean; projects?: Project[]; busy?: boolean }>();
+defineProps<{ busy?: boolean }>();
 const emit = defineEmits<{ select: [mode: ProjectMode] }>();
 </script>
 
@@ -38,14 +31,6 @@ const emit = defineEmits<{ select: [mode: ProjectMode] }>();
 .creationOptions {
   display: grid;
   gap: 8px;
-
-  .projectField {
-    display: grid;
-    gap: 6px;
-    margin-bottom: 6px;
-    color: var(--el-text-color-secondary);
-    font-size: 12px;
-  }
 
   .modeOption {
     display: flex;

@@ -27,12 +27,12 @@ const requiresWebView2Update = actualPlatform.isDesktop && actualPlatform.isWind
 const requiresMobileWebViewUpdate = actualPlatform.isMobile && getMissingBrowserFeatures().length > 0;
 let isMounted = false;
 
-async function notifyDesktopReady(failed = false) {
+async function notifyDesktopReady(failed = false, awaitingAccount = false) {
   if (!actualPlatform.isDesktop || publicWeb.value) return;
   const response = await fetch("/api/desktop/ready", {
     method: "POST",
     headers: { "x-lumo-desktop": "1", "Content-Type": "application/json", "Accept-Language": locale.value },
-    body: JSON.stringify({ failed }),
+    body: JSON.stringify({ failed, awaitingAccount }),
   });
   if (!response.ok) throw new Error((await response.json()).message || `通知桌面就绪失败（${response.status}）`);
 }
@@ -42,6 +42,10 @@ async function initialize() {
   if (requiresWebView2Update) throw new Error("当前 Microsoft Edge WebView2 Runtime 版本过旧。请以管理员身份运行微软最新版安装器；若仍提示已安装，请修复 WebView2 或联系管理员检查更新服务。更新完成后，请完全退出 Lumo 再重新打开。");
   if (requiresMobileWebViewUpdate) throw new Error("当前移动端浏览器内核缺少 Lumo 所需能力。请更新 Lumo 和系统浏览器内核；部分系统需要通过系统更新升级。更新完成后，请完全退出并重新打开 Lumo。");
   const { session, app: tenantApp } = await initializeMultiTenant();
+  if (!tenantApp && !session.publicWeb && !session.enabled) {
+    const { requireDesktopAccount } = await import("@/bootstrap/desktopAccount");
+    await requireDesktopAccount(() => notifyDesktopReady(false, true));
+  }
   app = tenantApp ?? await createCreationApp(session);
   app.mount("#app");
   isMounted = true;

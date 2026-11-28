@@ -1,0 +1,21 @@
+--- a/packages/openfilm/studio/ui/src/lib/host.ts
++++ b/packages/openfilm/studio/ui/src/lib/host.ts
+@@ -431,7 +431,7 @@
+  * it is for a moment, a region and a layer, none for a range or a subtitle line.
+  */
+ export type StudioRef = (
+-  | { kind: 'clip'; id: string | null; loc: string | null; label: string; clipKind: string; src: string | null; start: number; end: number; track?: number; in?: number; speed?: number }
++  | { kind: 'clip'; id: string | null; loc: string | null; label: string; clipKind: string; src: string | null; start: number; end: number; track?: number; in?: number; speed?: number; disabled?: boolean }
+   | { kind: 'layer'; label: string; loc: string | null; clipId: string | null; text: string | null; tag: string | null; time?: number; box?: StageBox; source?: string | null }
+   | { kind: 'region'; time: number; box: StageBox; clipIds: string[]; texts: string[] }
+   | { kind: 'time'; time: number }
+--- a/packages/openfilm/studio/ui/src/lib/studio-refs.ts
++++ b/packages/openfilm/studio/ui/src/lib/studio-refs.ts
+@@ -70,6 +70,7 @@
+   return {
+     kind: 'clip', id: block.clipId ?? null, loc, label: block.title, clipKind: block.kind, src: block.src ?? null,
+     start: sec(block.startMs), end: sec(block.endMs),
++    disabled: block.disabled === true,
+     ...(track != null ? { track } : {}),
+     ...(block.src ? { in: sec(inPointMs(block)), speed: block.speed && block.speed > 0 ? block.speed : 1 } : {}),
+     ...(image ? { image: { src: image } } : {}),

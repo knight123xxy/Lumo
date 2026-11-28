@@ -143,7 +143,7 @@ const form = reactive({
   outPoint: 0,
 });
 
-watch(() => props.clip?.id, sync, { immediate: true });
+watch(() => props.clip, sync, { immediate: true });
 
 function sync() {
   const clip = props.clip;

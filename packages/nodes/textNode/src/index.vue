@@ -55,7 +55,7 @@
 import { computed, inject, onMounted, ref, watch } from "vue";
 import { ElAlert, ElButton, ElCard, ElDialog, ElOption, ElOptionGroup, ElMessage, ElMessageBox } from "element-plus";
 import { IconEdit, IconFileText, IconSparkles, IconArrowUp } from "@tabler/icons-vue";
-import { getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelSelection, z, type NodeAiModel, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
+import { findNodeModel, getNodeModelIdentity, getNodeModelKey, nodeSkeleton, nodeTools, useNode, useNodeModelMemory, useNodeModelSelection, z, type NodeAiModel, type NodeHandle } from "@lumo/nodes-scaffold/runtime";
 import { groupNodeModels } from "@lumo/node-shared/groupNodeModels";
 import modelLabel from "@lumo/node-shared/modelLabel";
 import modelSelect from "@lumo/node-shared/modelSelect";
@@ -101,6 +101,7 @@ const models = ref<NodeAiModel[]>([]);
 const modelsLoading = ref(false);
 const generating = ref(false);
 const selectedModel = useNodeModelSelection(models, model);
+const modelMemory = useNodeModelMemory("text");
 const modelGroups = computed(() => groupNodeModels(models.value));
 const textReady = ref(false);
 const textReloading = ref(false);
@@ -219,7 +220,7 @@ async function loadModels() {
   try {
     models.value = await ai.getModels();
     if (!model.value) {
-      const first = modelGroups.value[0]?.models[0];
+      const first = findNodeModel(models.value, modelMemory.getDefault()) ?? modelGroups.value[0]?.models[0];
       model.value = first ? getNodeModelKey(first) : "";
     }
   } catch (error) {

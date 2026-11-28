@@ -1,6 +1,6 @@
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 import type { CanvasContext } from "@lumo/tools-scaffold/runtime";
-import type { AgentEvent, AgentPeerMessage } from "@/agent/runtime/types";
+import type { AgentEvent, AgentPeerMessage, AgentTextTransport } from "@/agent/runtime/types";
 import { run } from "@/agent/runtime";
 import { createAgentConversation, getToolResultText, registerAgentRun, trackAgentEvent, updateSubAgent } from "@/agent/runtime/sessions";
 import { addUsage, emptyUsage, type SubAgentResult } from "@/agent/runtime/subAgent";
@@ -11,7 +11,7 @@ import type { ThinkingLevel } from "@/lib/modelReasoning";
 
 export async function runDelegatedAgent(options: {
   cwd: string; parentFile?: string; name: string; task: string; message?: AgentPeerMessage;
-  providerId: string; modelId: string; thinkingLevel?: ThinkingLevel;
+  providerId: string; modelId: string; thinkingLevel?: ThinkingLevel; textTransport?: AgentTextTransport;
   canvas?: CanvasContext; signal?: AbortSignal; send: (event: AgentEvent) => void; onProgress?: (text: string) => void;
   onCanvasCancel?: (reason: Error) => void; onReady?: () => void;
 }) {
@@ -43,7 +43,7 @@ export async function runDelegatedAgent(options: {
     const questions = createQuestionContext(cwd, send, () => controller.abort());
     const result: SubAgentResult = { name, file: child.file, status: "running", result: "准备执行" };
     try {
-      await run({ prompt: task, cwd, runId, sessionFile: child.file, providerId, modelId, thinkingLevel, canvas: bridge?.context, question: questions.context, signal: childSignal, onCancel: () => controller.abort(), onCanvasCancel: options.onCanvasCancel }, send, message ? { ...message, startsTurn: true } : undefined, snapshot => { entries = snapshot; });
+      await run({ prompt: task, cwd, runId, sessionFile: child.file, providerId, modelId, thinkingLevel, textTransport: options.textTransport, canvas: bridge?.context, question: questions.context, signal: childSignal, onCancel: () => controller.abort(), onCanvasCancel: options.onCanvasCancel }, send, message ? { ...message, startsTurn: true } : undefined, snapshot => { entries = snapshot; });
       result.status = childSignal.aborted ? "cancelled" : "completed";
     } catch (error) {
       result.status = childSignal.aborted ? "cancelled" : (error as { code?: string })?.code === "AGENT_LENGTH" ? "limited" : "error";

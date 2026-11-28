@@ -146,7 +146,8 @@ export async function refreshLumoProvider() {
       "/api/providers/account/install", { sources, token },
       { signal: request.signal, headers: { "x-lumo-workspace": "1", Authorization: `Bearer ${token}` }, timeout: 45000 },
     );
-    if (data.code !== 200 || data.data?.provider?.id !== "算力汇") throw new Error(data.message || "安装账号供应商失败");
+    const providerId = data.data?.provider?.id;
+    if (data.code !== 200 || (providerId !== "Lumo" && providerId !== "lumo")) throw new Error(data.message || "安装账号供应商失败");
     await saveSettings(() => request.signal.aborted || multiTenantEnabled.value || lumoAccountToken.value !== token
       ? undefined : { lumoProvider: data.data.provider }, request.signal);
   } catch (error) {
@@ -160,7 +161,11 @@ export async function refreshLumoProvider() {
   }
 }
 
-type ResolvedAiModel = { providerId: string; providerLabel: string; modelId: string; routeId?: string; label: string; contextWindow: number; reasoningLevels: ThinkingLevel[] };
+type ResolvedAiModel = {
+  providerId: string; providerLabel: string; modelId: string; routeId?: string; label: string;
+  displayName?: string; priceLabel?: string; discountPercent?: number;
+  contextWindow: number; reasoningLevels: ThinkingLevel[];
+};
 const availableModels = ref<ResolvedAiModel[]>([]);
 export const modelChoices = computed(() => availableModels.value.map(model => ({ ...model, value: getNodeModelKey(model) })));
 

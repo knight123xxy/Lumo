@@ -1,6 +1,6 @@
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { raceWithAbortSignal } from "@earendil-works/pi-ai/utils/abort";
-import type { AssistantMessage, AssistantMessageEvent, ImageContent, Message, TextContent } from "@earendil-works/pi-ai";
+import type { AssistantMessage, AssistantMessageEvent, Context, ImageContent, Message, TextContent } from "@earendil-works/pi-ai";
 import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import { createHash, randomUUID } from "node:crypto";
 import { getAgentImageReference, getOffloadedImageText, readAgentImage, saveAgentImage } from "@/agent/runtime/imageAttachments";
@@ -12,16 +12,18 @@ import { getConfiguredProviders, portableTools, publicAiMessage } from "@/utils/
 import { createBillingUsageTracker } from "@/utils/ai/billingUsage";
 import { modelGateway, requireDirectModelAccess } from "@/utils/multiTenant/gateway";
 import type { ModelOutcome } from "@lumo/multi-tenant-gateway/types";
-import { getRuntimeModelConfiguration } from "@/agent/runtime/model";
+import { getAgentTextModel, getRuntimeModelConfiguration, getRuntimeTextTransport } from "@/agent/runtime/model";
+import { generateAgentText } from "@/agent/runtime/textTransport";
 import { t } from "@/lib/i18n";
 
 function contentHash(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-export function configureAgentRequests(session: AgentSession, limits?: { maxRequestImageBytes?: number; maxRequestBytes?: number }, runSignal?: AbortSignal, onRetry?: (replyTo?: string) => void) {
+export function configureAgentRequests(session: AgentSession, limits?: { maxRequestImageBytes?: number; maxRequestBytes?: number }, runSignal?: AbortSignal, onRetry?: (replyTo?: string) => void, prepareTextContext?: (context: Context, signal: AbortSignal) => Promise<Context>) {
   const configured = getRuntimeModelConfiguration(session.modelRuntime);
-  if (configured?.route) session.setAutoRetryEnabled(false);
+  const textTransport = getRuntimeTextTransport(session.modelRuntime);
+  if (configured?.route || textTransport) session.setAutoRetryEnabled(false);
   for (const value of Object.values(limits ?? {})) {
     if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) throw new Error("图片请求预算必须为正安全整数");
   }
@@ -90,6 +92,44 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
     void (async () => {
       let partial: AssistantMessage | undefined;
       let hasOutput = false;
+      if (textTransport) {
+        const message: AssistantMessage = {
+          role: "assistant", content: [], api: model.api, provider: model.provider, model: model.id,
+          stopReason: "pending", timestamp: Date.now(),
+          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+        };
+        try {
+          const selected = getAgentTextModel(textTransport, model.provider, model.id);
+          streamSignal.throwIfAborted();
+          if (toolFailure) { const { error } = toolFailure; toolFailure = undefined; throw error; }
+          const prepared = await prepareTextContext?.(context, streamSignal) ?? context;
+          const offloaded = new Set(history.getBranch().flatMap(entry => {
+            const images = entry.type === "custom" && entry.customType === "lumoImageOffload" ? (entry.data as { images?: unknown })?.images : undefined;
+            return Array.isArray(images) ? images.filter((id): id is string => typeof id === "string") : [];
+          }));
+          const messages = await Promise.all(prepared.messages.map(async message => {
+            if (message.role === "assistant" || typeof message.content === "string") return message;
+            const content = (await Promise.all(message.content.map(async part => {
+              const reference = getAgentImageReference(part);
+              if ("lumoImage" in part && !reference) throw new Error("图片附件引用无效");
+              if (!reference) return [part];
+              if (offloaded.has(reference.id)) return [{ type: "text" as const, text: getOffloadedImageText(reference) }];
+              const image = await readAgentImage(cwd, reference, streamSignal);
+              return [{ type: "text" as const, text: part.type === "text" ? part.text : "" }, image];
+            }))).flat();
+            return { ...message, content };
+          }));
+          const requestContext = { ...prepared, messages, tools: portableTools(prepared.tools) };
+          output.push(await generateAgentText(textTransport, selected.providerId, selected.modelId, requestContext, streamSignal, message, event => output.push(event)));
+        } catch (error) {
+          const reason = streamSignal.aborted ? "aborted" : "error";
+          const cause = streamSignal.aborted ? streamSignal.reason : error;
+          output.push({ type: "error", reason, error: { ...message, stopReason: reason, errorMessage: cause instanceof Error ? cause.message : String(cause) } });
+        } finally {
+          output.end();
+        }
+        return;
+      }
       const usageTracker = createBillingUsageTracker(model.api);
       const failure = (): ModelOutcome => !usageTracker.submitted() ? { kind: "notSubmitted" }
         : usageTracker.rejected() ? { kind: "rejected", delivered: hasOutput } : { kind: "unknown" };

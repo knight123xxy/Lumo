@@ -56,12 +56,12 @@ export function useNodeModelSelection<T extends ModelIdentity>(models: MaybeRefO
   return selected;
 }
 
-export type NodeModelMemory = { get(type: string): string; set(type: string, key: string): void };
+export type NodeModelMemory = { get(type: string): string; set(type: string, key: string): void; getDefault?(type: string): string };
 
 // 宿主未提供记忆能力时读取为空、写入忽略，节点回退到首个可用模型。
 export function useNodeModelMemory(type: string) {
   const memory = inject<NodeModelMemory | undefined>("nodeModelMemory", undefined);
-  return { get: () => memory?.get(type) ?? "", set: (key: string) => memory?.set(type, key) };
+  return { get: () => memory?.get(type) ?? "", getDefault: () => memory?.getDefault?.(type) ?? "", set: (key: string) => memory?.set(type, key) };
 }
 export type NodeImageRequest = {
   directory: string;

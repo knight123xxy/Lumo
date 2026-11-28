@@ -9,8 +9,8 @@
           <template #dropdown><el-dropdown-menu>
             <el-dropdown-item :command="'group:project'">{{ grouped ? '✓ ' : '' }}{{ translate('按项目分组') }}</el-dropdown-item>
             <el-dropdown-item :command="'group:list'">{{ !grouped ? '✓ ' : '' }}{{ translate('对话列表') }}</el-dropdown-item>
-            <el-dropdown-item divided command="sort:recent">{{ recent ? '✓ ' : '' }}{{ translate('最近更新') }}</el-dropdown-item>
-            <el-dropdown-item command="sort:name">{{ !recent ? '✓ ' : '' }}{{ translate('按名称排序') }}</el-dropdown-item>
+            <el-dropdown-item divided command="sort:created">{{ sortByCreated ? '✓ ' : '' }}{{ translate('创建时间') }}</el-dropdown-item>
+            <el-dropdown-item command="sort:name">{{ !sortByCreated ? '✓ ' : '' }}{{ translate('按名称排序') }}</el-dropdown-item>
             <el-dropdown-item v-for="option in filters" :key="option.value" :command="`filter:${option.value}`" :divided="option.value === 'all'">{{ filter === option.value ? '✓ ' : '' }}{{ option.label }}</el-dropdown-item>
           </el-dropdown-menu></template>
         </el-dropdown>
@@ -34,9 +34,11 @@
     <p v-if="!projects.length" class="workspaceEmpty">{{ translate('还没有项目') }}</p>
     <div v-for="project in projects" :key="project.directory" class="workspaceFolder">
       <div class="workspaceFolderRow">
-        <button class="workspaceFolderToggle" type="button" :aria-expanded="expanded.has(project.directory)" :title="project.name" @click="toggle(project.directory)">
+        <button class="workspaceFolderChevron" type="button" :aria-label="translate(expanded.has(project.directory) ? '收起对话列表' : '展开对话列表')" :aria-expanded="expanded.has(project.directory)" @click="toggle(project.directory)">
           <icon-chevron-down v-if="expanded.has(project.directory)" :size="14" aria-hidden="true" />
           <icon-chevron-right v-else :size="14" aria-hidden="true" />
+        </button>
+        <button class="workspaceFolderToggle" type="button" :aria-label="`${translate('打开项目')} · ${project.name}`" :title="project.name" :aria-current="store.project?.directory === project.directory ? 'true' : undefined" :disabled="disabled" @click="emit('openProject', project)">
           <icon-folder :size="15" aria-hidden="true" />
           <span>{{ project.name }}</span>
         </button>
@@ -97,12 +99,12 @@ const matches = (project: Project, value: string) => {
 const projects = computed(() => store.projectList.filter(project => matches(project, filter.value)));
 const router = useRouter();
 const grouped = ref(true);
-const recent = ref(true);
+const sortByCreated = ref(true);
 const searchOpen = ref(false);
 const query = ref("");
 function setView(command: string) {
   if (command.startsWith("group:")) grouped.value = command === "group:project";
-  else if (command.startsWith("sort:")) recent.value = command === "sort:recent";
+  else if (command.startsWith("sort:")) sortByCreated.value = command === "sort:created";
   else {
     const option = filters.value.find(option => command === `filter:${option.value}`);
     if (option) filter.value = option.value;
@@ -176,7 +178,9 @@ async function load(directory: string) {
 }
 
 function compareChats(a: AgentHistory, b: AgentHistory) {
-  return recent.value ? Date.parse(b.modified) - Date.parse(a.modified) : a.name.localeCompare(b.name);
+  // 会话文件名以创建时间开头，文件名在继续对话或重命名时保持不变。
+  if (sortByCreated.value) return b.file.localeCompare(a.file);
+  return a.name.localeCompare(b.name) || b.file.localeCompare(a.file);
 }
 function chatsFor(directory: string) {
   return [...(chats.get(directory) ?? [])].sort(compareChats);
@@ -203,8 +207,11 @@ watch(() => store.project?.directory, directory => {
   void load(directory);
 }, { immediate: true });
 
-watch(() => store.agentHistoryChange, directory => {
-  if (directory && (expanded.has(directory.directory) || searchOpen.value || !grouped.value)) void load(directory.directory);
+watch(() => store.agentHistoryChange, change => {
+  if (!change) return;
+  // ACT: 新 Agent 一启动就展开所属项目并刷新，索引立即可见。
+  if (grouped.value) expanded.add(change.directory);
+  void load(change.directory);
 });
 </script>
 
@@ -230,7 +237,8 @@ watch(() => store.agentHistoryChange, directory => {
     border-radius: 8px;
 
     &:hover, &:focus-within { background: var(--el-fill-color-light); }
-    &:has([aria-current="true"]) { background: var(--el-fill-color); }
+    &:has(> [aria-current="true"]) { background: var(--el-fill-color); }
+    &:has(> .workspaceChat[aria-current="true"]) { background: var(--el-color-primary-light-9); }
   }
   .workspaceFolderToggle, .workspaceChat {
     display: flex;
@@ -246,11 +254,29 @@ watch(() => store.agentHistoryChange, directory => {
     text-align: start;
     cursor: pointer;
 
-    &:hover:not(:disabled), &[aria-current="true"] { background: var(--el-fill-color-light); color: var(--el-text-color-primary); }
+    &:hover:not(:disabled), &[aria-current="true"] { color: var(--el-text-color-primary); }
+    &.workspaceChat[aria-current="true"] { color: var(--el-color-primary); }
     &:disabled { cursor: wait; }
     svg { flex-shrink: 0; }
     span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
+  .workspaceFolderChevron {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 18px;
+    height: 28px;
+    padding: 0;
+    color: var(--el-text-color-secondary);
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover { color: var(--el-text-color-primary); background: var(--el-fill-color-light); }
+    &:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 1px; }
+  }
+
   .workspaceFolderToggle, .workspaceChat { flex: 1; min-width: 0; }
   .workspaceChat { width: 100%; }
   .workspaceChats { margin-inline-start: 17px; padding-inline-start: 4px; border-inline-start: 1px solid var(--el-border-color-lighter); }

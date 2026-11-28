@@ -3,6 +3,13 @@ services:
     build: .
     init: true
     restart: unless-stopped
+    environment:
+      - LUMO_EMAIL_REGISTRATION_REQUIRED
+      - LUMO_REGISTRATION_REDIS_URL
+      - LUMO_REGISTRATION_CODE_SECRET
+      - LUMO_DIRECTMAIL_SMTP_HOST
+      - LUMO_DIRECTMAIL_SMTP_USER
+      - LUMO_DIRECTMAIL_SMTP_PASSWORD
     ports:
       - "127.0.0.1:3000:3000"
     volumes:

@@ -1,8 +1,32 @@
+import { z } from "zod";
 import { canvasOperations } from "@lumo/tool-canvas/runtime";
 import { pluginDevelopmentSchema } from "@/lib/pluginDevelopment";
 import type { CanvasInfo, CanvasContext } from "@lumo/tools-scaffold/runtime";
 import { asrRequestSchema } from "@lumo/tools-scaffold/runtime";
 import type { AgentEvent } from "@/agent/runtime/types";
+
+export const studioVolumeSchema = z.strictObject({ projectId: z.string().min(1).max(128), clipId: z.string().min(1).max(128), volume: z.number().min(0).max(2) });
+
+export const studioSpeedSchema = studioVolumeSchema.omit({ volume: true }).extend({ speed: z.number().min(0.1).max(16) });
+
+export const studioTrimSchema = studioVolumeSchema.omit({ volume: true }).extend({ start: z.number().min(0), end: z.number().positive() })
+  .refine(({ start, end }) => end > start, "出点必须晚于入点");
+
+export const studioDisabledSchema = studioVolumeSchema.omit({ volume: true }).extend({ disabled: z.boolean() });
+
+const timelineClipId = z.string().min(1).max(128);
+export const timelineOperations = {
+  readTimeline: z.strictObject({ offset: z.number().int().nonnegative().optional() }),
+  trimTimelineClip: z.strictObject({ clipId: timelineClipId, start: z.number().min(0), end: z.number().positive() })
+    .refine(({ start, end }) => end > start, "出点必须晚于入点"),
+  tightenTimelineSpeech: z.strictObject({ clipId: timelineClipId, mode: z.enum(["tighten", "speedUp"]) }),
+  subtitleTimelineSpeech: z.strictObject({ clipId: timelineClipId }),
+  subtitleTimelineFromScript: z.strictObject({ clipId: timelineClipId, script: z.string().trim().min(1).max(5000) }),
+  exportTimelineMp4: z.strictObject({}),
+  setTimelineClipVolume: z.strictObject({ clipId: timelineClipId, volume: z.number().min(0).max(2) }),
+};
+
+export const automaticFilmSchema = z.strictObject({ topic: z.string().trim().min(1).max(1000), videoPaths: z.array(z.string().min(1).max(1024)).min(1).max(8) });
 
 type CanvasResult = { result?: unknown; error?: string; cancelled?: boolean; unavailable?: boolean };
 type PendingCall = { cwd: string; finish(response: CanvasResult): void };
@@ -21,8 +45,15 @@ export function createCanvasContext(cwd: string, canvas: CanvasInfo, send: (even
       const pending = queue.then(() => {
         if (disposed) throw new Error("画布调用所属对话已结束");
         signal?.throwIfAborted();
-        const schema = request.name === "developPlugin" ? pluginDevelopmentSchema
-          : request.name === "transcribeAudio" ? asrRequestSchema : canvasOperations.find(item => item.name === request.name)?.parameters;
+        const schema = canvas.embeddedTimeline && Object.hasOwn(timelineOperations, request.name)
+          ? timelineOperations[request.name as keyof typeof timelineOperations]
+          : request.name === "developPlugin" ? pluginDevelopmentSchema
+          : request.name === "setStudioClipVolume" && canvas.studioSelection ? studioVolumeSchema
+          : request.name === "setStudioClipSpeed" && canvas.studioSelection ? studioSpeedSchema
+          : request.name === "trimStudioClip" && canvas.studioSelection ? studioTrimSchema
+          : request.name === "setStudioClipDisabled" && canvas.studioSelection ? studioDisabledSchema
+          : request.name === "createAutomaticFilm" && canvas.automaticFilm ? automaticFilmSchema
+           : request.name === "transcribeAudio" ? asrRequestSchema : canvasOperations.find(item => item.name === request.name)?.parameters;
         if (!schema) throw new Error("画布操作不存在");
         const args = schema.parse(request.args);
         const callId = crypto.randomUUID();
@@ -42,7 +73,7 @@ export function createCanvasContext(cwd: string, canvas: CanvasInfo, send: (even
           };
           const abort = () => finish({ error: signal?.reason instanceof Error ? signal.reason.message : "画布调用已取消" });
           // ACT: 音频按实际时长播放，转写由浏览器检测停滞与收尾超时，仍接受本轮取消。
-          const timer = request.name === "transcribeAudio" ? undefined : setTimeout(() => finish({ error: "画布调用超时，请确认画布仍然打开", unavailable: true }), request.name === "developPlugin" ? 360000 : 120000);
+          const timer = request.name === "transcribeAudio" ? undefined : setTimeout(() => finish({ error: "画布调用超时，请确认画布仍然打开", unavailable: true }), ["createAutomaticFilm", "tightenTimelineSpeech", "subtitleTimelineSpeech", "exportTimelineMp4"].includes(request.name) ? 21 * 60_000 : request.name === "developPlugin" ? 360000 : 120000);
           pendingCalls.set(callId, { cwd, finish });
           activeCalls.add(callId);
           signal?.addEventListener("abort", abort, { once: true });

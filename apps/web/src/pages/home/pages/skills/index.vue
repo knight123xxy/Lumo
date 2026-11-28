@@ -1,5 +1,46 @@
 <template>
   <div class="appStorePanel">
+    <article v-if="caseRoute && isProjectCase" class="caseDetail">
+      <router-link to="/home">{{ translate('返回案例列表') }}</router-link>
+      <h1>{{ projectCase.name }}</h1>
+      <p>{{ projectCase.summary }}</p>
+      <video :src="projectCase.preview" controls playsinline preload="metadata" :aria-label="translate('观看成片')" />
+      <dl>
+        <div><dt>{{ translate('题材') }}</dt><dd>{{ projectCase.subject }}</dd></div>
+        <div><dt>{{ translate('风格') }}</dt><dd>{{ projectCase.style }}</dd></div>
+        <div><dt>{{ translate('所需素材') }}</dt><dd>{{ projectCase.materials }}</dd></div>
+        <div><dt>{{ translate('实际输出') }}</dt><dd>{{ projectCase.provenance.output }}</dd></div>
+        <div><dt>{{ translate('适配版本') }}</dt><dd>{{ projectCase.provenance.version }}</dd></div>
+        <div><dt>{{ translate('素材出处') }}</dt><dd>{{ projectCase.provenance.source }}</dd></div>
+        <div><dt>{{ translate('使用许可') }}</dt><dd>{{ projectCase.provenance.license }}</dd></div>
+      </dl>
+      <el-button type="primary" :disabled="disabled" @click="emit('copyProjectCase')">{{ translate('用同款制作') }}</el-button>
+    </article>
+    <article v-else-if="caseRoute" class="caseDetail">
+      <router-link to="/home">{{ translate('返回案例列表') }}</router-link>
+      <template v-if="currentCase">
+        <h1>{{ currentCase.name }}</h1>
+        <p>{{ currentCase.summary }}</p>
+        <video :key="casePreview" :src="casePreview" controls playsinline preload="metadata" :aria-label="translate('观看成片')" />
+        <div v-if="currentCase.id === 'vertical-beat'" class="caseThemes" role="group" :aria-label="translate('视觉主题')">
+          <el-button :aria-pressed="!selectedTheme" @click="selectedTheme = undefined">{{ translate('原始样片') }}</el-button>
+          <el-button v-for="theme in caseThemes" :key="theme.id" :aria-pressed="selectedTheme === theme.id" @click="selectedTheme = theme.id">{{ theme.name }}</el-button>
+        </div>
+        <dl>
+          <div><dt>{{ translate('题材') }}</dt><dd>{{ currentCase.subject }}</dd></div>
+          <div><dt>{{ translate('风格') }}</dt><dd>{{ currentCase.style }}</dd></div>
+          <div><dt>{{ translate('所需素材') }}</dt><dd>{{ currentCase.materials }}</dd></div>
+          <div><dt>{{ translate('实际输出') }}</dt><dd>{{ currentCase.provenance.output }}</dd></div>
+          <div><dt>{{ translate('适配版本') }}</dt><dd>{{ currentCase.provenance.version }}</dd></div>
+          <div><dt>{{ translate('素材出处') }}</dt><dd>{{ currentCase.provenance.source }}</dd></div>
+          <div><dt>{{ translate('使用许可') }}</dt><dd>{{ currentCase.provenance.license }}</dd></div>
+        </dl>
+        <el-button type="primary" :disabled="disabled" @click="emit('openTemplate', currentCase, selectedTheme)">{{ translate('用同款制作') }}</el-button>
+      </template>
+      <p v-else>{{ translate('未找到案例') }}</p>
+    </article>
+    <template v-else>
+    <router-link class="projectCaseLink" :to="{ name: 'marketCase', params: { caseId: projectCase.id } }">{{ projectCase.name }} · {{ translate('可编辑工程') }}</router-link>
     <section class="storeSection heroSection" aria-labelledby="latestTitle">
       <div class="sectionHeader">
         <h2 id="latestTitle">{{ translate('最新上线') }}</h2>
@@ -74,6 +115,7 @@
     </section>
 
 
+    </template>
     <el-dialog v-model="detailVisible" class="appDetailDialog" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody :showClose="false">
       <div v-if="detail" class="detailPanel">
         <div class="detailHero" :class="{ image: detail.cover.endsWith('.png') }">
@@ -84,7 +126,7 @@
           </button>
         </div>
         <div class="detailBody">
-          <span class="detailBadge">{{ detail.kind === 'pipeline' ? translate('创作流水线') : translate('整集模板') }}</span>
+          <span class="detailBadge">{{ translate('创作流水线') }}</span>
           <h2>{{ detail.name }}</h2>
           <p class="detailSummary">{{ detail.summary }}</p>
           <div v-if="detail.stages?.length" class="detailStages">
@@ -99,7 +141,7 @@
           <div class="detailActions">
             <el-button @click="detailVisible = false">{{ translate('返回') }}</el-button>
             <el-button type="primary" :disabled="disabled" @click="startFromDetail">
-              {{ detail.kind === 'pipeline' ? translate('开始创作') : translate('使用该模板') }}
+              {{ translate('开始创作') }}
             </el-button>
           </div>
         </div>
@@ -127,7 +169,8 @@ import { translate } from "@lumo/i18n/vue";
 import { IconChevronLeft, IconChevronRight, IconPuzzle, IconX } from "@tabler/icons-vue";
 import http from "@/lib/http";
 import { pipelineCatalog, type Pipeline } from "./pipelineCatalog";
-import { templateCatalog } from "./templateCatalog";
+import { useRoute, useRouter } from "vue-router";
+import { caseThemes, projectCase, templateCatalog, type CaseThemeId, type TemplateStructure } from "@lumo/server/templateCatalog";
 
 type InstalledSkill = { name: string; displayName: string; description: string; builtin: boolean; enabled: boolean; version: string };
 
@@ -135,8 +178,18 @@ const props = defineProps<{ disabled: boolean; active: boolean }>();
 const emit = defineEmits<{
   start: [request: { name: string; summary: string; category: string; topic: string }];
   manage: [];
-  openTemplate: [];
+  openTemplate: [item: TemplateStructure, theme?: CaseThemeId];
+  copyProjectCase: [];
 }>();
+
+const route = useRoute();
+const router = useRouter();
+const caseRoute = computed(() => route.name === "marketCase");
+const isProjectCase = computed(() => route.params.caseId === projectCase.id);
+const currentCase = computed(() => templateCatalog.find(item => item.id === route.params.caseId));
+const selectedTheme = ref<CaseThemeId>();
+const casePreview = computed(() => `/cases/${currentCase.value?.id === "vertical-beat" && selectedTheme.value || currentCase.value?.id}.mp4`);
+watch(currentCase, () => { selectedTheme.value = undefined; });
 
 // 流水线封面图（gpt-image 预生成，存于 public/covers/），按 slug 映射。
 const pipelineCovers: Record<string, string> = {
@@ -184,8 +237,8 @@ function resumeHero() { heroPaused.value = false; }
 onMounted(startHeroTimer);
 onBeforeUnmount(() => { if (heroTimer) clearInterval(heroTimer); });
 function onHeroClick(index: number) {
-  if (index === activeHero.value) openDetail({ kind: "template", template: templateCatalog[index]! });
-  else gotoHero(index);
+  const item = templateCatalog[index];
+  if (item) void router.push({ name: "marketCase", params: { caseId: item.id } });
 }
 
 const expandedPipelines = ref(false);
@@ -261,34 +314,26 @@ async function loadSkills() {
 }
 
 type Detail = {
-  kind: "pipeline" | "template";
+  kind: "pipeline";
   name: string;
   summary: string;
   cover: string;
   stages?: { name: string; detail: string }[];
   pipeline?: Pipeline;
-  templateId?: string;
 };
 const detailVisible = ref(false);
 const detail = ref<Detail | null>(null);
 
-function openDetail(input: { kind: "pipeline"; pipeline: Pipeline } | { kind: "template"; template: (typeof templateCatalog)[number] }) {
-  if (input.kind === "pipeline") {
-    const pipeline = input.pipeline;
-    detail.value = { kind: "pipeline", name: pipeline.name, summary: pipeline.summary, cover: pipelineCovers[pipeline.slug] ?? "", stages: pipeline.stages, pipeline };
-  } else {
-    const template = input.template;
-    detail.value = { kind: "template", name: template.name, summary: template.summary, cover: template.cover, templateId: template.id };
-  }
+function openDetail({ pipeline }: { kind: "pipeline"; pipeline: Pipeline }) {
+  detail.value = { kind: "pipeline", name: pipeline.name, summary: pipeline.summary, cover: pipelineCovers[pipeline.slug] ?? "", stages: pipeline.stages, pipeline };
   detailVisible.value = true;
 }
 
 function startFromDetail() {
-  const current = detail.value;
-  if (!current) return;
+  const pipeline = detail.value?.pipeline;
+  if (!pipeline) return;
   detailVisible.value = false;
-  if (current.kind === "pipeline" && current.pipeline) open(current.pipeline);
-  else emit("openTemplate");
+  open(pipeline);
 }
 
 function open(pipeline: Pipeline) {
@@ -632,6 +677,25 @@ watch(() => props.active, active => { if (active) void loadSkills(); }, { immedi
 :global(.appDetailDialog .el-dialog__header) { display: none; }
 
 :global(.appDetailDialog .el-dialog__body) { padding: 0; }
+
+.caseDetail {
+  display: grid;
+  gap: 16px;
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 24px;
+  background: var(--el-bg-color);
+  border-radius: var(--ui-radius);
+
+  a { color: var(--el-color-primary); justify-self: start; }
+  h1, p, dl, dd { margin: 0; }
+  video { display: block; width: 100%; height: min(58vh, 480px); background: #15161a; }
+  .caseThemes { display: flex; flex-wrap: wrap; gap: 8px; .el-button { margin: 0; } }
+  dl { display: grid; gap: 12px; }
+  dt { font-weight: 600; }
+  dd { color: var(--el-text-color-secondary); }
+  .el-button { justify-self: start; }
+}
 
 .detailPanel {
   display: flex;

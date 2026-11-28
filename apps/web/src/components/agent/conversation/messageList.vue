@@ -8,10 +8,10 @@
               <span class="welcomeIcon" aria-hidden="true"><span class="welcomeLogo" :style="{ maskImage: `url(${logoUrl})` }" /></span>
               <div>
                 <p class="welcomeLabel">你好，我是 Lumo 助手</p>
-                <h3>从一个想法开始</h3>
+                <h3>{{ isEditingMode ? translate('从一次剪辑开始') : '从一个想法开始' }}</h3>
               </div>
             </div>
-            <p class="welcomeDescription">聊聊你的故事、画面或镜头，让我们一起把想法落到画布上。</p>
+            <p class="welcomeDescription">{{ isEditingMode ? translate('先导入素材，或告诉我你想剪出怎样的视频。') : '聊聊你的故事、画面或镜头，让我们一起把想法落到画布上。' }}</p>
             <div class="welcomeSuggestions">
               <el-button v-for="item in welcomeSuggestions" :key="item.label" class="welcomeSuggestion" text bg :disabled="locked" :aria-label="`填入提示：${item.label}`" @click="emit('fillPrompt', item.prompt)">
                 <component :is="item.icon" :size="19" aria-hidden="true" />
@@ -87,6 +87,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onUpdated, ref, watch, type ComponentPublicInstance } from "vue";
 import { defaultRangeExtractor, observeElementRect, useVirtualizer } from "@tanstack/vue-virtual";
+import { translate } from "@lumo/i18n/vue";
 import { IconArrowDown, IconArrowFork, IconArrowUpRight, IconAtom, IconChevronDown, IconChevronRight, IconCopy, IconCornerDownRight, IconMovie, IconPencil, IconPhoto, IconTrash, IconUsersGroup, IconVector, IconX } from "@tabler/icons-vue";
 import logoUrl from "@lumo/assets/logo.svg";
 import browserPanel from "@lumo/tool-browser/panel";
@@ -104,7 +105,7 @@ import type { AgentMessage } from "../types";
 import "tdesign-vue-next/es/style/index.css";
 import "@tdesign-vue-next/chat/es/style/index.css";
 
-const props = defineProps<{ messages: AgentMessage[]; directory?: string; active: boolean; disabled: boolean; locked: boolean; busy: boolean; remoteRunning: boolean; compacting: boolean; editingId?: string; deletingId?: string; branchingId?: string; voiceActive: boolean }>();
+const props = defineProps<{ messages: AgentMessage[]; conversationMode?: "canvas" | "edit"; directory?: string; active: boolean; disabled: boolean; locked: boolean; busy: boolean; remoteRunning: boolean; compacting: boolean; editingId?: string; deletingId?: string; branchingId?: string; voiceActive: boolean }>();
 const emit = defineEmits<{ fillPrompt: [prompt: string]; copy: [content: string]; edit: [message: AgentMessage]; branch: [message: AgentMessage]; delete: [message: AgentMessage]; cancelEdit: [] }>();
 const browserMessages = computed(() => {
   const groups = new Map<string, { id: string; tools: AgentToolCall[] }>();
@@ -210,11 +211,16 @@ watch([() => props.active, messageList], async ([active, element]) => {
   else messageVirtualizer.value.scrollToOffset(messageScrollOffset);
   messageListInitialized = true;
 }, { immediate: true, flush: "post" });
-const welcomeSuggestions = [
+const isEditingMode = computed(() => props.conversationMode === "edit");
+const canvasSuggestions = [
   { label: "搭建创作画布", description: "把创意串成清晰的节点流程", icon: IconVector, prompt: "帮我搭建一个创作画布，先和我确认需要的节点与流程。" },
   { label: "梳理故事分镜", description: "拆解故事，安排画面与镜头", icon: IconMovie, prompt: "帮我把故事整理成分镜，先和我确认故事内容、时长和画面风格。" },
   { label: "生成图片素材", description: "为角色和场景寻找视觉方向", icon: IconPhoto, prompt: "帮我生成图片素材，先和我确认画面内容、风格和使用的模型。" },
 ];
+const welcomeSuggestions = computed(() => isEditingMode.value ? [
+  { label: translate("规划剪辑结构"), description: translate("根据已有素材安排开场、正文和结尾"), icon: IconMovie, prompt: translate("帮我规划这条视频的剪辑结构，先和我确认目标时长、用途和已有素材。") },
+  { label: translate("生成成片草稿"), description: translate("把项目内的视频素材编排成时间线"), icon: IconVector, prompt: translate("我想用一键成片做一条短视频。请先和我确认主题与项目内的视频素材，再生成成片草稿。") },
+] : canvasSuggestions);
 </script>
 
 <style lang="scss">
