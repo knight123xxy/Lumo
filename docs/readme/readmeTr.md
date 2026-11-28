@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="Yıldız Rozeti" />
   </a>
-  <a href="../../LICENSE">
+  <a href="../../licenses/toonflow.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License Rozeti" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ Veya davet bağlantısını kullanın: [https://discord.gg/HEjKmpNpAZ](https://d
 
 ## 8. 📜 Açık Kaynak Lisansı
 
-Toonflow, [MIT License](../../LICENSE) kapsamında lisanslanmıştır. Üçüncü taraf bağımlılıklar ve varlıklar kendi lisanslarına ve telif hakkı bildirimlerine tabi olmaya devam eder.
+Toonflow, [MIT License](../../licenses/toonflow.txt) kapsamında lisanslanmıştır. Üçüncü taraf bağımlılıklar ve varlıklar kendi lisanslarına ve telif hakkı bildirimlerine tabi olmaya devam eder.
 
 [![Toonflow Yıldız Geçmişi](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="Mga Star" />
   </a>
-  <a href="../../LICENSE">
+  <a href="../../licenses/toonflow.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="Lisensyang MIT" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ O gamitin ang link ng imbitasyon: [https://discord.gg/HEjKmpNpAZ](https://discor
 
 ## 8. 📜 Lisensya ng Open Source
 
-Ang Toonflow ay nasa ilalim ng [Lisensyang MIT](../../LICENSE). Nananatiling sakop ng kani-kanilang lisensya at abiso sa copyright ang mga third-party dependency at asset.
+Ang Toonflow ay nasa ilalim ng [Lisensyang MIT](../../licenses/toonflow.txt). Nananatiling sakop ng kani-kanilang lisensya at abiso sa copyright ang mga third-party dependency at asset.
 
 [![Kasaysayan ng mga Star ng Toonflow](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="Huy hiệu số sao" />
   </a>
-  <a href="../../LICENSE">
+  <a href="../../licenses/toonflow.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="Huy hiệu giấy phép MIT" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ Hoặc nhấp vào liên kết mời: [https://discord.gg/HEjKmpNpAZ](https://di
 
 ## 8. 📜 Giấy phép mã nguồn mở
 
-Toonflow sử dụng [giấy phép MIT](../../LICENSE). Các gói phụ thuộc và tư liệu bên thứ ba tuân theo giấy phép và thông báo bản quyền tương ứng.
+Toonflow sử dụng [giấy phép MIT](../../licenses/toonflow.txt). Các gói phụ thuộc và tư liệu bên thứ ba tuân theo giấy phép và thông báo bản quyền tương ứng.
 
 [![Lịch sử số sao của Toonflow](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="ป้ายจำนวนดาว" />
   </a>
-  <a href="../../LICENSE">
+  <a href="../../licenses/toonflow.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="ป้ายสัญญาอนุญาต MIT" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ https://github.com/user-attachments/assets/2d9fddac-dfdf-4640-b030-b09d7f7287e9
 
 ## 8. 📜 สัญญาอนุญาตโอเพนซอร์ส
 
-Toonflow ใช้[สัญญาอนุญาต MIT](../../LICENSE) ส่วนแพ็กเกจและสื่อของบุคคลที่สามอยู่ภายใต้สัญญาอนุญาตและประกาศลิขสิทธิ์ของตน
+Toonflow ใช้[สัญญาอนุญาต MIT](../../licenses/toonflow.txt) ส่วนแพ็กเกจและสื่อของบุคคลที่สามอยู่ภายใต้สัญญาอนุญาตและประกาศลิขสิทธิ์ของตน
 
 [![ประวัติจำนวนดาวของ Toonflow](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

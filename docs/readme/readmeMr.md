@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="तारे बॅज" />
   </a>
-  <a href="../../LICENSE">
+  <a href="../../licenses/toonflow.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License बॅज" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ Discord मध्ये सामील होण्यासाठी तुम
 
 ## 8. 📜 मुक्त-स्रोत परवाना
 
-Toonflow [MIT License](../../LICENSE) अंतर्गत परवानाकृत आहे. तृतीय-पक्ष अवलंबित्व आणि मालमत्ता त्यांच्या संबंधित परवाने आणि कॉपीराइट सूचनांच्या अधीन राहतील.
+Toonflow [MIT License](../../licenses/toonflow.txt) अंतर्गत परवानाकृत आहे. तृतीय-पक्ष अवलंबित्व आणि मालमत्ता त्यांच्या संबंधित परवाने आणि कॉपीराइट सूचनांच्या अधीन राहतील.
 
 [![Toonflow स्टार इतिहास](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 

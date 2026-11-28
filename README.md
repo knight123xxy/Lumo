@@ -29,4 +29,6 @@ bun run dev:desktop   # macOS 桌面客户端（Electrobun）
 
 ## 开源许可
 
-[MIT License](./LICENSE)。本项目基于 [HBAI-Ltd/Toonflow-app](https://github.com/HBAI-Ltd/Toonflow-app) 修改，保留原作者署名；第三方依赖和素材遵循各自的许可与版权声明。
+Lumo 的新增和修改部分采用 [Apache License 2.0](./LICENSE)。
+
+本项目基于 [HBAI-Ltd/Toonflow-app](https://github.com/HBAI-Ltd/Toonflow-app) 修改。随附的 Toonflow 上游代码继续适用 [MIT 许可证](./licenses/toonflow.txt)，原版权声明和许可文本随项目保留。第三方依赖和素材遵循各自的许可与版权声明。此前按 MIT 许可证发布的版本继续适用其发布时的条款。

@@ -59,7 +59,7 @@
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/stargazers">
     <img src="https://img.shields.io/github/stars/HBAI-Ltd/Toonflow-app?style=for-the-badge&logo=github" alt="Lencana Star" />
   </a>
-  <a href="../../LICENSE">
+  <a href="../../licenses/toonflow.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="Lencana MIT License" />
   </a>
   <a href="https://github.com/HBAI-Ltd/Toonflow-app/releases">
@@ -551,7 +551,7 @@ Atau gunakan tautan undangan: [https://discord.gg/HEjKmpNpAZ](https://discord.gg
 
 ## 8. 📜 Lisensi Sumber Terbuka
 
-Toonflow dilisensikan di bawah [MIT License](../../LICENSE). Dependensi dan aset pihak ketiga tetap tunduk pada lisensi serta pemberitahuan hak cipta masing-masing.
+Toonflow dilisensikan di bawah [MIT License](../../licenses/toonflow.txt). Dependensi dan aset pihak ketiga tetap tunduk pada lisensi serta pemberitahuan hak cipta masing-masing.
 
 [![Riwayat Star Toonflow](https://api.star-history.com/svg?repos=HBAI-Ltd/Toonflow-app&type=Date)](https://www.star-history.com/#HBAI-Ltd/Toonflow-app&Date)
 
